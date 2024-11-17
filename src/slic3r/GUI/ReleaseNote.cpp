@@ -25,6 +25,10 @@
 #include "BitmapCache.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 
+
+// Added China domestic URL definition
+static const std::string PROFILE_UPDATE_URL_CN = "https://api.gitee.com/feng-zirong/elegoo-slicer/releases";
+
 namespace Slic3r { namespace GUI {
 
 wxDEFINE_EVENT(EVT_SECONDARY_CHECK_CONFIRM, wxCommandEvent);
@@ -346,6 +350,19 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
         EndModal(wxID_YES);
     });
 
+    // Add new button
+    m_button_open_mirror = new Button(this, _L("Download-CN"));
+    m_button_open_mirror->SetBackgroundColor(btn_bg_green);
+    m_button_open_mirror->SetBorderColor(*wxWHITE);
+    m_button_open_mirror->SetTextColor(wxColour("#FFFFFE"));
+    m_button_open_mirror->SetFont(Label::Body_12);
+    m_button_open_mirror->SetSize(wxSize(FromDIP(130), FromDIP(24)));
+    m_button_open_mirror->SetMinSize(wxSize(FromDIP(130), FromDIP(24)));
+    m_button_open_mirror->SetCornerRadius(FromDIP(12));
+    m_button_open_mirror->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &e) {
+        wxLaunchDefaultBrowser(PROFILE_UPDATE_URL_CN);
+    });
+
     m_button_skip_version = new Button(this, _L("Skip this Version"));
     m_button_skip_version->SetBackgroundColor(btn_bg_white);
     m_button_skip_version->SetBorderColor(wxColour(38, 46, 48));
@@ -390,6 +407,7 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
     sizer_button->Add(stable_only_label, 0, wxALIGN_CENTER | wxLEFT, FromDIP(7));
     sizer_button->Add(m_cb_stable_only, 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
     sizer_button->Add(m_button_download, 0, wxALL, FromDIP(5));
+    sizer_button->Add(m_button_open_mirror, 0, wxALL, FromDIP(5)); // Add new button
     sizer_button->Add(m_button_skip_version, 0, wxALL, FromDIP(5));
     sizer_button->Add(m_button_cancel, 0, wxALL, FromDIP(5));
 
