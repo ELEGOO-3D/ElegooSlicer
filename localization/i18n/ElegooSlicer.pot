@@ -8097,6 +8097,9 @@ msgstr ""
 msgid "New version of ElegooSlicer"
 msgstr ""
 
+msgid "Download(Wiki)"
+msgstr ""
+
 msgid "Skip this Version"
 msgstr ""
 

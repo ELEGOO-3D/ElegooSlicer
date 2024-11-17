@@ -27,7 +27,7 @@
 
 
 // Added China domestic URL definition
-static const std::string PROFILE_UPDATE_URL_CN = "https://api.gitee.com/feng-zirong/elegoo-slicer/releases";
+static const std::string PROFILE_UPDATE_URL_CN = "https://wiki.elegoo.com.cn/slicer/fdm/elegooslicer";
 
 namespace Slic3r { namespace GUI {
 
@@ -351,7 +351,7 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
     });
 
     // Add new button
-    m_button_open_mirror = new Button(this, _L("Download-CN"));
+    m_button_open_mirror = new Button(this, _L("Download(Wiki)"));
     m_button_open_mirror->SetBackgroundColor(btn_bg_green);
     m_button_open_mirror->SetBorderColor(*wxWHITE);
     m_button_open_mirror->SetTextColor(wxColour("#FFFFFE"));

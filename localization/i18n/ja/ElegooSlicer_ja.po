@@ -8476,6 +8476,9 @@ msgstr "新しいプラグイン (%s) が発見しました、インストール
 msgid "New version of ElegooSlicer"
 msgstr "新バージョン"
 
+msgid "Download"
+msgstr "ダウンロード（Wiki）"
+
 msgid "Skip this Version"
 msgstr "Skip this Version"
 

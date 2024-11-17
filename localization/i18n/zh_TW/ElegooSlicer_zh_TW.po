@@ -8662,6 +8662,9 @@ msgstr "新的網路套件（ %s） 可用，您是否需要安裝它？"
 msgid "New version of ElegooSlicer"
 msgstr "新版本的 ElegooSlicer"
 
+msgid "Download(Wiki)"
+msgstr "下载（Wiki）"
+
 msgid "Skip this Version"
 msgstr ""
 

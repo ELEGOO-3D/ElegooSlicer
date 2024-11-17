@@ -8333,6 +8333,9 @@ msgstr "新的网络插件(%s) 可用，您是否需要安装它？"
 msgid "New version of ElegooSlicer"
 msgstr "新版本的ElegooSlicer"
 
+msgid "Download(Wiki)"
+msgstr "下载（Wiki）"
+
 msgid "Skip this Version"
 msgstr "跳过本版本"
 
