@@ -93,8 +93,19 @@ ThumbnailErrors validate_thumbnails_string(wxString& str, const wxString& def_ex
     auto [thumbnails_list, errors] = GCodeThumbnails::make_and_check_thumbnail_list(input_string);
     if (!thumbnails_list.empty()) {
         const auto& extentions = ConfigOptionEnum<GCodeThumbnailsFormat>::get_enum_names();
-        for (const auto& [format, size] : thumbnails_list)
-            str += format_wxstr("%1%x%2%/%3%, ", size.x(), size.y(), extentions[int(format)]);
+        for (const auto& [format, size, color] : thumbnails_list)
+        {
+            //color is Vec4d，format to #RRGGBBAA
+            if (int(color[3] * 255) == 0) {
+                str += format_wxstr("%1%x%2%/%3%, ", size.x(), size.y(), extentions[int(format)]);
+            } else {
+                auto color_str = format_wxstr("#%02X%02X%02X", int(color[0] * 255), int(color[1] * 255), int(color[2] * 255));
+                if (int(color[3] * 255) != 255) {
+                    color_str += format_wxstr("%02X", int(color[3] * 255));
+                }
+                str += format_wxstr("%1%x%2%/%3%/%4%, ", size.x(), size.y(), extentions[int(format)], color_str);
+            }
+        }
         str.resize(str.Len() - 2);
     }
 

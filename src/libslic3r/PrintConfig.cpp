@@ -6310,8 +6310,19 @@ void PrintConfigDef::handle_legacy_composite(DynamicPrintConfig &config)
         if (!thumbnails_list.empty()) {
             const auto& extentions = ConfigOptionEnum<GCodeThumbnailsFormat>::get_enum_names();
             thumbnails_str.clear();
-            for (const auto& [ext, size] : thumbnails_list)
-                thumbnails_str += Slic3r::format("%1%x%2%/%3%, ", size.x(), size.y(), extentions[int(ext)]);
+            for (const auto& [ext, size, color] : thumbnails_list)
+            {
+                //color is Vec4d，format to #RRGGBBAA
+                if (int(color[3] * 255) == 0) {
+                    thumbnails_str += Slic3r::format("%1%x%2%/%3%, ", size.x(), size.y(), extentions[int(ext)]);
+                } else {
+                    auto color_str = Slic3r::format("#%02X%02X%02X", int(color[0] * 255), int(color[1] * 255), int(color[2] * 255));
+                    if (int(color[3] * 255) != 255) {
+                        color_str += Slic3r::format("%02X", int(color[3] * 255));
+                    }
+                    thumbnails_str += Slic3r::format("%1%x%2%/%3%/%4%, ", size.x(), size.y(), extentions[int(ext)], color_str);
+                }
+            }
             thumbnails_str.resize(thumbnails_str.length() - 2);
 
             config.set_key_value("thumbnails", new ConfigOptionString(thumbnails_str));

@@ -6,7 +6,7 @@
 #include "../enum_bitmask.hpp"
 #include "ThumbnailData.hpp"
 #include "../enum_bitmask.hpp"
-
+#include <tuple>
 #include <vector>
 #include <memory>
 #include <string_view>
@@ -31,11 +31,11 @@ struct CompressedImageBuffer
 
 std::string get_hex(const unsigned int input);
 std::string rjust(std::string input, unsigned int width, char fill_char);
-std::unique_ptr<CompressedImageBuffer> compress_thumbnail(const ThumbnailData &data, GCodeThumbnailsFormat format);
+std::unique_ptr<CompressedImageBuffer> compress_thumbnail(const ThumbnailData& data, GCodeThumbnailsFormat format);
 std::string get_error_string(const ThumbnailErrors& errors);
 
 
-typedef std::vector<std::pair<GCodeThumbnailsFormat, Vec2d>> GCodeThumbnailDefinitionsList;
+typedef std::vector<std::tuple<GCodeThumbnailsFormat, Vec2d, Vec4d>> GCodeThumbnailDefinitionsList;
 using namespace std::literals;
 std::pair<GCodeThumbnailDefinitionsList, ThumbnailErrors> make_and_check_thumbnail_list(const std::string& thumbnails_string, const std::string_view def_ext = "PNG"sv);
 std::pair<GCodeThumbnailDefinitionsList, ThumbnailErrors> make_and_check_thumbnail_list(const ConfigBase &config);
@@ -44,7 +44,7 @@ std::pair<GCodeThumbnailDefinitionsList, ThumbnailErrors> make_and_check_thumbna
 template<typename WriteToOutput, typename ThrowIfCanceledCallback>
 inline void export_thumbnails_to_file(ThumbnailsGeneratorCallback&                                thumbnail_cb,
                                       int                                                         plate_id,
-                                      const std::vector<std::pair<GCodeThumbnailsFormat, Vec2d>>& thumbnails_list,
+                                      const std::vector<std::tuple<GCodeThumbnailsFormat, Vec2d, Vec4d>>& thumbnails_list,
                                       WriteToOutput                                               output,
                                       ThrowIfCanceledCallback                                     throw_if_canceled)
 {
@@ -53,11 +53,29 @@ inline void export_thumbnails_to_file(ThumbnailsGeneratorCallback&              
         return;
     short i = 0;
     bool first_ColPic = true;
-    for (const auto& [format, size] : thumbnails_list) {
+    for (const auto& [format, size, background_color] : thumbnails_list) {
         static constexpr const size_t max_row_length = 78;
         ThumbnailsList                thumbnails     = thumbnail_cb(ThumbnailsParams{{size}, true, true, true, true, plate_id});
-        for (const ThumbnailData &data : thumbnails) {
+        for (ThumbnailData &data : thumbnails) {
             if (data.is_valid()) {
+                //set background color
+                if (int(background_color[3] * 255) != 0) {
+                    for (unsigned int y = 0; y < data.height; ++y) {
+                        for (unsigned int x = 0; x < data.width; ++x) {
+                            unsigned int index     = (y * data.width + x) * 4;
+                            float        alpha     = data.pixels[index + 3] / 255.0f;
+                            data.pixels[index + 0] = static_cast<unsigned char>((data.pixels[index + 0] * alpha) +
+                                                                                (background_color[0] * 255 * (1 - alpha)));
+                            data.pixels[index + 1] = static_cast<unsigned char>((data.pixels[index + 1] * alpha) +
+                                                                                (background_color[1] * 255 * (1 - alpha)));
+                            data.pixels[index + 2] = static_cast<unsigned char>((data.pixels[index + 2] * alpha) +
+                                                                                (background_color[2] * 255 * (1 - alpha)));
+                            data.pixels[index + 3] = static_cast<unsigned char>((data.pixels[index + 3] * alpha) +
+                                                                                (background_color[3] * 255 * (1 - alpha)));
+                        }
+                    }
+                }
+
                 auto compressed = compress_thumbnail(data, format);
                 if (compressed->data && compressed->size) {
                     if (format == GCodeThumbnailsFormat::BTT_TFT) {

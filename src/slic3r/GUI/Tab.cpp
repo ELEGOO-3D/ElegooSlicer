@@ -3780,7 +3780,7 @@ void TabPrinter::build_fff()
 
                         if (!thumbnails_list.empty()) {
                             GCodeThumbnailsFormat old_format = GCodeThumbnailsFormat(m_config->option("thumbnails_format")->getInt());
-                            GCodeThumbnailsFormat new_format = thumbnails_list.begin()->first;
+                            GCodeThumbnailsFormat new_format = std::get<0>(*thumbnails_list.begin());
                             if (old_format != new_format) {
                                 DynamicPrintConfig new_conf = *m_config;
 
