@@ -1,38 +1,46 @@
-set(_srcdir ${CMAKE_CURRENT_LIST_DIR}/mpfr)
+find_package(MPFR QUIET)
 
-if (MSVC)
-    set(_output  ${DESTDIR}/include/mpfr.h
-                 ${DESTDIR}/include/mpf2mpfr.h
-                 ${DESTDIR}/lib/libmpfr-4.lib 
-                 ${DESTDIR}/bin/libmpfr-4.dll)
+if (USE_SYSTEM_DEPS AND MPFR_FOUND)
+    message(STATUS "Using system MPFR")
+    set(MPFR_PKG "")
+else()
+    message(STATUS "Building MPFR as external project")
+    set(_srcdir ${CMAKE_CURRENT_LIST_DIR}/mpfr)
 
-    add_custom_command(
-        OUTPUT  ${_output}
-        COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/include/mpfr.h ${DESTDIR}/include/
-        COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/include/mpf2mpfr.h ${DESTDIR}/include/
-        COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/lib/win${DEPS_BITS}/libmpfr-4.lib ${DESTDIR}/lib/
-        COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/lib/win${DEPS_BITS}/libmpfr-4.dll ${DESTDIR}/bin/
-    )
+    if (MSVC)
+        set(_output  ${DESTDIR}/include/mpfr.h
+                     ${DESTDIR}/include/mpf2mpfr.h
+                     ${DESTDIR}/lib/libmpfr-4.lib
+                     ${DESTDIR}/bin/libmpfr-4.dll)
 
-    add_custom_target(dep_MPFR SOURCES ${_output})
+        add_custom_command(
+            OUTPUT  ${_output}
+            COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/include/mpfr.h ${DESTDIR}/include/
+            COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/include/mpf2mpfr.h ${DESTDIR}/include/
+            COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/lib/win${DEPS_BITS}/libmpfr-4.lib ${DESTDIR}/lib/
+            COMMAND ${CMAKE_COMMAND} -E copy ${_srcdir}/lib/win${DEPS_BITS}/libmpfr-4.dll ${DESTDIR}/bin/
+        )
 
-else ()
+        add_custom_target(dep_MPFR SOURCES ${_output})
 
-    set(_cross_compile_arg "")
-    if (CMAKE_CROSSCOMPILING)
-        # TOOLCHAIN_PREFIX should be defined in the toolchain file
-        set(_cross_compile_arg --host=${TOOLCHAIN_PREFIX})
+    else ()
+
+        set(_cross_compile_arg "")
+        if (CMAKE_CROSSCOMPILING)
+            set(_cross_compile_arg --host=${TOOLCHAIN_PREFIX})
+        endif ()
+
+        ExternalProject_Add(dep_MPFR
+            URL https://www.mpfr.org/mpfr-4.2.1/mpfr-4.2.1.tar.xz
+            URL_HASH SHA256=277807353a6726978996945af13e52829e3abd7a9a5b7fb2793894e18f1fcbb2
+            DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/MPFR
+            BUILD_IN_SOURCE ON
+            CONFIGURE_COMMAND autoreconf -f -i &&
+                              env "CFLAGS=${_gmp_ccflags}" "CXXFLAGS=${_gmp_ccflags}" ./configure ${_cross_compile_arg} --prefix=${DESTDIR} --enable-shared=yes --enable-static=no --with-gmp=${DESTDIR} ${_gmp_build_tgt}
+            BUILD_COMMAND make -j
+            INSTALL_COMMAND make install
+            DEPENDS dep_GMP
+        )
     endif ()
-
-    ExternalProject_Add(dep_MPFR
-        URL https://www.mpfr.org/mpfr-4.2.1/mpfr-4.2.1.tar.xz
-        URL_HASH SHA256=277807353a6726978996945af13e52829e3abd7a9a5b7fb2793894e18f1fcbb2
-        DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/MPFR
-        BUILD_IN_SOURCE ON
-        CONFIGURE_COMMAND autoreconf -f -i && 
-                          env "CFLAGS=${_gmp_ccflags}" "CXXFLAGS=${_gmp_ccflags}" ./configure ${_cross_compile_arg} --prefix=${DESTDIR} --enable-shared=no --enable-static=yes --with-gmp=${DESTDIR} ${_gmp_build_tgt}
-        BUILD_COMMAND make -j
-        INSTALL_COMMAND make install
-        DEPENDS dep_GMP
-    )
-endif ()
+    set(MPFR_PKG dep_MPFR)
+endif()

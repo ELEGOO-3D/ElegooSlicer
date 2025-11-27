@@ -62,6 +62,8 @@ else()
     endif()
 endif()
 
+option(USE_SYSTEM_DEPS "Use system-installed dependencies where available" OFF)
+
 set(IS_CROSS_COMPILE FALSE)
 
 if (APPLE)
@@ -102,7 +104,13 @@ if (NOT _is_multi AND NOT CMAKE_BUILD_TYPE)
 endif ()
 
 function(elegooslicer_add_cmake_project projectname)
-    cmake_parse_arguments(P_ARGS "" "INSTALL_DIR;BUILD_COMMAND;INSTALL_COMMAND" "CMAKE_ARGS" ${ARGN})
+    cmake_parse_arguments(P_ARGS "SHARED_LIBS_BOOL" "INSTALL_DIR;BUILD_COMMAND;INSTALL_COMMAND" "CMAKE_ARGS" ${ARGN})
+
+    # Default to shared libraries if SHARED_LIBS_BOOL is not explicitly set to OFF
+    set(_build_shared_libs_arg -DBUILD_SHARED_LIBS:BOOL=ON)
+    if (DEFINED P_ARGS_SHARED_LIBS_BOOL AND NOT P_ARGS_SHARED_LIBS_BOOL)
+        set(_build_shared_libs_arg -DBUILD_SHARED_LIBS:BOOL=OFF)
+    endif ()
 
     set(_configs_line -DCMAKE_BUILD_TYPE:STRING=${CMAKE_BUILD_TYPE})
     if (_is_multi OR MSVC)
@@ -135,7 +143,7 @@ if (NOT IS_CROSS_COMPILE OR NOT APPLE)
             -DCMAKE_C_COMPILER:STRING=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_COMPILER:STRING=${CMAKE_CXX_COMPILER}
             -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
-            -DBUILD_SHARED_LIBS:BOOL=OFF
+            ${_build_shared_libs_arg}
             ${_cmake_osx_arch}
             "${_configs_line}"
             ${DEP_CMAKE_OPTS}
@@ -187,7 +195,7 @@ else()
         CMAKE_ARGS
             -DCMAKE_INSTALL_PREFIX:STRING=${DESTDIR}
             -DCMAKE_PREFIX_PATH:STRING=${DESTDIR}
-            -DBUILD_SHARED_LIBS:BOOL=OFF
+            ${_build_shared_libs_arg}
             ${_cmake_osx_arch}
             "${_configs_line}"
             ${DEP_CMAKE_OPTS}

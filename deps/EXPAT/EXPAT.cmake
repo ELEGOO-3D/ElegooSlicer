@@ -1,9 +1,16 @@
-elegooslicer_add_cmake_project(EXPAT
-  # GIT_REPOSITORY https://github.com/nigels-com/glew.git
-  # GIT_TAG 3a8eff7 # 2.1.0
-  SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/expat
-)
+find_package(EXPAT QUIET)
 
-if (MSVC)
-    add_debug_dep(dep_EXPAT)
-endif ()
+if (USE_SYSTEM_DEPS AND EXPAT_FOUND)
+    message(STATUS "Using system EXPAT")
+    set(EXPAT_PKG "")
+else()
+    message(STATUS "Building EXPAT as external project")
+    elegooslicer_add_cmake_project(EXPAT SHARED_LIBS_BOOL TRUE
+      SOURCE_DIR          ${CMAKE_CURRENT_LIST_DIR}/expat
+    )
+
+    if (MSVC)
+        add_debug_dep(dep_EXPAT)
+    endif ()
+    set(EXPAT_PKG dep_EXPAT)
+endif()

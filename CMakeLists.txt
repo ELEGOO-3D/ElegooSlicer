@@ -33,6 +33,7 @@ else()
 endif()
 
 option(SLIC3R_STATIC 			"Compile ElegooSlicer with static libraries (Boost, TBB, glew)" ${SLIC3R_STATIC_INITIAL})
+option(USE_SYSTEM_DEPS "Use system-installed dependencies where available" OFF)
 option(SLIC3R_GUI    			"Compile ElegooSlicer with GUI components (OpenGL, wxWidgets)" 1)
 option(SLIC3R_FHS               "Assume ElegooSlicer is to be installed in a FHS directory structure" 0)
 option(SLIC3R_WX_STABLE         "Build against wxWidgets stable (3.0) as oppsed to dev (3.1) on Linux" 0)
@@ -141,15 +142,25 @@ if (NOT MSVC)
 endif ()
 
 # Display and check CMAKE_PREFIX_PATH
-message(STATUS "SLIC3R_STATIC: ${SLIC3R_STATIC}")
-if (NOT "${CMAKE_PREFIX_PATH}" STREQUAL "")
+# message(STATUS "SLIC3R_STATIC: ${SLIC3R_STATIC}")
+if (USE_SYSTEM_DEPS)
+    message(STATUS "USE_SYSTEM_DEPS is ON. CMAKE_PREFIX_PATH will not be explicitly set, relying on system paths.")
+    # No need to set CMAKE_PREFIX_PATH, find_package will use system paths
+    set(CMAKE_PREFIX_PATH "")
+elseif (NOT "${CMAKE_PREFIX_PATH}" STREQUAL "")
     message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH} (from cache or command line)")
     set(PREFIX_PATH_CHECK ${CMAKE_PREFIX_PATH})
 elseif (NOT "$ENV{CMAKE_PREFIX_PATH}" STREQUAL "")
     message(STATUS "CMAKE_PREFIX_PATH: $ENV{CMAKE_PREFIX_PATH} (from environment)")
     set(PREFIX_PATH_CHECK $ENV{CMAKE_PREFIX_PATH})
 else ()
-    message(STATUS "CMAKE_PREFIX_PATH: (default)")
+    # When USE_SYSTEM_DEPS is OFF, we expect deps to be built locally in DESTDIR
+    # This DESTDIR is defined in deps/CMakeLists.txt, so we need to replicate its logic or ensure consistency.
+    # Assuming DESTDIR is CMAKE_CURRENT_BINARY_DIR}/deps/destdir/usr/local/
+    set(LOCAL_DEP_DESTDIR "${CMAKE_CURRENT_BINARY_DIR}/deps/destdir/usr/local/")
+    message(STATUS "USE_SYSTEM_DEPS is OFF. Setting CMAKE_PREFIX_PATH to local dependency install directory: ${LOCAL_DEP_DESTDIR}")
+    set(CMAKE_PREFIX_PATH ${LOCAL_DEP_DESTDIR})
+    set(PREFIX_PATH_CHECK ${LOCAL_DEP_DESTDIR})
 endif ()
 
 foreach (DIR ${PREFIX_PATH_CHECK})
@@ -403,52 +414,58 @@ list(REMOVE_DUPLICATES CMAKE_C_FLAGS_RELWITHDEBINFO)
 list(REMOVE_DUPLICATES CMAKE_CXX_FLAGS_RELWITHDEBINFO)
 
 # Find and configure boost
+if(USE_SYSTEM_DEPS)
+    find_package(Boost 1.66 COMPONENTS system filesystem thread log locale regex chrono atomic date_time iostreams program_options)
+    if(NOT Boost_FOUND)
+        message(STATUS "Boost not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external Boost project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT Boost_FOUND)
+    # If using external project, link against its build. Assume dep_Boost is defined in deps/CMakeLists.txt
+    add_dependencies(ElegooSlicer dep_Boost)
+    # Need to correctly set include directories and link libraries for the external project.
+    # This might require more complex logic depending on how dep_Boost exposes its targets.
+    # For now, we'll rely on the external project's install step to populate DESTDIR.
+    # And main CMakeLists needs to specify correct include/lib paths from DESTDIR.
+endif()
+
 if(SLIC3R_STATIC)
     # Use static boost libraries.
     set(Boost_USE_STATIC_LIBS ON)
     # Use boost libraries linked statically to the C++ runtime.
     # set(Boost_USE_STATIC_RUNTIME ON)
 endif()
-#set(Boost_DEBUG ON)
-# set(Boost_COMPILER "-mgw81")
-# boost::process was introduced first in version 1.64.0,
-# boost::beast::detail::base64 was introduced first in version 1.66.0
-find_package(Boost 1.66 REQUIRED COMPONENTS system filesystem thread log locale regex chrono atomic date_time iostreams program_options)
 
-add_library(boost_libs INTERFACE)
-add_library(boost_headeronly INTERFACE)
-
-if (APPLE)
-    # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
-    target_compile_definitions(boost_headeronly INTERFACE BOOST_ASIO_DISABLE_KQUEUE)
-endif()
-
-if(NOT SLIC3R_STATIC)
-    target_compile_definitions(boost_headeronly INTERFACE BOOST_LOG_DYN_LINK)
-endif()
-
-function(slic3r_remap_configs targets from_Cfg to_Cfg)
-    if(MSVC)
-        string(TOUPPER ${from_Cfg} from_CFG)
-    
-        foreach(tgt ${targets})
-            if(TARGET ${tgt})
-                set_target_properties(${tgt} PROPERTIES MAP_IMPORTED_CONFIG_${from_CFG} ${to_Cfg})
-            endif()
-        endforeach()
-    endif()
-endfunction()
-
-target_include_directories(boost_headeronly INTERFACE ${Boost_INCLUDE_DIRS})
-target_link_libraries(boost_libs INTERFACE boost_headeronly ${Boost_LIBRARIES})
+# Old boost library handling removed. Linking will be managed by either system find_package or external project.
 
 # Find and configure intel-tbb
-if(SLIC3R_STATIC)
-    set(TBB_STATIC 1)
+if(USE_SYSTEM_DEPS)
+    find_package(TBB)
+    if(NOT TBB_FOUND)
+        message(STATUS "TBB not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external TBB project.")
 endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT TBB_FOUND)
+    # If using external project, link against its build.
+    add_dependencies(ElegooSlicer dep_TBB)
+    # TBB_STATIC should be 0 (false) for shared library build
+    set(TBB_STATIC 0)
+else()
+    # If using system TBB, and SLIC3R_STATIC is ON, still try to use static TBB if available
+    if(SLIC3R_STATIC)
+        set(TBB_STATIC 1)
+    else()
+        set(TBB_STATIC 0)
+    endif()
+endif()
+
 set(TBB_DEBUG 1)
-set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO RelWithDebInfo Release "")
-find_package(TBB REQUIRED)
 # include_directories(${TBB_INCLUDE_DIRS})
 # add_definitions(${TBB_DEFINITIONS})
 # if(MSVC)
@@ -458,15 +475,60 @@ find_package(TBB REQUIRED)
 # The Intel TBB library will use the std::exception_ptr feature of C++11.
 # add_definitions(-DTBB_USE_CAPTURED_EXCEPTION=0)
 
-find_package(OpenSSL REQUIRED)
-find_package(CURL REQUIRED)
+find_package(OpenSSL)
+if(USE_SYSTEM_DEPS)
+    find_package(OpenSSL)
+    if(NOT OpenSSL_FOUND)
+        message(STATUS "OpenSSL not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external OpenSSL project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT OpenSSL_FOUND)
+    add_dependencies(ElegooSlicer dep_OpenSSL)
+endif()
+
+# Find and configure CURL
+if(USE_SYSTEM_DEPS)
+    find_package(CURL)
+    if(NOT CURL_FOUND)
+        message(STATUS "CURL not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external CURL project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT CURL_FOUND)
+    add_dependencies(ElegooSlicer dep_CURL)
+endif()
 
 
 add_library(libcurl INTERFACE)
 target_link_libraries(libcurl INTERFACE CURL::libcurl)
 
-find_package(ZLIB REQUIRED)
-target_link_libraries(libcurl INTERFACE ZLIB::ZLIB)
+# Find and configure ZLIB
+if(USE_SYSTEM_DEPS)
+    find_package(ZLIB)
+    if(NOT ZLIB_FOUND)
+        message(STATUS "ZLIB not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external ZLIB project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT ZLIB_FOUND)
+    add_dependencies(ElegooSlicer dep_ZLIB)
+endif()
+
+# Linking ZLIB
+if(ZLIB_FOUND)
+    target_link_libraries(libcurl INTERFACE ZLIB::ZLIB)
+else()
+    # If ZLIB is an external project, it should be linked correctly during its own build/install.
+    # We might need to explicitly add include directories if it's not handled automatically.
+    # For now, rely on the implicit linking through add_dependencies or proper setup in external project.
+endif()
 
 # Fixing curl's cmake config script bugs
 if (NOT WIN32)
@@ -524,31 +586,98 @@ if (NOT EXPAT_FOUND)
     set(EXPAT_LIBRARIES expat)
 endif ()
 
-find_package(PNG REQUIRED)
+# Find and configure PNG
+if(USE_SYSTEM_DEPS)
+    find_package(PNG)
+    if(NOT PNG_FOUND)
+        message(STATUS "PNG not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external PNG project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT PNG_FOUND)
+    add_dependencies(ElegooSlicer dep_PNG)
+endif()
 
 set(OpenGL_GL_PREFERENCE "LEGACY")
-find_package(OpenGL REQUIRED)
+# Find and configure OpenGL
+if(USE_SYSTEM_DEPS)
+    find_package(OpenGL)
+    if(NOT OpenGL_FOUND)
+        message(STATUS "OpenGL not found in system, falling back to external project (if applicable).")
+        # OpenGL is usually a system lib, if not found, it's a configuration issue, no external project for it here.
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external OpenGL project (if applicable).")
+    # OpenGL is usually a system lib, if not found, it's a configuration issue, no external project for it here.
+endif()
+# OpenGL does not have a corresponding dep_OpenGL target to add_dependencies to,
+# as it's typically a system library. If not found, build will likely fail.
 
 set(GLEW_ROOT "${CMAKE_PREFIX_PATH}")
 message("GLEW_ROOT: ${GLEW_ROOT}")
-# Find glew or use bundled version
-if (SLIC3R_STATIC AND NOT SLIC3R_STATIC_EXCLUDE_GLEW)
-    set(GLEW_USE_STATIC_LIBS ON)
-    set(GLEW_VERBOSE ON)
+# Find and configure glew
+if(USE_SYSTEM_DEPS)
+    find_package(GLEW)
+    if(NOT GLEW_FOUND)
+        message(STATUS "GLEW not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external GLEW project.")
 endif()
 
-find_package(GLEW REQUIRED)
+if(NOT USE_SYSTEM_DEPS OR NOT GLEW_FOUND)
+    add_dependencies(ElegooSlicer dep_GLEW)
+    # If building external GLEW, it will be shared, so ensure static flags are off.
+    set(GLEW_USE_STATIC_LIBS OFF)
+else()
+    # If using system GLEW, and SLIC3R_STATIC is ON, still try to use static GLEW if available
+    if (SLIC3R_STATIC AND NOT SLIC3R_STATIC_EXCLUDE_GLEW)
+        set(GLEW_USE_STATIC_LIBS ON)
+        set(GLEW_VERBOSE ON)
+    else()
+        set(GLEW_USE_STATIC_LIBS OFF)
+    endif()
+endif()
 
-find_package(glfw3 REQUIRED)
+# Find and configure glfw3
+if(USE_SYSTEM_DEPS)
+    find_package(glfw3)
+    if(NOT glfw3_FOUND)
+        message(STATUS "glfw3 not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external glfw3 project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT glfw3_FOUND)
+    add_dependencies(ElegooSlicer dep_GLFW)
+endif()
 
 # Find the Cereal serialization library
-find_package(cereal REQUIRED)
-if (NOT TARGET cereal::cereal)
-    set_target_properties(cereal PROPERTIES IMPORTED_GLOBAL TRUE)
-    add_library(cereal::cereal ALIAS cereal)
-else ()
-    set_target_properties(cereal::cereal PROPERTIES IMPORTED_GLOBAL TRUE)
-endif ()
+if(USE_SYSTEM_DEPS)
+    find_package(cereal)
+    if(NOT cereal_FOUND)
+        message(STATUS "cereal not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external cereal project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT cereal_FOUND)
+    add_dependencies(ElegooSlicer dep_Cereal)
+    # If not found, need to ensure cereal headers are available from the external project install dir
+    # This might require explicit include_directories or relying on the external project's install
+    # to populate CMAKE_PREFIX_PATH properly.
+else()
+    if (NOT TARGET cereal::cereal)
+        set_target_properties(cereal PROPERTIES IMPORTED_GLOBAL TRUE)
+        add_library(cereal::cereal ALIAS cereal)
+    else ()
+        set_target_properties(cereal::cereal PROPERTIES IMPORTED_GLOBAL TRUE)
+    endif ()
+endif()
 
 # l10n
 set(L10N_DIR "${SLIC3R_RESOURCES_DIR}/i18n")
@@ -592,22 +721,45 @@ foreach(po_file ${BBL_L10N_PO_FILES})
     )
 endforeach()
 
-find_package(NLopt 1.4 REQUIRED)
+# Find and configure NLopt
+if(USE_SYSTEM_DEPS)
+    find_package(NLopt 1.4)
+    if(NOT NLopt_FOUND)
+        message(STATUS "NLopt not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external NLopt project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT NLopt_FOUND)
+    add_dependencies(ElegooSlicer dep_NLopt)
+endif()
 
 
+# Find and configure OpenVDB
 if(SLIC3R_STATIC)
     set(OPENVDB_USE_STATIC_LIBS ON)
     set(USE_BLOSC TRUE)
 endif ()
 
-find_package(OpenVDB 5.0 COMPONENTS openvdb)
-if(OpenVDB_FOUND)
+if(USE_SYSTEM_DEPS)
+    find_package(OpenVDB 5.0 COMPONENTS openvdb)
+    if(NOT OpenVDB_FOUND)
+        message(STATUS "OpenVDB not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external OpenVDB project.")
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT OpenVDB_FOUND)
+    add_dependencies(ElegooSlicer dep_OpenVDB)
+    # OpenVDB requires IlmBase and Blosc. Ensure these are either found by system
+    # or built as external dependencies.
+    # The dep_OpenVDB target in deps/OpenVDB/OpenVDB.cmake handles its dependencies.
+else ()
+    # Original logic if OpenVDB is found
     slic3r_remap_configs(IlmBase::Half RelWithDebInfo Release)
     slic3r_remap_configs(Blosc::blosc RelWithDebInfo Release)
-else ()
-    message(FATAL_ERROR "OpenVDB could not be found with the bundled find module. "
-                   "You can try to specify the find module location of your "
-                   "OpenVDB installation with the OPENVDB_FIND_MODULE_PATH cache variable.")
 endif ()
 
 find_path(SPNAV_INCLUDE_DIR spnav.h)

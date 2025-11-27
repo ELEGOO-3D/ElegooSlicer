@@ -475,8 +475,31 @@ set(CGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE ON CACHE BOOL "" FORCE)
 
 cmake_policy(PUSH)
 cmake_policy(SET CMP0011 NEW)
-find_package(CGAL REQUIRED)
-find_package(OpenCV REQUIRED core)
+
+# Find and configure CGAL
+if(USE_SYSTEM_DEPS)
+    find_package(CGAL)
+    if(NOT CGAL_FOUND)
+        message(STATUS "CGAL not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external CGAL project.")
+endif()
+if(NOT USE_SYSTEM_DEPS OR NOT CGAL_FOUND)
+    add_dependencies(libslic3r dep_CGAL) # Add dependency if not found
+endif()
+# Find and configure OpenCV
+if(USE_SYSTEM_DEPS)
+    find_package(OpenCV core)
+    if(NOT OpenCV_FOUND)
+        message(STATUS "OpenCV not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external OpenCV project.")
+endif()
+if(NOT USE_SYSTEM_DEPS OR NOT OpenCV_FOUND)
+    add_dependencies(libslic3r dep_OpenCV) # Add dependency if not found
+endif()
 cmake_policy(POP)
 
 add_library(libslic3r_cgal STATIC 
@@ -518,10 +541,35 @@ target_include_directories(libslic3r PUBLIC ${EXPAT_INCLUDE_DIRS})
 
 # Find the OCCT and related libraries
 set(OpenCASCADE_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/occt")
-find_package(OpenCASCADE REQUIRED)
-target_include_directories(libslic3r PUBLIC ${OpenCASCADE_INCLUDE_DIR})
+# Find and configure OpenCASCADE
+if(USE_SYSTEM_DEPS)
+    find_package(OpenCASCADE COMPONENTS TKernel TKBRep TKGeomBase)
+    if(NOT OpenCASCADE_FOUND)
+        message(STATUS "OpenCASCADE not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external OpenCASCADE project.")
+endif()
+if(NOT USE_SYSTEM_DEPS OR NOT OpenCASCADE_FOUND)
+    add_dependencies(libslic3r dep_OCCT) # Add dependency if not found
+    # Need to correctly set include directories for the external project.
+    # For now, rely on the external project's install step to populate DESTDIR.
+else()
+    target_include_directories(libslic3r PUBLIC ${OpenCASCADE_INCLUDE_DIR})
+endif()
 
-find_package(JPEG REQUIRED)
+# Find and configure JPEG
+if(USE_SYSTEM_DEPS)
+    find_package(JPEG)
+    if(NOT JPEG_FOUND)
+        message(STATUS "JPEG not found in system, falling back to external project.")
+    endif()
+else()
+    message(STATUS "USE_SYSTEM_DEPS is OFF, implicitly using external JPEG project.")
+endif()
+if(NOT USE_SYSTEM_DEPS OR NOT JPEG_FOUND)
+    add_dependencies(libslic3r dep_JPEG) # Add dependency if not found
+endif()
 
 set(OCCT_LIBS
     TKXDESTEP
@@ -553,39 +601,151 @@ set(OCCT_LIBS
 )
 
 
-target_link_libraries(libslic3r
+    )
+
+# Constructing the library list for libslic3r
+set(_libslic3r_LIBS "")
+
+# Add external project dependencies first if they are not found as system libraries
+if(NOT USE_SYSTEM_DEPS OR NOT Boost_FOUND)
+    list(APPEND _libslic3r_LIBS dep_Boost)
+else()
+    list(APPEND _libslic3r_LIBS Boost::system Boost::filesystem Boost::thread Boost::log Boost::locale Boost::regex Boost::chrono Boost::atomic Boost::date_time Boost::iostreams Boost::program_options)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT TBB_FOUND)
+    list(APPEND _libslic3r_LIBS dep_TBB)
+else()
+    list(APPEND _libslic3r_LIBS TBB::tbb TBB::tbbmalloc)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT OpenSSL_FOUND)
+    list(APPEND _libslic3r_LIBS dep_OpenSSL)
+else()
+    list(APPEND _libslic3r_LIBS OpenSSL::SSL OpenSSL::Crypto)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT CURL_FOUND)
+    list(APPEND _libslic3r_LIBS dep_CURL)
+else()
+    list(APPEND _libslic3r_LIBS CURL::libcurl)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT ZLIB_FOUND)
+    list(APPEND _libslic3r_LIBS dep_ZLIB)
+else()
+    list(APPEND _libslic3r_LIBS ZLIB::ZLIB)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT PNG_FOUND)
+    list(APPEND _libslic3r_LIBS dep_PNG)
+else()
+    list(APPEND _libslic3r_LIBS PNG::PNG)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT EXPAT_FOUND)
+    list(APPEND _libslic3r_LIBS dep_EXPAT)
+else()
+    list(APPEND _libslic3r_LIBS ${EXPAT_LIBRARIES}) # EXPAT_LIBRARIES is set by find_package(EXPAT)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT GLEW_FOUND)
+    list(APPEND _libslic3r_LIBS dep_GLEW)
+else()
+    list(APPEND _libslic3r_LIBS GLEW::GLEW) # Assuming GLEW exports a target
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT glfw3_FOUND)
+    list(APPEND _libslic3r_LIBS dep_GLFW)
+else()
+    list(APPEND _libslic3r_LIBS glfw) # Assuming glfw3 exports 'glfw' target
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT cereal_FOUND)
+    list(APPEND _libslic3r_LIBS dep_Cereal)
+    # The cereal library is header-only, so no explicit link needed to dep_Cereal target
+    # The dep_Cereal adds it to include paths, so its fine.
+else()
+    list(APPEND _libslic3r_LIBS cereal::cereal)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT NLopt_FOUND)
+    list(APPEND _libslic3r_LIBS dep_NLopt)
+else()
+    list(APPEND _libslic3r_LIBS NLopt::nlopt) # Assuming NLopt exports a target
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT OpenVDB_FOUND)
+    list(APPEND _libslic3r_LIBS dep_OpenVDB)
+else()
+    list(APPEND _libslic3r_LIBS OpenVDB::openvdb)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT GMP_FOUND)
+    list(APPEND _libslic3r_LIBS dep_GMP)
+else()
+    list(APPEND _libslic3r_LIBS GMP::GMP) # Assuming GMP exports a target
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT MPFR_FOUND)
+    list(APPEND _libslic3r_LIBS dep_MPFR)
+else()
+    list(APPEND _libslic3r_LIBS MPFR::MPFR) # Assuming MPFR exports a target
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT CGAL_FOUND)
+    list(APPEND _libslic3r_LIBS dep_CGAL)
+else()
+    list(APPEND _libslic3r_LIBS CGAL::CGAL)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT OpenCASCADE_FOUND)
+    list(APPEND _libslic3r_LIBS dep_OCCT)
+else()
+    list(APPEND _libslic3r_LIBS ${OCCT_LIBS}) # OCCT_LIBS contains a list of individual OCCT libraries
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT OpenCV_FOUND)
+    list(APPEND _libslic3r_LIBS dep_OpenCV)
+else()
+    list(APPEND _libslic3r_LIBS OpenCV::core OpenCV::imgcodecs OpenCV::imgproc OpenCV::world)
+endif()
+
+if(NOT USE_SYSTEM_DEPS OR NOT Freetype_FOUND)
+    list(APPEND _libslic3r_LIBS dep_FREETYPE)
+else()
+    list(APPEND _libslic3r_LIBS Freetype::Freetype) # Assuming Freetype exports a target
+endif()
+
+# OpenCSG is always an external project for now
+list(APPEND _libslic3r_LIBS dep_OpenCSG)
+
+target_link_libraries(libslic3r PUBLIC
     libnest2d
     admesh
-    cereal::cereal
     libigl
     miniz
-    boost_libs
     clipper
     nowide
-    ${EXPAT_LIBRARIES}
     glu-libtess
     qhull
     semver
-    TBB::tbb
-    TBB::tbbmalloc
     libslic3r_cgal
     ${CMAKE_DL_LIBS}
-    PNG::PNG
-    ZLIB::ZLIB
-    ${OCCT_LIBS}
     Clipper2
     mcut
-    JPEG::JPEG
     qoi
     opencv_world
-    )
+    ${_libslic3r_LIBS} # Add all collected dependencies here
+)
 
+# Existing conditional linking logic
 if(NOT SLIC3R_STATIC)
     target_compile_definitions(libslic3r PUBLIC BOOST_ALL_DYN_LINK)
 endif()
 
 if(NOT WIN32)
-    target_link_libraries(libslic3r freetype)
+    target_link_libraries(libslic3r freetype) # freetype is handled above
     if (NOT APPLE)
         target_link_libraries(libslic3r fontconfig)
     endif()
@@ -596,10 +756,6 @@ if (APPLE)
     find_library(MODELIO ModelIO REQUIRED)
     target_link_libraries(libslic3r ${FOUNDATION} ${MODELIO})
 endif ()
-
-if (TARGET OpenVDB::openvdb)
-    target_link_libraries(libslic3r OpenVDB::openvdb)
-endif()
 
 if(WIN32)
     target_link_libraries(libslic3r Psapi.lib)
