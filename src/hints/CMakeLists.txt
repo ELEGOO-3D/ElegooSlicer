@@ -4,7 +4,7 @@ project(HintsToPot)
 add_executable(hintsToPot
     HintsToPot.cpp)
 
-target_link_libraries(hintsToPot PRIVATE boost_libs)
+target_link_libraries(hintsToPot PRIVATE )
 
 #encoding_check(HintsToPot)
 

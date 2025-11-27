@@ -41,7 +41,7 @@ function usage() {
 }
 
 unset name
-while getopts ":1bcdghirsu" opt; do
+while getopts ":1bcdghirsuy" opt; do
   case ${opt} in
     1 )
         export CMAKE_BUILD_PARALLEL_LEVEL=1
@@ -164,33 +164,36 @@ then
     then
         rm -fr build
     fi
-    CMAKE_BUILD_ARGS=""
+    CMAKE_BUILD_ARGS_COMMON=""
     if [[ -n "${FOUND_GTK3_DEV}" ]]
     then
-        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DSLIC3R_GTK=3"
+        CMAKE_BUILD_ARGS_COMMON="${CMAKE_BUILD_ARGS_COMMON} -DSLIC3R_GTK=3"
     fi
     if [[ -n "${BUILD_DEBUG}" ]]
     then
-        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DCMAKE_BUILD_TYPE=Debug -DBBL_INTERNAL_TESTING=1 -DELEGOO_TEST=1"
+        CMAKE_BUILD_ARGS_COMMON="${CMAKE_BUILD_ARGS_COMMON} -DCMAKE_BUILD_TYPE=Debug -DBBL_INTERNAL_TESTING=1 -DELEGOO_TEST=1"
     else
-        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 -DELEGOO_TEST=0"
+        CMAKE_BUILD_ARGS_COMMON="${CMAKE_BUILD_ARGS_COMMON} -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 -DELEGOO_TEST=0"
     fi
 
+    CMAKE_BUILD_ARGS_SPECIFIC=""
+    CMAKE_PREFIX_PATH_OPTION=""
     if [[ -n "${USE_SYSTEM_DEPS}" ]]
     then
-        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DUSE_SYSTEM_DEPS=ON"
-        # If using system deps, we prefer shared libs, so do not force SLIC3R_STATIC=1
+        CMAKE_BUILD_ARGS_SPECIFIC="${CMAKE_BUILD_ARGS_SPECIFIC} -DUSE_SYSTEM_DEPS=ON"
         echo "Building ElegooSlicer with system dependencies enabled. Static linking is not forced."
     else
-        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DSLIC3R_STATIC=1"
+        CMAKE_BUILD_ARGS_SPECIFIC="${CMAKE_BUILD_ARGS_SPECIFIC} -DSLIC3R_STATIC=1"
+        CMAKE_PREFIX_PATH_OPTION="-DCMAKE_PREFIX_PATH="${PWD}/deps/build/destdir/usr/local""
         echo "Building ElegooSlicer without system dependencies, static linking is forced."
     fi
 
-    echo -e "cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${PWD}/deps/build/destdir/usr/local" ${CMAKE_BUILD_ARGS}"
+    echo -e "cmake -S . -B build -G Ninja ${CMAKE_PREFIX_PATH_OPTION} -DORCA_TOOLS=ON ${CMAKE_BUILD_ARGS_COMMON} ${CMAKE_BUILD_ARGS_SPECIFIC}"
     cmake -S . -B build -G Ninja \
-        -DCMAKE_PREFIX_PATH="${PWD}/deps/build/destdir/usr/local" \
+        ${CMAKE_PREFIX_PATH_OPTION} \
         -DORCA_TOOLS=ON \
-        ${CMAKE_BUILD_ARGS}
+        ${CMAKE_BUILD_ARGS_COMMON} \
+        ${CMAKE_BUILD_ARGS_SPECIFIC}
     echo "done"
     echo "Building ElegooSlicer ..."
     cmake --build build --target ElegooSlicer

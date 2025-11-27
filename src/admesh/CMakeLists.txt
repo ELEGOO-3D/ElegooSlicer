@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 project(admesh)
 
 add_library(admesh STATIC
@@ -11,4 +11,5 @@ add_library(admesh STATIC
     util.cpp
 )
 
-target_link_libraries(admesh PRIVATE boost_headeronly)
+# boost_headeronly removed as Boost dependencies are handled at a higher level
+target_link_libraries(admesh PRIVATE )

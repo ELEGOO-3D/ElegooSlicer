@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.5)
 project(imgui)
 
 add_library(imgui STATIC
@@ -18,6 +18,3 @@ add_library(imgui STATIC
     imstb_truetype.h
 )
 
-if(Boost_FOUND)
-    target_link_libraries(imgui PRIVATE boost_headeronly)
-endif()

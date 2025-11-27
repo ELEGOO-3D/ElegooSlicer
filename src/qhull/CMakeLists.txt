@@ -17,22 +17,22 @@ add_library(qhull INTERFACE)
 if(Qhull_FOUND)
 
 message(STATUS "Using qhull from system.")
-if(SLIC3R_STATIC)
-    slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhullstatic_r" RelWithDebInfo Release)
+#if(SLIC3R_STATIC) # This check is no longer needed here as SLIC3R_STATIC is handled at top-level
+#    slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhullstatic_r" RelWithDebInfo Release) # Removed as slic3r_remap_configs is not available here
     if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
         target_link_libraries(qhull INTERFACE Qhull::qhullcpp_d Qhull::qhullstatic_rd)
     else()
         target_link_libraries(qhull INTERFACE Qhull::qhullcpp Qhull::qhullstatic_r)
     endif()
-else()
-    slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhull_r" RelWithDebInfo Release)
-    target_link_libraries(qhull INTERFACE Qhull::qhullcpp Qhull::qhull_r)
-endif()
+#else() # This check is no longer needed here as SLIC3R_STATIC is handled at top-level
+#    slic3r_remap_configs("Qhull::qhullcpp;Qhull::qhull_r" RelWithDebInfo Release) # Removed as slic3r_remap_configs is not available here
+#    target_link_libraries(qhull INTERFACE Qhull::qhullcpp Qhull::qhull_r)
+#endif()
 
 else(Qhull_FOUND)
 
 project(qhull)
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 
 # Define qhull_VERSION in CMakeLists.txt, Makefile, qhull-exports.def, qhull_p-exports.def, qhull_r-exports.def, qhull-warn.pri
 set(qhull_VERSION2 "2015.2 2016/01/18")  # not used, See global.c, global_r.c, rbox.c, rbox_r.c
