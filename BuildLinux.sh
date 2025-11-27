@@ -25,7 +25,7 @@ function check_available_memory_and_disk() {
 }
 
 function usage() {
-    echo "Usage: ./BuildLinux.sh [-1][-b][-c][-d][-i][-r][-s][-u]"
+    echo "Usage: ./BuildLinux.sh [-1][-b][-c][-d][-i][-r][-s][-u][-y]"
     echo "   -1: limit builds to 1 core (where possible)"
     echo "   -b: build in debug mode"
     echo "   -c: force a clean build"
@@ -35,6 +35,7 @@ function usage() {
     echo "   -r: skip ram and disk checks (low ram compiling)"
     echo "   -s: build elegoo-slicer (optional)"
     echo "   -u: update and build dependencies (optional and need sudo)"
+    echo "   -y: use system-installed shared libraries (implies dynamic linking, overrides -s for static linking)"
     echo "For a first use, you want to 'sudo ./BuildLinux.sh -u'"
     echo "   and then './BuildLinux.sh -dsi'"
 }
@@ -68,6 +69,9 @@ while getopts ":1bcdghirsu" opt; do
         ;;
     u )
         UPDATE_LIB="1"
+        ;;
+    y )
+        USE_SYSTEM_DEPS="1"
         ;;
   esac
 done
@@ -149,23 +153,33 @@ then
     then
         rm -fr build
     fi
-    BUILD_ARGS=""
+    CMAKE_BUILD_ARGS=""
     if [[ -n "${FOUND_GTK3_DEV}" ]]
     then
-        BUILD_ARGS="-DSLIC3R_GTK=3"
+        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DSLIC3R_GTK=3"
     fi
     if [[ -n "${BUILD_DEBUG}" ]]
     then
-        BUILD_ARGS="${BUILD_ARGS} -DCMAKE_BUILD_TYPE=Debug -DBBL_INTERNAL_TESTING=1 -DELEGOO_TEST=1"
+        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DCMAKE_BUILD_TYPE=Debug -DBBL_INTERNAL_TESTING=1 -DELEGOO_TEST=1"
     else
-        BUILD_ARGS="${BUILD_ARGS} -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 -DELEGOO_TEST=0"
+        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DBBL_RELEASE_TO_PUBLIC=1 -DBBL_INTERNAL_TESTING=0 -DELEGOO_TEST=0"
     fi
-    echo -e "cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${PWD}/deps/build/destdir/usr/local" -DSLIC3R_STATIC=1 ${BUILD_ARGS}"
+
+    if [[ -n "${USE_SYSTEM_DEPS}" ]]
+    then
+        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DUSE_SYSTEM_DEPS=ON"
+        # If using system deps, we prefer shared libs, so do not force SLIC3R_STATIC=1
+        echo "Building ElegooSlicer with system dependencies enabled. Static linking is not forced."
+    else
+        CMAKE_BUILD_ARGS="${CMAKE_BUILD_ARGS} -DSLIC3R_STATIC=1"
+        echo "Building ElegooSlicer without system dependencies, static linking is forced."
+    fi
+
+    echo -e "cmake -S . -B build -G Ninja -DCMAKE_PREFIX_PATH="${PWD}/deps/build/destdir/usr/local" ${CMAKE_BUILD_ARGS}"
     cmake -S . -B build -G Ninja \
         -DCMAKE_PREFIX_PATH="${PWD}/deps/build/destdir/usr/local" \
-        -DSLIC3R_STATIC=1 \
         -DORCA_TOOLS=ON \
-        ${BUILD_ARGS}
+        ${CMAKE_BUILD_ARGS}
     echo "done"
     echo "Building ElegooSlicer ..."
     cmake --build build --target ElegooSlicer
