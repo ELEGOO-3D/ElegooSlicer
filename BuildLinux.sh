@@ -135,13 +135,24 @@ then
         then
             mkdir deps/build/release
         fi
-        cmake -S deps -B deps/build/release -G Ninja -DDESTDIR="${PWD}/deps/build/destdir" -DDEP_DOWNLOAD_DIR="${PWD}/deps/DL_CACHE" ${BUILD_ARGS}
+        DEBUG_BUILD_ARGS=""
+        if [[ -n "${USE_SYSTEM_DEPS}" ]]; then
+            DEBUG_BUILD_ARGS="${DEBUG_BUILD_ARGS} -DUSE_SYSTEM_DEPS=ON"
+            echo "Configuring debug dependencies with system dependencies enabled."
+        fi
+        cmake -S deps -B deps/build/release -G Ninja -DDESTDIR="${PWD}/deps/build/destdir" -DDEP_DOWNLOAD_DIR="${PWD}/deps/DL_CACHE" ${BUILD_ARGS} ${DEBUG_BUILD_ARGS}
         cmake --build deps/build/release
         BUILD_ARGS="${BUILD_ARGS} -DCMAKE_BUILD_TYPE=Debug"
     fi
 
-    echo "cmake -S deps -B deps/build -G Ninja ${BUILD_ARGS}"
-    cmake -S deps -B deps/build -G Ninja ${BUILD_ARGS}
+    DEP_BUILD_ARGS=""
+    if [[ -n "${USE_SYSTEM_DEPS}" ]]; then
+        DEP_BUILD_ARGS="${DEP_BUILD_ARGS} -DUSE_SYSTEM_DEPS=ON"
+        echo "Configuring dependencies with system dependencies enabled."
+    fi
+
+    echo "cmake -S deps -B deps/build -G Ninja ${BUILD_ARGS} ${DEP_BUILD_ARGS}"
+    cmake -S deps -B deps/build -G Ninja ${BUILD_ARGS} ${DEP_BUILD_ARGS}
     cmake --build deps/build
 fi
 
