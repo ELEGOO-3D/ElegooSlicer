@@ -32,7 +32,7 @@ endif()
 elegooslicer_add_cmake_project(elegoolink
 
     GIT_REPOSITORY      https://github.com/wujie-elegoo/elegoolink
-    GIT_TAG             origin/wan_use_curl
+    GIT_TAG             origin/cc_canvas
     
     DEPENDS 
         dep_ixwebsocket 

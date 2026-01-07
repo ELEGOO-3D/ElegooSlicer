@@ -147,6 +147,7 @@ PrinterNetworkInfo convertFromElegooPrinterAttributes(const elink::PrinterAttrib
     info.printCapabilities.supportsTimeLapse          = attributes.capabilities.printCapabilities.supportsTimeLapse;
     info.printCapabilities.supportsHeatedBedSwitching = attributes.capabilities.printCapabilities.supportsHeatedBedSwitching;
     info.printCapabilities.supportsFilamentMapping    = attributes.capabilities.printCapabilities.supportsFilamentMapping;
+    info.printCapabilities.supportsAutoRefill         = attributes.capabilities.printCapabilities.supportsAutoRefill;
     info.systemCapabilities.supportsMultiFilament     = attributes.capabilities.systemCapabilities.supportsMultiFilament;
     info.systemCapabilities.canGetDiskInfo            = attributes.capabilities.systemCapabilities.canGetDiskInfo;
     info.systemCapabilities.canSetPrinterName         = attributes.capabilities.systemCapabilities.canSetPrinterName;
@@ -561,7 +562,7 @@ PrinterNetworkResult<bool> ElegooLink::sendPrintTask(const PrinterNetworkParams&
         }
 
         resultCode = parseElegooResult(autoRefillResult.code);
-        if (resultCode != PrinterNetworkErrorCode::SUCCESS) {
+        if (resultCode != PrinterNetworkErrorCode::SUCCESS && resultCode != PrinterNetworkErrorCode::OPERATION_NOT_IMPLEMENTED) {
             return PrinterNetworkResult<bool>(resultCode, false, parseUnknownErrorMsg(resultCode, autoRefillResult.message));
         }
 

@@ -545,7 +545,7 @@ const PrintSendApp = {
             } else {
                 this.hasMmsInfo = false;
             }
-
+            this.refreshShowFilamentSection();
             this.$nextTick(() => {
                 this.adjustModelNameWidth();
             });

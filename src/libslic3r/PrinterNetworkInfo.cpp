@@ -127,6 +127,9 @@ PrinterNetworkInfo convertJsonToPrinterNetworkInfo(const nlohmann::json& json)
                 printerNetworkInfo.printCapabilities.supportsFilamentMapping = json["printCapabilities"]["supportsFilamentMapping"]
                                                                                    .get<bool>();
             }
+            if (json["printCapabilities"].contains("supportsAutoRefill")) {
+                printerNetworkInfo.printCapabilities.supportsAutoRefill = json["printCapabilities"]["supportsAutoRefill"].get<bool>();
+            }
         }
         if (json.contains("systemCapabilities")) {
             if (json["systemCapabilities"].contains("supportsMultiFilament")) {
@@ -190,6 +193,7 @@ nlohmann::json convertPrinterNetworkInfoToJson(const PrinterNetworkInfo& printer
     printCapabilitiesJson["supportsTimeLapse"]          = printerNetworkInfo.printCapabilities.supportsTimeLapse;
     printCapabilitiesJson["supportsHeatedBedSwitching"] = printerNetworkInfo.printCapabilities.supportsHeatedBedSwitching;
     printCapabilitiesJson["supportsFilamentMapping"]    = printerNetworkInfo.printCapabilities.supportsFilamentMapping;
+    printCapabilitiesJson["supportsAutoRefill"]         = printerNetworkInfo.printCapabilities.supportsAutoRefill;
     json["printCapabilities"]                           = printCapabilitiesJson;
     nlohmann::json systemCapabilitiesJson;
     systemCapabilitiesJson["supportsMultiFilament"] = printerNetworkInfo.systemCapabilities.supportsMultiFilament;

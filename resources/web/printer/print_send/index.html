@@ -163,7 +163,7 @@
                     <div class="filament-container">
                         <div class="filament-header">
                             <div class="filament-controls">
-                                <div class="toggle-item">
+                                <div class="toggle-item" v-if="curPrinter && curPrinter.printCapabilities.supportsAutoRefill">
                                     <div class="toggle-label trans" tid="auto_refill">{{ $t('printSend.autoRefill') }}
                                     </div>
                                     <label class="toggle-switch">

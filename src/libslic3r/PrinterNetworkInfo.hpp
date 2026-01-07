@@ -126,6 +126,7 @@ struct PrintCapabilities
     bool supportsTimeLapse = false;          // Supports time-lapse printing
     bool supportsHeatedBedSwitching = false; // Supports heated bed switching
     bool supportsFilamentMapping = false;    // Supports filament mapping
+    bool supportsAutoRefill = false;         // Supports auto refill
 };
 
 struct SystemCapabilities
