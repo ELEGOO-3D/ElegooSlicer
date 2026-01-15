@@ -2,8 +2,8 @@
 setlocal enabledelayedexpansion
 
 set GIT_TOKEN=
-set LAN_WEB_URL=
-set CLOUD_WEB_URL=
+set LAN_WEB_URL=https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/v2.0.0/lan_service_web.zip
+set CLOUD_WEB_URL=https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/v2.0.0/cloud_service_web.zip
 set LAN_WEB_NAME=lan_service_web
 set CLOUD_WEB_NAME=cloud_service_web
 

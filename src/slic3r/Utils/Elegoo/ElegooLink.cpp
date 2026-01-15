@@ -190,24 +190,23 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl)
 
     elink::ElegooLink::Config cfg;
 
-#if ELEGOO_INTERNAL_TESTING
-    cfg.logLevel = 1; // Log level 0 - TRACE, 1 - DEBUG, 2 - INFO, 3 - WARN, 4 - ERROR, 5 - CRITICAL, 6 - OFF
-#else
-    cfg.logLevel = 2;
-#endif
-    cfg.logEnableConsole = true;
-    cfg.logEnableFile    = true;
-    cfg.logFileName      = data_dir() + "/log/elegoolink.log";
-    cfg.logMaxFileSize   = 10 * 1024 * 1024;
-    cfg.logMaxFiles      = 5;
-
+    #if ELEGOO_INTERNAL_TESTING
+        cfg.log.logLevel = 1; // Log level 0 - TRACE, 1 - DEBUG, 2 - INFO, 3 - WARN, 4 - ERROR, 5 - CRITICAL, 6 - OFF
+    #else
+        cfg.log.logLevel = 2;
+    #endif
+    cfg.log.logEnableConsole = true;
+    cfg.log.logEnableFile = true;
+    cfg.log.logFileName = data_dir() + "/log/elegoolink.log";
+    cfg.log.logMaxFileSize = 10 * 1024 * 1024;
+    cfg.log.logMaxFiles = 5;
     auto webDir = resources_dir();
     std::replace(webDir.begin(), webDir.end(), '\\', '/');
-    cfg.staticWebPath = webDir + "/plugins/elegoolink/web";
-
+    cfg.local.staticWebPath = webDir + "/plugins/elegoolink/web";
+    cfg.cloud.staticWebPath = cfg.local.staticWebPath;
     std::string caCertDir = resources_dir();
     std::replace(caCertDir.begin(), caCertDir.end(), '\\', '/');
-    cfg.caCertPath      =  caCertDir + "/cert/cacert.pem"; // Use system default CA certs
+    cfg.cloud.caCertPath = caCertDir + "/cert/cacert.pem"; // Use system default CA certs
 
     if (!elink::ElegooLink::getInstance().initialize(cfg)) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": error initializing ElegooLink";
@@ -215,7 +214,7 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl)
     elink::SetRegionParams setRegionParams;
     setRegionParams.region = region;
     setRegionParams.baseUrl = iotUrl;
-    setRegionParams.caCertPath = cfg.caCertPath;
+    setRegionParams.caCertPath = cfg.cloud.caCertPath;
     elink::ElegooLink::getInstance().setRegion(setRegionParams);
 
     std::string version = elink::ElegooLink::getInstance().getVersion();
@@ -587,7 +586,7 @@ PrinterNetworkResult<bool> ElegooLink::sendPrintFile(const PrinterNetworkParams&
 {
     CHECK_INITIALIZED(false);
     PrinterNetworkErrorCode           resultCode = PrinterNetworkErrorCode::UNKNOWN_ERROR;
-    elink::FileUploadCompletionResult elinkResult;
+    elink::FileUploadResult elinkResult;
   
     try {
         PrinterStatus status;

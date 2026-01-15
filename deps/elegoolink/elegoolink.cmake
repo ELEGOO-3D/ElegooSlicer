@@ -31,8 +31,8 @@ endif()
 
 elegooslicer_add_cmake_project(elegoolink
 
-    GIT_REPOSITORY      https://github.com/wujie-elegoo/elegoolink
-    GIT_TAG             origin/cc_canvas
+    GIT_REPOSITORY      https://github.com/ELEGOO-3D/elegoo-link.git
+    GIT_TAG             v1.0.0
     
     DEPENDS 
         dep_ixwebsocket 
@@ -43,9 +43,8 @@ elegooslicer_add_cmake_project(elegoolink
     CMAKE_ARGS 
         -DBUILD_EXAMPLES=OFF
         -DBUILD_TESTS=OFF
-        -DBUILD_EXECUTABLE=OFF
         -DBUILD_SHARED_LIBS=OFF
-        -DBUILD_CLOUD_SERVICE=ON
+        -DENABLE_CLOUD_FEATURES=ON
         -DAGORA_APP_ID=${AGORA_APP_ID}
         -DELEGOO_CHINA_IOT_URL=${ELEGOO_CHINA_IOT_URL}
         -DELEGOO_GLOBAL_IOT_URL=${ELEGOO_GLOBAL_IOT_URL}
