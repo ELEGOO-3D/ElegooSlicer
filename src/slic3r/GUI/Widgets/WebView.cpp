@@ -260,6 +260,25 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << url2.ToUTF8();
 
 #ifdef __WIN32__
+    // On Windows, wxWebViewEdge / WebView2 does not expose CoreWebView2Environment
+    // creation options directly, but we can pass additional browser arguments
+    // (such as disabling GPU) via the official environment variable
+    // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS before the first environment is created.
+    //
+    // This is equivalent to C#:
+    //   new CoreWebView2EnvironmentOptions("--disable-gpu");
+    //
+    // If the variable already contains other arguments, we just append ours.
+    wxString additional_args;
+    wxGetEnv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", &additional_args);
+    if (!additional_args.Contains("--disable-gpu")) {
+        if (!additional_args.empty())
+            additional_args += " ";
+        additional_args += "--disable-gpu";
+        wxSetEnv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", additional_args);
+        BOOST_LOG_TRIVIAL(info) << "WebView2: Set WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="
+                                << additional_args.ToUTF8().data();
+    }
     wxWebView* webView = new WebViewEdge;
 #elif defined(__WXOSX__)
     wxWebView *webView = new WebViewWebKit;
