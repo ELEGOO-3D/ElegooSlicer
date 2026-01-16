@@ -820,6 +820,35 @@ void PrinterManagerView::setupIPCHandlers()
         nlohmann::json data = convertUserNetworkInfoToJson(userNetworkInfo);
         return webviewIpc::IPCResult::success(data);
     });
+
+    mIpc->onRequest("get_license_expired_devices", [this](const webviewIpc::IPCRequest& request){
+        auto licenseResult = PrinterManager::getInstance()->getLicenseExpiredDevices();
+        webviewIpc::IPCResult result;
+        nlohmann::json devicesJson;
+        devicesJson["devices"] = nlohmann::json::array();
+        if (licenseResult.hasData()) {
+            for (const auto& device : licenseResult.data.value()) {
+                nlohmann::json deviceJson;
+                deviceJson["serialNumber"] = device.serialNumber;
+                deviceJson["status"] = device.status;
+                devicesJson["devices"].push_back(deviceJson);
+            }
+        }
+        result.data = devicesJson;
+        result.message = licenseResult.message;
+        result.code = licenseResult.isSuccess() ? 0 : static_cast<int>(licenseResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("renew_license", [this](const webviewIpc::IPCRequest& request){
+        auto params = request.params;
+        std::string serialNumber = params.value("serialNumber", "");
+        auto renewResult = PrinterManager::getInstance()->renewLicense(serialNumber);
+        webviewIpc::IPCResult result;
+        result.message = renewResult.message;
+        result.code = renewResult.isSuccess() ? 0 : static_cast<int>(renewResult.code);
+        return result;
+    });
     
     PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
         PrinterWebView* targetView = findPrinterView(event.printerId);

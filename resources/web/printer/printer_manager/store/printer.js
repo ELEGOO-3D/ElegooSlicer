@@ -9,6 +9,7 @@ const usePrinterStore = defineStore('printer', {
     printerModelList: null,
     statusUpdateInterval: null,
     isMainClient: true,
+    licenseExpiredDevices: [],
     userInfo: {
       userId: null,
       nickname: null,
@@ -425,6 +426,56 @@ const usePrinterStore = defineStore('printer', {
         };
       } catch (error) {
         console.error('Failed to request user info:', error);
+      }
+    },
+
+    async requestLicenseExpiredDevices() {
+      try {
+        // backend ipc call to get license expired devices
+        const response = await nativeIpc.request('get_license_expired_devices', {});
+        if (response && response.devices) {
+          this.licenseExpiredDevices = response.devices;
+          console.log('License expired devices:', this.licenseExpiredDevices);
+        }
+      } catch (error) {
+        console.error('Failed to request license expired devices:', error);
+        this.licenseExpiredDevices = [];
+        throw error;
+      }
+    },
+
+    getLicenseStatusBySN(serialNumber) {
+      return 3;
+      if (!serialNumber || !this.licenseExpiredDevices || this.licenseExpiredDevices.length === 0) {
+        return null;
+      }
+      const device = this.licenseExpiredDevices.find(d => d.serialNumber === serialNumber);
+      return device ? device.status : null;
+    },
+
+    getLicenseErrorMessage(status) {
+      const messages = {
+        2: i18n.global.t('printerManager.licenseExpired'),
+        3: i18n.global.t('printerManager.licenseRenewToConfirm'),
+        9: i18n.global.t('printerManager.licenseNotFound')
+      };
+      return messages[status] || '';
+    },
+
+    async renewLicense(serialNumber) {
+      try {
+        const response = await this.ipcRequest('renew_license', { serialNumber });
+        return response;
+      } catch (error) {
+        console.error('Failed to renew license:', error);
+        throw error;
+      }
+    },
+
+    updateLicenseStatus(serialNumber, newStatus) {
+      const device = this.licenseExpiredDevices.find(d => d.serialNumber === serialNumber);
+      if (device) {
+        device.status = newStatus;
       }
     }
   }

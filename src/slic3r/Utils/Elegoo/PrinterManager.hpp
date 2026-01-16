@@ -49,6 +49,8 @@ public:
     PrinterNetworkResult<PrinterPrintTaskResponse> getPrintTaskList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<bool> deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds);
     PrinterNetworkResult<bool> sendRtmMessage(const std::string& printerId, const std::string& message);
+    PrinterNetworkResult<std::vector<LicenseExpiredDevice>> getLicenseExpiredDevices();
+    PrinterNetworkResult<bool> renewLicense(const std::string& serialNumber);
     PrinterNetworkResult<PrinterPrintFileResponse> getFileDetail(const std::string& printerId, const std::string& fileName);
 
     static std::map<std::string, std::map<std::string, DynamicPrintConfig>> getVendorPrinterModelConfig();

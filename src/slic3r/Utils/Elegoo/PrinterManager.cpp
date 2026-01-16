@@ -22,6 +22,7 @@
 #include <algorithm>
 #include "PrinterCache.hpp"
 #include "PrinterNetworkEvent.hpp"
+#include "ElegooLink.hpp"
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/Utils/Elegoo/PrinterPluginManager.hpp"
 #include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
@@ -1057,6 +1058,20 @@ PrinterNetworkResult<bool> PrinterManager::sendRtmMessage(const std::string& pri
     auto            result          = network->sendRtmMessage(message);
     checkUserAuthStatus(printer.value(), result, requestUserInfo);
     return result;
+}
+
+PrinterNetworkResult<std::vector<LicenseExpiredDevice>> PrinterManager::getLicenseExpiredDevices()
+{
+    return ElegooLink::getInstance()->getLicenseExpiredDevices();
+}
+
+PrinterNetworkResult<bool> PrinterManager::renewLicense(const std::string& serialNumber)
+{
+    if (serialNumber.empty()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": serialNumber is empty";
+        return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::INVALID_PARAMETER, false);
+    }
+    return ElegooLink::getInstance()->renewLicense(serialNumber);
 }
 
 bool PrinterManager::deletePrinterNetwork(const std::string& printerId)
