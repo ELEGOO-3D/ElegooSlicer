@@ -278,6 +278,12 @@ struct PluginNetworkInfo
 
 
 
+struct LicenseExpiredDevice
+{
+    std::string serialNumber; // Device serial number
+    int status = 0;           // License status: 1=VALID, 2=EXPIRED, 3=need device confirm, 9=not found
+};
+
 struct PrinterNetworkParams
 {
     std::string printerId;

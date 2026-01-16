@@ -1018,6 +1018,40 @@ PrinterNetworkResult<bool> ElegooLink::sendRtmMessage(const std::string& printer
                                       parseUnknownErrorMsg(resultCode, result.message));
 }
 
+PrinterNetworkResult<std::vector<LicenseExpiredDevice>> ElegooLink::getLicenseExpiredDevices()
+{
+    CHECK_INITIALIZED(std::vector<LicenseExpiredDevice>());
+
+    elink::GetLicenseExpiredDevicesResult result = elink::ElegooLink::getInstance().getLicenseExpiredDevices();
+    PrinterNetworkErrorCode resultCode = parseElegooResult(result.code);
+    
+    std::vector<LicenseExpiredDevice> devices;
+    if (resultCode == PrinterNetworkErrorCode::SUCCESS && result.hasData()) {
+        for (const auto& device : result.value().devices) {
+            LicenseExpiredDevice licenseDevice;
+            licenseDevice.serialNumber = device.serialNumber;
+            licenseDevice.status = device.status;
+            devices.push_back(licenseDevice);
+        }
+    }
+    
+    return PrinterNetworkResult<std::vector<LicenseExpiredDevice>>(resultCode, devices,
+                                      parseUnknownErrorMsg(resultCode, result.message));
+}
+
+PrinterNetworkResult<bool> ElegooLink::renewLicense(const std::string& serialNumber)
+{
+    CHECK_INITIALIZED(false);
+    
+    elink::RenewLicenseParams params;
+    params.serialNumber = serialNumber;
+    elink::RenewLicenseResult result = elink::ElegooLink::getInstance().renewLicense(params);
+    PrinterNetworkErrorCode resultCode = parseElegooResult(result.code);
+    
+    return PrinterNetworkResult<bool>(resultCode, resultCode == PrinterNetworkErrorCode::SUCCESS,
+                                      parseUnknownErrorMsg(resultCode, result.message));
+}
+
 PrinterNetworkResult<std::vector<PrinterNetworkInfo>> ElegooLink::getUserBoundPrinters()
 {
     CHECK_INITIALIZED(std::vector<PrinterNetworkInfo>());
