@@ -43,6 +43,8 @@ public:
     PrinterNetworkResult<std::vector<PrinterNetworkInfo>> getUserBoundPrinters();
     PrinterNetworkResult<UserNetworkInfo> refreshToken(const UserNetworkInfo& userInfo);
     PrinterNetworkResult<bool> sendRtmMessage(const std::string& printerId, const std::string& message);
+    PrinterNetworkResult<std::vector<LicenseExpiredDevice>> getLicenseExpiredDevices();
+    PrinterNetworkResult<bool> renewLicense(const std::string& serialNumber);
     PrinterNetworkResult<PrinterNetworkInfo> bindWANPrinter(const PrinterNetworkInfo& printerNetworkInfo);
     PrinterNetworkResult<bool> unbindWANPrinter(const std::string& serialNumber);
     PrinterNetworkResult<bool> setRegion(const std::string& region, const std::string& iotUrl);
