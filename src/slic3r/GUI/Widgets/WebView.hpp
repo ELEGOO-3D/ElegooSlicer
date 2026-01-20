@@ -16,6 +16,9 @@ public:
     static bool RunScript(wxWebView * webView, wxString const & msg);
 
     static void RecreateAll();
+    
+    // Cleanup all WebViews before application exit
+    static void CleanupAll();
 };
 
 #endif // !slic3r_GUI_WebView_hpp_

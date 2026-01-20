@@ -410,3 +410,74 @@ void WebView::RecreateAll()
         webView->Reload();
     }
 }
+
+void WebView::CleanupAll()
+{
+    BOOST_LOG_TRIVIAL(info) << "WebView::CleanupAll: Starting cleanup of " << g_webviews.size() 
+                            << " webviews";
+    
+    // Clear delay queue first
+    g_delay_webviews.clear();
+    
+    // Make a copy of the webview list to avoid iterator invalidation
+    auto webviews_copy = g_webviews;
+    
+    for (auto webView : webviews_copy) {
+        if (webView) {
+            try {
+                BOOST_LOG_TRIVIAL(trace) << "WebView::CleanupAll: Cleaning up webview " << webView;
+                
+                // Stop any ongoing operations first
+                webView->Stop();
+                
+                // Clear history to free memory
+                webView->ClearHistory();
+                
+#ifdef __WXMAC__
+                // For macOS WKWebView, we need to be more aggressive
+                // Get the native WKWebView pointer
+                WKWebView * wkWebView = (WKWebView *) webView->GetNativeBackend();
+                
+                // First, remove all user scripts
+                try {
+                    webView->RemoveAllUserScripts();
+                } catch (...) {
+                    // RemoveAllUserScripts might not exist in all versions
+                }
+                
+                // Remove script message handlers
+                try {
+                    webView->RemoveScriptMessageHandler("wx");
+                } catch (...) {
+                    BOOST_LOG_TRIVIAL(trace) << "WebView::CleanupAll: Failed to remove message handler";
+                }
+                
+                // Use native cleanup function for deep cleanup
+                // This clears cache, scripts, and message handlers without triggering navigation
+                if (wkWebView) {
+                    Slic3r::GUI::WKWebView_cleanup(wkWebView);
+                }
+#else
+                // Remove script message handlers
+                webView->RemoveScriptMessageHandler("wx");
+#endif
+                
+                // Disable the webview to prevent further events
+                webView->Enable(false);
+                
+                // Hide the webview
+                webView->Hide();
+                
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << "WebView::CleanupAll: Exception during cleanup: " << e.what();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << "WebView::CleanupAll: Unknown exception during cleanup";
+            }
+        }
+    }
+    
+    // Note: Don't clear g_webviews here as WebViewRef destructors will handle removal
+    // when the actual wxWebView objects are destroyed by their parent windows
+    
+    BOOST_LOG_TRIVIAL(info) << "WebView::CleanupAll: Cleanup completed";
+}

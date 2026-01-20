@@ -105,6 +105,7 @@
 #include "Notebook.hpp"
 #include "Widgets/Label.hpp"
 #include "Widgets/ProgressDialog.hpp"
+#include "Widgets/WebView.hpp"
 
 //BBS: DailyTip and UserGuide Dialog
 #include "WebDownPluginDlg.hpp"
@@ -1113,6 +1114,10 @@ GUI_App::GUI_App()
 void GUI_App::shutdown()
 {
     BOOST_LOG_TRIVIAL(info) << "GUI_App::shutdown enter";
+
+    // Cleanup WebViews early in the shutdown process
+    // This is critical on macOS to prevent WKWebView process leaks
+    WebView::CleanupAll();
 
     m_downloader->close();
 

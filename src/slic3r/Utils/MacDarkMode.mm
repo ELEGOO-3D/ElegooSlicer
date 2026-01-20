@@ -100,6 +100,40 @@ void WKWebView_setTransparentBackground(void * web)
     [webView registerForDraggedTypes: @[NSFilenamesPboardType]];
 }
 
+void WKWebView_cleanup(void * web)
+{
+    if (web == nullptr) return;
+    
+    WKWebView * webView = (WKWebView*)web;
+    
+    // Stop all loading
+    [webView stopLoading];
+    
+    // Load a blank page to cleanup resources
+    [webView loadHTMLString:@"" baseURL:nil];
+    
+    // Remove all user scripts if available
+    if (@available(macOS 11.0, *)) {
+        WKUserContentController *controller = webView.configuration.userContentController;
+        [controller removeAllUserScripts];
+        [controller removeAllScriptMessageHandlers];
+    }
+    
+    // Clear website data
+    NSSet *dataTypes = [NSSet setWithArray:@[
+        WKWebsiteDataTypeDiskCache,
+        WKWebsiteDataTypeMemoryCache,
+        WKWebsiteDataTypeOfflineWebApplicationCache
+    ]];
+    
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:0];
+    [[WKWebsiteDataStore defaultDataStore] removeDataOfTypes:dataTypes
+                                               modifiedSince:date
+                                           completionHandler:^{
+        // Cleanup completed
+    }];
+}
+
 void openFolderForFile(wxString const & file)
 {
     NSArray *fileURLs = [NSArray arrayWithObjects:wxCFStringRef(file).AsNSString(), /* ... */ nil];
