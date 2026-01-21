@@ -445,7 +445,6 @@ const usePrinterStore = defineStore('printer', {
     },
 
     getLicenseStatusBySN(serialNumber) {
-      return 3;
       if (!serialNumber || !this.licenseExpiredDevices || this.licenseExpiredDevices.length === 0) {
         return null;
       }
