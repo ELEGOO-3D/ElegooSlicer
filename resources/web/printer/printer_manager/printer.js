@@ -134,6 +134,10 @@ const PrinterManager = {
             // Stop existing interval if any
             this.stopLicenseRefresh();
 
+            if(!this.printerStore.userInfo.userId || this.printerStore.userInfo.loginStatus !== 1) {
+                console.log('User not logged in or offline, not starting license refresh');
+                return;
+            }
             // Request immediately
             if (await this.refreshLicenseDevices()) {
                 return;
@@ -171,6 +175,12 @@ const PrinterManager = {
             try {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 await this.printerStore.requestPrinterList();
+                // Refresh all printer status
+                try {
+                    await this.printerStore.refreshPrinterStatus();
+                } catch (error) {
+                    console.error('Failed to refresh printer status:', error);
+                }
                 this.startLicenseRefresh();
             } finally {
                 loading.close();

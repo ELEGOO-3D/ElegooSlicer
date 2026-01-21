@@ -471,6 +471,16 @@ const usePrinterStore = defineStore('printer', {
       }
     },
 
+    async refreshPrinterStatus() {
+      try {
+        await this.ipcRequest('refresh_printer_status', {});
+        console.log('Printer status refreshed successfully');
+      } catch (error) {
+        console.error('Failed to refresh printer status:', error);
+        throw error;
+      }
+    },
+
     updateLicenseStatus(serialNumber, newStatus) {
       const device = this.licenseExpiredDevices.find(d => d.serialNumber === serialNumber);
       if (device) {

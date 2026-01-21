@@ -850,6 +850,16 @@ void PrinterManagerView::setupIPCHandlers()
         return result;
     });
     
+    mIpc->onRequest("refresh_printer_status", [this](const webviewIpc::IPCRequest& request){
+        webviewIpc::IPCResult result;
+        auto printerList = PrinterManager::getInstance()->getPrinterList(); 
+        for (const auto& printer : printerList) {
+            auto refreshResult = PrinterManager::getInstance()->refreshPrinterStatus(printer.printerId);
+        }
+        result.code = 0;
+        return result;
+    });
+    
     PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
         PrinterWebView* targetView = findPrinterView(event.printerId);
         if (targetView) {

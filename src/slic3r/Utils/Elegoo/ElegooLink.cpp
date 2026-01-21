@@ -1052,6 +1052,19 @@ PrinterNetworkResult<bool> ElegooLink::renewLicense(const std::string& serialNum
                                       parseUnknownErrorMsg(resultCode, result.message));
 }
 
+PrinterNetworkResult<bool> ElegooLink::refreshPrinterStatus(const std::string& printerId)
+{
+    CHECK_INITIALIZED(false);
+    
+    elink::PrinterStatusParams params;
+    params.printerId = printerId;
+    elink::VoidResult result = elink::ElegooLink::getInstance().refreshPrinterStatus(params);
+    PrinterNetworkErrorCode resultCode = parseElegooResult(result.code);
+    
+    return PrinterNetworkResult<bool>(resultCode, resultCode == PrinterNetworkErrorCode::SUCCESS,
+                                      parseUnknownErrorMsg(resultCode, result.message));
+}
+
 PrinterNetworkResult<std::vector<PrinterNetworkInfo>> ElegooLink::getUserBoundPrinters()
 {
     CHECK_INITIALIZED(std::vector<PrinterNetworkInfo>());

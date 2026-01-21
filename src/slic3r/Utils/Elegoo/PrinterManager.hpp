@@ -51,6 +51,7 @@ public:
     PrinterNetworkResult<bool> sendRtmMessage(const std::string& printerId, const std::string& message);
     PrinterNetworkResult<std::vector<LicenseExpiredDevice>> getLicenseExpiredDevices();
     PrinterNetworkResult<bool> renewLicense(const std::string& serialNumber);
+    PrinterNetworkResult<bool> refreshPrinterStatus(const std::string& printerId);
     PrinterNetworkResult<PrinterPrintFileResponse> getFileDetail(const std::string& printerId, const std::string& fileName);
 
     static std::map<std::string, std::map<std::string, DynamicPrintConfig>> getVendorPrinterModelConfig();

@@ -1074,6 +1074,15 @@ PrinterNetworkResult<bool> PrinterManager::renewLicense(const std::string& seria
     return ElegooLink::getInstance()->renewLicense(serialNumber);
 }
 
+PrinterNetworkResult<bool> PrinterManager::refreshPrinterStatus(const std::string& printerId)
+{
+    if (printerId.empty()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": printerId is empty";
+        return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::INVALID_PARAMETER, false);
+    }
+    return ElegooLink::getInstance()->refreshPrinterStatus(printerId);
+}
+
 bool PrinterManager::deletePrinterNetwork(const std::string& printerId)
 {
     std::lock_guard<std::mutex> lock(mPrinterNetworkMutex);
