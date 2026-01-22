@@ -217,6 +217,8 @@ void PrinterCache::updatePrinterAttributesByNotify(const std::string& printerId,
         it->second.lastActiveTime = now;
         it->second.firmwareVersion = printerInfo.firmwareVersion;
         it->second.printerName = printerInfo.printerName;
+        it->second.printCapabilities = printerInfo.printCapabilities;
+        it->second.systemCapabilities = printerInfo.systemCapabilities;
     }
 }
 

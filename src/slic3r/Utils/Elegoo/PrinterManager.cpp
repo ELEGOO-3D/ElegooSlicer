@@ -1337,7 +1337,7 @@ PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& 
     printer.webUrl             = printerAttributes.webUrl;
     printer.printerName        = printerAttributes.printerName;
     printer.connectStatus      = PRINTER_CONNECT_STATUS_CONNECTED;
-    network->getPrinterStatus();
+    // network->getPrinterStatus();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                             << boost::format(": connected to printer: %s %s %s, firmware version: %s") % printer.host %
                                    printer.printerName % printer.printerModel % printerAttributes.firmwareVersion;

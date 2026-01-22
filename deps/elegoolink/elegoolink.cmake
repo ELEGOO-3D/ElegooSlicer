@@ -31,7 +31,7 @@ endif()
 
 elegooslicer_add_cmake_project(elegoolink
 
-    GIT_REPOSITORY      https://github.com/ELEGOO-3D/elegoo-link.git
+    GIT_REPOSITORY      git@gitee.com:fdm-slicing-software/elegoo-link.git
     GIT_TAG             origin/main
     
     DEPENDS 
