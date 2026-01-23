@@ -757,6 +757,33 @@ PrinterNetworkResult<PrinterNetworkInfo> ElegooLink::getPrinterStatus(const std:
     }
     return PrinterNetworkResult<PrinterNetworkInfo>(resultCode, printerNetworkInfo, parseUnknownErrorMsg(resultCode, elinkResult.message));
 }
+
+PrinterNetworkResult<std::string> ElegooLink::getPrinterStatusRaw(const std::string& printerId)
+{
+    CHECK_INITIALIZED(std::string());
+    std::string                rawJsonString;
+    PrinterNetworkErrorCode    resultCode = PrinterNetworkErrorCode::UNKNOWN_ERROR;
+    elink::PrinterStatusParams params;
+    elink::BizResult<std::string> elinkResult;
+    params.printerId = printerId;
+    try {
+        elinkResult = elink::ElegooLink::getInstance().getPrinterStatusRaw(params);
+        resultCode  = parseElegooResult(elinkResult.code);
+        if (resultCode == PrinterNetworkErrorCode::SUCCESS) {
+            if (elinkResult.hasData()) {
+                // Return the raw JSON string directly from the SDK
+                rawJsonString = elinkResult.value();
+            } else {
+                resultCode = PrinterNetworkErrorCode::PRINTER_NETWORK_INVALID_DATA;
+            }
+        }
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": exception: %s") % e.what();
+        resultCode = PrinterNetworkErrorCode::PRINTER_NETWORK_EXCEPTION;
+    }
+    return PrinterNetworkResult<std::string>(resultCode, rawJsonString, parseUnknownErrorMsg(resultCode, elinkResult.message));
+}
+
 PrinterNetworkResult<PrinterPrintFileResponse> ElegooLink::getFileList(const std::string& printerId, int pageNumber, int pageSize)
 {
     PrinterPrintFileResponse      printFileResponse;

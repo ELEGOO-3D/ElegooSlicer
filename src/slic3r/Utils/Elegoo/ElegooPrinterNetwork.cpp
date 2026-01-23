@@ -70,6 +70,11 @@ PrinterNetworkResult<PrinterNetworkInfo> ElegooPrinterNetwork::getPrinterStatus(
     return ElegooLink::getInstance()->getPrinterStatus(mPrinterNetworkInfo.printerId);
 }
 
+PrinterNetworkResult<std::string> ElegooPrinterNetwork::getPrinterStatusRaw()
+{
+    return ElegooLink::getInstance()->getPrinterStatusRaw(mPrinterNetworkInfo.printerId);
+}
+
 PrinterNetworkResult<PrinterPrintFileResponse> ElegooPrinterNetwork::getFileList(int pageNumber, int pageSize)
 {
     return ElegooLink::getInstance()->getFileList(mPrinterNetworkInfo.printerId, pageNumber, pageSize);

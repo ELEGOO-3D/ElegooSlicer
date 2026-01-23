@@ -27,6 +27,7 @@ public:
     PrinterNetworkResult<PrinterMmsGroup>                 getPrinterMmsInfo(const std::string& printerId);
     PrinterNetworkResult<PrinterNetworkInfo>              getPrinterAttributes(const std::string& printerId);
     PrinterNetworkResult<PrinterNetworkInfo>              getPrinterStatus(const std::string& printerId);
+    PrinterNetworkResult<std::string>                     getPrinterStatusRaw(const std::string& printerId);
     PrinterNetworkResult<PrinterPrintFileResponse> getFileList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<PrinterPrintTaskResponse> getPrintTaskList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<bool> deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds);

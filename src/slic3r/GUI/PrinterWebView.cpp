@@ -569,6 +569,28 @@ void PrinterWebView::setupIPCHandlers()
         result.code = fileDetail.isSuccess() ? 0 : static_cast<int>(fileDetail.code);
         return result;
     });
+    
+    mIpc->onRequest("getPrinterStatusRaw", [this](const webviewIpc::IPCRequest& request){
+        auto params = request.params;
+        std::string printerId = params.value("printerId", "");
+        auto statusRaw = PrinterManager::getInstance()->getPrinterStatusRaw(printerId);
+        webviewIpc::IPCResult result;
+        result.message = statusRaw.message;
+        result.code = statusRaw.isSuccess() ? 0 : static_cast<int>(statusRaw.code);
+        if (statusRaw.isSuccess() && statusRaw.data.has_value()) {
+            // Parse the JSON string and set as data
+            try {
+                result.data = nlohmann::json::parse(statusRaw.data.value());
+            } catch (const std::exception& e) {
+                result.code = static_cast<int>(PrinterNetworkErrorCode::PRINTER_NETWORK_INVALID_DATA);
+                result.message = "Failed to parse status data";
+                result.data = nlohmann::json::object();
+            }
+        } else {
+            result.data = nlohmann::json::object();
+        }
+        return result;
+    });
 }
 
 void PrinterWebView::onRtcTokenChanged(const nlohmann::json& data){

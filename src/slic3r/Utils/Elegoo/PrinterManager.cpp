@@ -1083,6 +1083,33 @@ PrinterNetworkResult<bool> PrinterManager::refreshPrinterStatus(const std::strin
     return ElegooLink::getInstance()->refreshPrinterStatus(printerId);
 }
 
+PrinterNetworkResult<std::string> PrinterManager::getPrinterStatusRaw(const std::string& printerId)
+{
+    CHECK_INITIALIZED(std::string());
+    
+    auto printer = PrinterCache::getInstance()->getPrinter(printerId);
+    if (!printer.has_value()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
+        return PrinterNetworkResult<std::string>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, std::string());
+    }
+    
+    if (printer.value().connectStatus != PRINTER_CONNECT_STATUS_CONNECTED) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not connected, printerId: %s") % printerId;
+        return PrinterNetworkResult<std::string>(PrinterNetworkErrorCode::PRINTER_CONNECTION_ERROR, std::string());
+    }
+
+    std::shared_ptr<IPrinterNetwork> network = getPrinterNetwork(printerId);
+    if (!network) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": no network connection for printer: %s") % printerId;
+        return PrinterNetworkResult<std::string>(PrinterNetworkErrorCode::NETWORK_ERROR, std::string());
+    }
+
+    UserNetworkInfo requestUserInfo = UserNetworkManager::getInstance()->getUserInfo();
+    auto            result          = network->getPrinterStatusRaw();
+    checkUserAuthStatus(printer.value(), result, requestUserInfo);
+    return result;
+}
+
 bool PrinterManager::deletePrinterNetwork(const std::string& printerId)
 {
     std::lock_guard<std::mutex> lock(mPrinterNetworkMutex);
