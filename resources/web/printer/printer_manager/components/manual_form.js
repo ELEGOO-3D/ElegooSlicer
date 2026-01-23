@@ -146,7 +146,7 @@ const ManualFormTemplate = /*html*/
                                 type="password"
                                 v-model="formData.pinCode"
                                 :placeholder="$t('manualForm.pinCodePlaceholderRequired')"
-                                maxlength="20"
+                                maxlength="6"
                                 show-password
                             />
                         </el-form-item>
@@ -339,6 +339,10 @@ const ManualFormComponent = {
                             }
                             if (!value || !value.trim()) {
                                 callback(new Error(this.$t('manualForm.pleaseEnterPinCode')));
+                                return;
+                            }
+                            if (value.trim().length < 6) {
+                                callback(new Error(this.$t('manualForm.pinCodeMustBe6Characters')));
                                 return;
                             }
                             callback();
