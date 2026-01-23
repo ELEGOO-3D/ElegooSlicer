@@ -63,6 +63,7 @@ PrinterNetworkErrorCode parseElegooResult(elink::ELINK_ERROR_CODE code)
     case elink::ELINK_ERROR_CODE::SERVER_RTM_NOT_CONNECTED: return PrinterNetworkErrorCode::SERVER_RTM_NOT_CONNECTED;
     case elink::ELINK_ERROR_CODE::SERVER_UNAUTHORIZED: return PrinterNetworkErrorCode::SERVER_UNAUTHORIZED;
     case elink::ELINK_ERROR_CODE::SERVER_FORBIDDEN: return PrinterNetworkErrorCode::SERVER_FORBIDDEN;
+    case elink::ELINK_ERROR_CODE::SERVER_PIN_CODE_MISMATCH: return PrinterNetworkErrorCode::SERVER_PIN_CODE_MISMATCH;
     default: return PrinterNetworkErrorCode::UNKNOWN_ERROR;
     }
 }

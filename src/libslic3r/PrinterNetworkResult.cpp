@@ -100,6 +100,8 @@ std::string getErrorMessage(PrinterNetworkErrorCode error)
             return _u8L("Unauthorized access, please check your account login status and try again.");
         case PrinterNetworkErrorCode::SERVER_FORBIDDEN:
             return _u8L("Forbidden access. Please try again later.");
+        case PrinterNetworkErrorCode::SERVER_PIN_CODE_MISMATCH:
+            return _u8L("Pairing failed. Please select the correct printer model.");
         case PrinterNetworkErrorCode::INSUFFICIENT_MEMORY:
             return _u8L("Insufficient memory. Please try again later.");
         case PrinterNetworkErrorCode::PRINTER_SERIAL_NUMBER_EMPTY:

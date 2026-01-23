@@ -149,6 +149,7 @@ const langMessages = {
       "pleaseSelectConnectionMethod": "Please select connection/binding method",
       "pleaseEnterHostNameIpUrl": "Please enter hostname, IP or URL",
       "pleaseEnterPinCode": "Please enter PIN code",
+      "pinCodeMustBe6Characters": "PIN code must be at least 6 characters",
       "invalidPrinterName": "Contains invalid special characters"
     },
     "printerAccessAuth": {
@@ -383,6 +384,7 @@ const langMessages = {
       "pleaseSelectConnectionMethod": "请选择连接/绑定方式",
       "pleaseEnterHostNameIpUrl": "请输入主机名、IP或URL",
       "pleaseEnterPinCode": "请输入PIN码",
+      "pinCodeMustBe6Characters": "PIN码至少需要6个字符",
       "vendorCannotBeModified": "现有打印机无法修改厂商",
       "invalidPrinterName": "包含不允许的特殊字符"
     },

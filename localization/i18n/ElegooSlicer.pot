@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 20:08+0800\n"
+"POT-Creation-Date: 2026-01-23 19:16+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16107,6 +16107,9 @@ msgid "RTM client not connected or not logged in. Please try again later."
 msgstr ""
 
 msgid "Forbidden access. Please try again later."
+msgstr ""
+
+msgid "Pairing failed. Please select the correct printer model."
 msgstr ""
 
 msgid "Insufficient memory. Please try again later."

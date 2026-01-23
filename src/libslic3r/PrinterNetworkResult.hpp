@@ -63,6 +63,7 @@ enum class PrinterNetworkErrorCode
   
     SERVER_UNAUTHORIZED = 2050, // Unauthorized access
     SERVER_FORBIDDEN = 2051,    // Forbidden access
+    SERVER_PIN_CODE_MISMATCH = 2052,// PIN code does not match, e.g. SN or model does not match
 
     HOST_TYPE_NOT_SUPPORTED = 9998,          // Host type not supported
     PRINTER_NETWORK_EXCEPTION = 9999,          // External error

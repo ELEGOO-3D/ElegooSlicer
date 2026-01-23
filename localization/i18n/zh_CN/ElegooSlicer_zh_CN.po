@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Slic3rPE\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 20:08+0800\n"
+"POT-Creation-Date: 2026-01-23 19:16+0800\n"
 "PO-Revision-Date: 2023-04-01 13:21+0800\n"
 "Last-Translator: ELEGOOTechSupport <softfeverever@gmail.com>\n"
 "Language-Team: \n"
@@ -17046,6 +17046,9 @@ msgstr ""
 
 msgid "Forbidden access. Please try again later."
 msgstr ""
+
+msgid "Pairing failed. Please select the correct printer model."
+msgstr "绑定失败，请选择正确的打印机型号后重试"
 
 msgid "Insufficient memory. Please try again later."
 msgstr ""

@@ -1290,7 +1290,8 @@ PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& 
         if (connectResult.code == PrinterNetworkErrorCode::INVALID_USERNAME_OR_PASSWORD ||
             connectResult.code == PrinterNetworkErrorCode::INVALID_TOKEN ||
             connectResult.code == PrinterNetworkErrorCode::INVALID_ACCESS_CODE ||
-            connectResult.code == PrinterNetworkErrorCode::INVALID_PIN_CODE) {
+            connectResult.code == PrinterNetworkErrorCode::INVALID_PIN_CODE||
+            connectResult.code == PrinterNetworkErrorCode::SERVER_PIN_CODE_MISMATCH) {
             printer.printerStatus = PRINTER_STATUS_AUTH_ERROR;
         }
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__
