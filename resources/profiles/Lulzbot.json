@@ -1,7 +1,7 @@
 {
     "name": "Lulzbot",
     "url": "https://ohai.lulzbot.com/group/taz-6/",
-    "version": "01.03.02.02",
+    "version": "01.03.02.05",
     "force_update": "0",
     "description": "Lulzbot configurations",
     "machine_model_list": [
