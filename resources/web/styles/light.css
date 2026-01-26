@@ -88,6 +88,11 @@ body {
   padding: 0;
   overflow: hidden;
   box-sizing: border-box;
+  user-select: none;
+}
+
+img {
+  -webkit-user-drag: none;
 }
 
 *,

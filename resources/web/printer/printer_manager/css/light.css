@@ -776,6 +776,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  user-select: text;
 }
 
 .printer-setting-update-tag {
