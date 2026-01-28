@@ -583,8 +583,7 @@ void PrinterWebView::setupIPCHandlers()
                 result.data = nlohmann::json::parse(statusRaw.data.value());
             } catch (const std::exception& e) {
                 result.code = static_cast<int>(PrinterNetworkErrorCode::PRINTER_NETWORK_INVALID_DATA);
-                result.message = "Failed to parse status data";
-                result.data = nlohmann::json::object();
+                result.message = "Failed to parse status data, invalid JSON format";
             }
         } else {
             result.data = nlohmann::json::object();

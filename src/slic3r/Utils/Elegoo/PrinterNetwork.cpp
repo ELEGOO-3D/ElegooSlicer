@@ -152,11 +152,11 @@ std::string INetworkHelper::getRegion() {
     return region;
 }
 
-void NetworkInitializer::init() {
+void NetworkInitializer::init(const std::string& logLevel) {
     std::shared_ptr<INetworkHelper> elegooNetworkHelper = NetworkFactory::createNetworkHelper(htElegooLink);
     std::string region = elegooNetworkHelper->getRegion();
     std::string iotUrl = elegooNetworkHelper->getIotUrl();
-    ElegooPrinterNetwork::init(region, iotUrl);    
+    ElegooPrinterNetwork::init(region, iotUrl, logLevel);    
 }
 
 void NetworkInitializer::uninit() {

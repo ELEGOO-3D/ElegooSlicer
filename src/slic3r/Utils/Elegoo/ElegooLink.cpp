@@ -22,6 +22,29 @@ namespace Slic3r {
 
 namespace {
 
+// Map log level string to spdlog log level: trace=0, debug=1, info=2, warn=3, error=4, critical=5, off=6
+unsigned int level_string_to_spdlog(const std::string& level)
+{
+    static const std::map<std::string, int> levelMap = {
+        {"trace", 0},
+        {"debug", 1},
+        {"info", 2},
+        {"warn", 3},
+        {"warning", 3},  // alias for warn
+        {"error", 4},
+        {"critical", 5},
+        {"fatal", 5},    // alias for critical
+        {"off", 6}
+    };
+    
+    auto it = levelMap.find(level);
+    if (it != levelMap.end()) {
+        return it->second;
+    }
+    // Default to info level if not found
+    return 2;
+}
+
 PrinterNetworkErrorCode parseElegooResult(elink::ELINK_ERROR_CODE code)
 {
     switch (code) {
@@ -182,7 +205,7 @@ ElegooLink::ElegooLink() {}
 
 ElegooLink::~ElegooLink() {}
 
-void ElegooLink::init(const std::string& region, std::string& iotUrl)
+void ElegooLink::init(const std::string& region, std::string& iotUrl, const std::string& logLevel)
 {
     std::lock_guard<std::mutex> lock(mMutex);
     if (mIsInitialized) {
@@ -191,11 +214,8 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl)
 
     elink::ElegooLink::Config cfg;
 
-    #if ELEGOO_INTERNAL_TESTING
-        cfg.log.logLevel = 1; // Log level 0 - TRACE, 1 - DEBUG, 2 - INFO, 3 - WARN, 4 - ERROR, 5 - CRITICAL, 6 - OFF
-    #else
-        cfg.log.logLevel = 2;
-    #endif
+    // Map log level string to spdlog log level: trace=0, debug=1, info=2, warn=3, error=4, critical=5, off=6
+    cfg.log.logLevel = level_string_to_spdlog(logLevel);
     cfg.log.logEnableConsole = true;
     cfg.log.logEnableFile = true;
     cfg.log.logFileName = data_dir() + "/log/elegoolink.log";

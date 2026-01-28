@@ -16,7 +16,7 @@ class ElegooLink : public Singleton<ElegooLink>
 public:
     ElegooLink();
     ~ElegooLink();
-    void init(const std::string& region, std::string& iotUrl);
+    void init(const std::string& region, std::string& iotUrl, const std::string& logLevel = "info");
     void uninit();
 
     PrinterNetworkResult<PrinterNetworkInfo>              connectToPrinter(const PrinterNetworkInfo& printerNetworkInfo);

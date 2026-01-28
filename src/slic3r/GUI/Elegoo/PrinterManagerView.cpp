@@ -517,6 +517,17 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
         }
     }
 
+    if(wxGetApp().app_config->get_bool("developer_mode")){
+        if(!url.Contains("?"))
+        {
+            url = url + "?dev=true";
+        }
+        else
+        {
+            url = url + "&dev=true";
+        }
+    }  
+
     view->load_url(url);
     // Local network shows IP address, cloud printing shows printer name
     if(printerInfo.networkType==0)

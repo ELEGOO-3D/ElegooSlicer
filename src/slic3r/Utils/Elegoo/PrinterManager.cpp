@@ -274,7 +274,28 @@ void PrinterManager::init()
         PrinterCache::getInstance()->updatePrinterAttributesByNotify(event.printerId, event.printerInfo);
     });
 
-    NetworkInitializer::init();
+    // Get log level from AppConfig
+    std::string logLevel = "info";
+    try {
+        if (wxGetApp().app_config) {
+            #if ELEGOO_INTERNAL_TESTING
+                logLevel = "debug";
+            #else
+                if(wxGetApp().app_config->get_bool("developer_mode")){
+                    logLevel = "debug";
+                }else{
+                    // logLevel = wxGetApp().app_config->get("log_severity_level");
+                    // if (logLevel.empty()) {
+                    //     logLevel = "info";
+                    // }
+                }
+            #endif
+        }
+    } catch (...) {
+        logLevel = "info";
+    }
+    
+    NetworkInitializer::init(logLevel);
     PrinterPluginManager::getInstance()->init();
     UserNetworkManager::getInstance()->init();
 

@@ -26,6 +26,7 @@ enum class PrinterNetworkErrorCode
     OPERATION_NOT_IMPLEMENTED = 7, // Operation not implemented
     NETWORK_ERROR             = 8, // Network error
     INSUFFICIENT_MEMORY       = 9, // Insufficient memory
+    NOT_CONNECTED_TO_SUBSERVICE = 10, // Not connected to subservice
 
     // Authentication-related errors (200-299)
     INVALID_USERNAME_OR_PASSWORD = 201, // Username or password invalid

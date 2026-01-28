@@ -136,7 +136,7 @@ protected:
 class NetworkInitializer
 {
 public:
-    static void init();
+    static void init(const std::string& logLevel = "info");
     static void uninit();
 };
 

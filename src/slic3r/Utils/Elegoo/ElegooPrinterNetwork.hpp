@@ -30,7 +30,7 @@ public:
     virtual PrinterNetworkResult<bool> updatePrinterName(const std::string& printerName) override;
     virtual PrinterNetworkResult<bool> cancelBindPrinter(const std::string& serialNumber) override;
 
-    static void init(const std::string& region, std::string& iotUrl);
+    static void init(const std::string& region, std::string& iotUrl, const std::string& logLevel = "info");
     static void uninit();
 };
 
