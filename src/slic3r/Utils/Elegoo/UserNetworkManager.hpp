@@ -67,7 +67,7 @@ private:
     mutable std::recursive_mutex mInitMutex;
     std::atomic<bool> mIsInitialized{false};
     
-    mutable std::mutex mUserMutex;
+    mutable std::recursive_mutex mUserMutex;
     UserNetworkInfo mUserInfo;
     std::shared_ptr<IUserNetwork> mUserNetwork;
     

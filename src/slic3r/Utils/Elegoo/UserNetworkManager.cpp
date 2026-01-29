@@ -220,14 +220,14 @@ void UserNetworkManager::checkUserAuthStatus(const UserNetworkInfo& requestUserI
 }
 UserNetworkInfo UserNetworkManager::getUserInfo()
 {   
-    std::lock_guard<std::mutex> userLock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> userLock(mUserMutex);
     mUserInfo.loginErrorMessage = getLoginErrorMessage(mUserInfo);
     return mUserInfo;
 }
 
 void UserNetworkManager::logout()
 {
-    std::lock_guard<std::mutex> lock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     mUserInfo = UserNetworkInfo();
     saveUserInfo(mUserInfo);
     notifyUserInfoUpdated();
@@ -238,7 +238,7 @@ void UserNetworkManager::logout()
 }
 void UserNetworkManager::login(const UserNetworkInfo& userInfo)
 {
-    std::lock_guard<std::mutex> lock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     mUserInfo = userInfo;
     mUserInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
     saveUserInfo(mUserInfo);
@@ -248,17 +248,17 @@ void UserNetworkManager::login(const UserNetworkInfo& userInfo)
 
 std::shared_ptr<IUserNetwork> UserNetworkManager::getNetwork() const
 {
-    std::lock_guard<std::mutex> lock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     return mUserNetwork;
 }
 void UserNetworkManager::setNetwork(std::shared_ptr<IUserNetwork> network)
 {
-    std::lock_guard<std::mutex> lock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     mUserNetwork = network;
 }
 bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
 {
-    std::lock_guard<std::mutex> lock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     // if the user id is the same, update the user info
     if (mUserInfo.userId == userInfo.userId) {
         bool needNotify = false;
@@ -303,7 +303,7 @@ bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
 
 bool UserNetworkManager::updateUserInfoLoginStatus(const UserNetworkInfo& userInfo, const LoginStatus& loginStatus)
 {
-    std::lock_guard<std::mutex> lock(mUserMutex);
+    std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     if (mUserInfo.userId != userInfo.userId) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                 << boost::format(": user id is different, skip update login status, user id: %s, new user id: %s, login status: %d")
@@ -803,7 +803,7 @@ void UserNetworkManager::loadUserInfo()
             UserNetworkInfo userInfo = convertJsonToUserNetworkInfo(json);
 
             if (!userInfo.userId.empty()) {
-                std::lock_guard<std::mutex> lock(mUserMutex);
+                std::lock_guard<std::recursive_mutex> lock(mUserMutex);
                 if(userInfo.loginStatus != LOGIN_STATUS_OFFLINE_INVALID_TOKEN &&
                     userInfo.loginStatus != LOGIN_STATUS_OFFLINE_INVALID_USER) {
                     userInfo.loginStatus = LOGIN_STATUS_NOT_LOGIN;
