@@ -1,7 +1,7 @@
 {
     "name": "Kingroon",
     "url": "https://kingroon.com/",
-    "version": "01.03.02.07",
+    "version": "01.03.02.08",
     "force_update": "1",
     "description": "Kingroon configuration files",
     "machine_model_list": [
