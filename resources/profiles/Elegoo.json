@@ -1,6 +1,6 @@
 {
     "name": "Elegoo",
-    "version": "01.03.02.08",
+    "version": "01.03.02.09",
     "force_update": "0",
     "description": "Elegoo configurations",
     "machine_model_list": [
@@ -185,7 +185,7 @@
         {
             "name": "0.08mm Optimal @Elegoo CC2 0.2 nozzle",
             "sub_path": "process/ECC2/0.08mm Optimal @Elegoo CC2 0.2 nozzle.json"
-        },       
+        },
         {
             "name": "0.20mm Standard @Elegoo CC 0.4 nozzle",
             "sub_path": "process/ECC/0.20mm Standard @Elegoo CC 0.4 nozzle.json"
@@ -1539,7 +1539,7 @@
         {
             "name": "Elegoo RAPID TPU 95A @ECC2",
             "sub_path": "filament/ECC2/Elegoo RAPID TPU 95A @ECC2.json"
-        },     
+        },
         {
             "name": "Elegoo PLA @EN4 Series",
             "sub_path": "filament/EN4SERIES/Elegoo PLA @EN4 Series.json"
@@ -1981,7 +1981,7 @@
         {
             "name": "Elegoo Centauri Carbon 2 0.8 nozzle",
             "sub_path": "machine/ECC2/Elegoo Centauri Carbon 2 0.8 nozzle.json"
-        },     
+        },
         {
             "name": "Elegoo Neptune 4 0.4 nozzle",
             "sub_path": "machine/EN4SERIES/Elegoo Neptune 4 0.4 nozzle.json"
