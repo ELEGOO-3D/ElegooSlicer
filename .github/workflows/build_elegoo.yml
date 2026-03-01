@@ -131,7 +131,7 @@ jobs:
 
       - name: Upload artifacts mac
         if: inputs.os == 'macos-14'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ElegooSlicer_Mac_${{inputs.arch}}_${{ env.ver }}
           path: ${{ github.workspace }}/ElegooSlicer_Mac_${{inputs.arch}}_${{ env.ver }}.dmg
@@ -212,21 +212,21 @@ jobs:
 
       # - name: Upload artifacts Win zip
       #   if: inputs.os == 'windows-latest'
-      #   uses: actions/upload-artifact@v4
+      #   uses: actions/upload-artifact@v7
       #   with:
       #     name: ElegooSlicer_Windows_${{ env.ver }}_portable
       #     path: ${{ github.workspace }}/build/ElegooSlicer_Windows_${{ env.ver }}_portable.zip
 
       - name: Upload artifacts Win installer
         if: inputs.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ElegooSlicer_Windows_${{ env.ver }}
           path: ${{ github.workspace }}/build/ElegooSlicer*.exe
 
       # - name: Upload artifacts Win PDB
       #   if: inputs.os == 'windows-latest'
-      #   uses: actions/upload-artifact@v4
+      #   uses: actions/upload-artifact@v7
       #   with:
       #     name: PDB
       #     path: ${{ github.workspace }}/build/src/Release/Debug_PDB_${{ env.ver }}_for_developers_only.7z
@@ -302,7 +302,7 @@ jobs:
       #   env:
       #     ubuntu-ver: ${{ (inputs.os == 'ubuntu-20.04' && '2004') || (inputs.os == 'ubuntu-24.04' && '2404') || '' }}
       #     ubuntu-ver-str: ${{ (inputs.os == 'ubuntu-24.04' && '_Ubuntu2404') || '' }}
-      #   uses: actions/upload-artifact@v4
+      #   uses: actions/upload-artifact@v7
       #   with:
       #     name: ElegooSlicer_Linux_ubuntu_${{ env.ubuntu-ver }}_${{ env.ver }}
       #     path: './build/ElegooSlicer_Linux${{ env.ubuntu-ver-str }}_${{ env.ver }}.AppImage'
