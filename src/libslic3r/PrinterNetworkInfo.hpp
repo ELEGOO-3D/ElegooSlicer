@@ -148,7 +148,27 @@ enum NetworkType {
     NETWORK_TYPE_WAN = 1,
 };
 
+enum class UploadTaskStatus {
+    UPLOADING = 0,      // Uploading file
+    SUCCESS = 1,        // Upload and send print both succeeded (if uploadAndStartPrint is true)
+    FAILED = -1,        // Upload or send print failed
+    CANCELLED = -2      // Task cancelled
+};
 
+struct UploadTaskInfo
+{
+    std::string taskId;
+    std::string printerId;
+    std::string fileName;
+    uint64_t    uploadedBytes{0};
+    uint64_t    totalBytes{0};
+    int         progress{0};
+    UploadTaskStatus status{UploadTaskStatus::UPLOADING};
+    PrinterNetworkErrorCode code{PrinterNetworkErrorCode::SUCCESS};
+    std::string message;
+    int64_t     beginTime{0};
+    int64_t     endTime{0};
+}; 
 
 struct PrinterPrintFile
 {
@@ -318,6 +338,22 @@ nlohmann::json convertPrintFilamentMmsMappingToJson(const PrintFilamentMmsMappin
 PrintFilamentMmsMapping convertJsonToPrintFilamentMmsMapping(const nlohmann::json& json);
 nlohmann::json convertUserNetworkInfoToJson(const UserNetworkInfo& userNetworkInfo);
 UserNetworkInfo convertJsonToUserNetworkInfo(const nlohmann::json& json);
+
+nlohmann::json convertPrinterPrintTaskToJson(const PrinterPrintTask& task);
+PrinterPrintTask convertJsonToPrinterPrintTask(const nlohmann::json& json);
+nlohmann::json convertPrinterPrintTaskResponseToJson(const PrinterPrintTaskResponse& response);
+PrinterPrintTaskResponse convertJsonToPrinterPrintTaskResponse(const nlohmann::json& json);
+
+nlohmann::json convertUploadTaskInfoToJson(const UploadTaskInfo& task);
+UploadTaskInfo convertJsonToUploadTaskInfo(const nlohmann::json& json);
+
+nlohmann::json convertPrinterPrintFileToJson(const PrinterPrintFile& file);
+PrinterPrintFile convertJsonToPrinterPrintFile(const nlohmann::json& json);
+nlohmann::json convertPrinterPrintFileResponseToJson(const PrinterPrintFileResponse& response);
+PrinterPrintFileResponse convertJsonToPrinterPrintFileResponse(const nlohmann::json& json);
+
+nlohmann::json convertPrinterNetworkParamsToJson(const PrinterNetworkParams& params);
+PrinterNetworkParams convertJsonToPrinterNetworkParams(const nlohmann::json& json);
 
 LoginStatus parseLoginStatusByErrorCode(PrinterNetworkErrorCode resultCode);
 

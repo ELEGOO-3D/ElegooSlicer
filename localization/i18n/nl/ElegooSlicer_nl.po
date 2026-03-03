@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 20:08+0800\n"
+"POT-Creation-Date: 2026-01-16 15:22+0800\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -4651,6 +4651,9 @@ msgstr "Print alles"
 msgid "Send all"
 msgstr "Alles verzenden"
 
+msgid "Beginner Guide"
+msgstr ""
+
 msgid "Keyboard Shortcuts"
 msgstr "Sneltoesten"
 
@@ -6969,6 +6972,12 @@ msgstr "Ontwikkelmodus"
 
 msgid "Skip AMS blacklist check"
 msgstr "AMS-zwartelijstcontrole overslaan"
+
+msgid "ELEGOO Seed Lab"
+msgstr ""
+
+msgid "ELEGOO AI"
+msgstr ""
 
 msgid "Home page and daily tips"
 msgstr "Startpagina en dagelijkse tips"
@@ -17404,22 +17413,41 @@ msgid "Operation not implemented. Please try again later."
 msgstr ""
 
 msgid ""
-"Operation failed. Please check if multiple clients are open and continue on "
-"the main client."
-msgstr ""
-
-msgid ""
 "The file is too large to upload. Please try another way to start the "
 "transfer or print."
 msgstr ""
 
+msgid "Unable to connect to main process. Please try again."
+msgstr ""
+
+msgid "Failed to connect to main process. Please try again."
+msgstr ""
+
+msgid "Connection to main process lost. Please try again."
+msgstr ""
+
+msgid "Connection to main process closed. Please try again."
+msgstr ""
+
+msgid "Communication error with main process. Please try again."
+msgstr ""
+
+msgid "Failed to send request to main process. Please try again."
+msgstr ""
+
+msgid "Invalid data received from main process. Please try again."
+msgstr ""
+
+msgid "Communication protocol error with main process. Please try again."
+msgstr ""
+
+msgid "Too many requests to main process. Please try again later."
+msgstr ""
+
+msgid "Internal communication error. Please try again."
+msgstr ""
+
 msgid "Host/IP/URL"
-msgstr ""
-
-msgid "Send print task failed"
-msgstr ""
-
-msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

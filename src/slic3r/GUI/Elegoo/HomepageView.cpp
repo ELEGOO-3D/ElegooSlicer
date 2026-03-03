@@ -91,20 +91,20 @@ void RecentHomepageView::setupIPCHandlers()
     if (!mIpc)
         return;
 
-    mIpc->onRequest("getRecentFiles", [this](const webviewIpc::IPCRequest& request) { return handleGetRecentFiles(request.params); });
+    mIpc->onRequest("getRecentFiles", [this](const IPCRequest& request) { return handleGetRecentFiles(request.params); });
 
-    mIpc->onRequest("clearRecentFiles", [this](const webviewIpc::IPCRequest& request) { return handleClearRecentFiles(request.params); });
+    mIpc->onRequest("clearRecentFiles", [this](const IPCRequest& request) { return handleClearRecentFiles(request.params); });
 
-    mIpc->onEvent("openRecentFile", [this](const webviewIpc::IPCEvent& event) { return handleOpenFile(event.data); });
+    mIpc->onEvent("openRecentFile", [this](const IPCEvent& event) { return handleOpenFile(event.data); });
 
-    mIpc->onEvent("createNewProject", [this](const webviewIpc::IPCEvent& event) { return handleCreateNewProject(event.data); });
+    mIpc->onEvent("createNewProject", [this](const IPCEvent& event) { return handleCreateNewProject(event.data); });
 
-    mIpc->onEvent("openProject", [this](const webviewIpc::IPCEvent& event) { return handleOpenProject(event.data); });
+    mIpc->onEvent("openProject", [this](const IPCEvent& event) { return handleOpenProject(event.data); });
 
     mIpc->onEvent("openFileInExplorer",
-                    [this](const webviewIpc::IPCEvent& event) { return handleOpenFileInExplorer(event.data); });
+                    [this](const IPCEvent& event) { return handleOpenFileInExplorer(event.data); });
 
-    mIpc->onRequest("removeFromRecent", [this](const webviewIpc::IPCRequest& request) { return handleRemoveFromRecent(request.params); });
+    mIpc->onRequest("removeFromRecent", [this](const IPCRequest& request) { return handleRemoveFromRecent(request.params); });
 }
 
 void RecentHomepageView::showRecentFiles(int images){
@@ -121,7 +121,7 @@ void RecentHomepageView::showRecentFiles(int images){
     }
     mIpc->sendEvent("recentFilesUpdated", result);
 }
-webviewIpc::IPCResult RecentHomepageView::handleGetRecentFiles(const nlohmann::json&)
+IPCResult RecentHomepageView::handleGetRecentFiles(const nlohmann::json&)
 {
     int images= INT_MAX;
     boost::property_tree::wptree data;
@@ -135,18 +135,18 @@ webviewIpc::IPCResult RecentHomepageView::handleGetRecentFiles(const nlohmann::j
         fileJson["image"]        = wxString(value.get<std::wstring>(L"image", L"")).ToUTF8();
         result.push_back(fileJson);
     }
-    return webviewIpc::IPCResult::success(result);
+    return IPCResult::success(result);
 }
 
-webviewIpc::IPCResult RecentHomepageView::handleClearRecentFiles(const nlohmann::json& data)
+IPCResult RecentHomepageView::handleClearRecentFiles(const nlohmann::json& data)
 {
     wxGetApp().CallAfter([]() {
         wxGetApp().request_remove_project("");
     });
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult RecentHomepageView::handleOpenFile(const nlohmann::json& data)
+IPCResult RecentHomepageView::handleOpenFile(const nlohmann::json& data)
 {
     std::string filePath = data.value("path", "");
     if (!filePath.empty()) {
@@ -154,27 +154,27 @@ webviewIpc::IPCResult RecentHomepageView::handleOpenFile(const nlohmann::json& d
             wxGetApp().request_open_project(filePath);
         });
     }
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult RecentHomepageView::handleCreateNewProject(const nlohmann::json& data)
+IPCResult RecentHomepageView::handleCreateNewProject(const nlohmann::json& data)
 {
     // Use CallAfter to ensure this is executed in the main thread and after any pending UI operations
     wxGetApp().CallAfter([]() {
         wxGetApp().request_open_project("<new>");
     });
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult RecentHomepageView::handleOpenProject(const nlohmann::json& data)
+IPCResult RecentHomepageView::handleOpenProject(const nlohmann::json& data)
 {
     wxGetApp().CallAfter([]() {
         wxGetApp().request_open_project({});
     });
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult RecentHomepageView::handleOpenFileInExplorer(const nlohmann::json& data)
+IPCResult RecentHomepageView::handleOpenFileInExplorer(const nlohmann::json& data)
 {
     std::string filePath = data.value("path", "");
     if (!filePath.empty()) {
@@ -186,10 +186,10 @@ webviewIpc::IPCResult RecentHomepageView::handleOpenFileInExplorer(const nlohman
             wxLaunchDefaultBrowser("file://" + dirPath);
         });
     }
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult RecentHomepageView::handleRemoveFromRecent(const nlohmann::json& data)
+IPCResult RecentHomepageView::handleRemoveFromRecent(const nlohmann::json& data)
 {
     std::string filePath = data.value("path", "");
     if (!filePath.empty()) {
@@ -197,7 +197,7 @@ webviewIpc::IPCResult RecentHomepageView::handleRemoveFromRecent(const nlohmann:
             wxGetApp().request_remove_project(filePath);
         });
     }
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
 void RecentHomepageView::OnNavigationRequest(wxWebViewEvent& evt){
@@ -322,7 +322,7 @@ void OnlineModelsHomepageView::setupIPCHandlers()
     if (!mIpc)
         return;
 
-    mIpc->onRequest("report.getClientUserInfo", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("report.getClientUserInfo", [this](const IPCRequest& request) {
         UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();
         if (userNetworkInfo.userId.empty() || userNetworkInfo.token.empty() ||
             userNetworkInfo.loginStatus == LOGIN_STATUS_OFFLINE_INVALID_TOKEN ||
@@ -331,10 +331,10 @@ void OnlineModelsHomepageView::setupIPCHandlers()
             userNetworkInfo = UserNetworkInfo();
         }
         nlohmann::json  data = generateUserInfoData(userNetworkInfo);
-        return webviewIpc::IPCResult::success(data);
+        return IPCResult::success(data);
     });
 
-    mIpc->onRequest("report.notLogged", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("report.notLogged", [this](const IPCRequest& request) {
         UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();
         auto result = UserNetworkManager::getInstance()->checkUserNeedReLogin();
         if(result.isSuccess()) {
@@ -343,43 +343,43 @@ void OnlineModelsHomepageView::setupIPCHandlers()
                 //need re-login
                 auto evt = new wxCommandEvent(EVT_USER_LOGIN);
                 wxQueueEvent(wxGetApp().mainframe, evt);
-                return webviewIpc::IPCResult::error();
+                return IPCResult::error();
             } 
         } else {
             //show_error(wxGetApp().mainframe, result.message);
-            return webviewIpc::IPCResult::error(result.message);
+            return IPCResult::error(result.message);
         }
         //don't need to re-login, return user info
         nlohmann::json  data = generateUserInfoData(userNetworkInfo);
-        return webviewIpc::IPCResult::success(data);
+        return IPCResult::success(data);
     });
 
-    mIpc->onRequest("report.refreshToken", [this](const webviewIpc::IPCRequest& request) { 
+    mIpc->onRequest("report.refreshToken", [this](const IPCRequest& request) { 
         auto        data     = request.params;
         UserNetworkInfo userNetworkInfo = parseUserInfoData(data);
         UserNetworkInfo refreshResult = UserNetworkManager::getInstance()->refreshToken(userNetworkInfo);
-        return webviewIpc::IPCResult::success(generateUserInfoData(refreshResult));       
+        return IPCResult::success(generateUserInfoData(refreshResult));       
 
     });
-    mIpc->onRequest("report.ready", [this](const webviewIpc::IPCRequest& request) { return handleReady(); });
+    mIpc->onRequest("report.ready", [this](const IPCRequest& request) { return handleReady(); });
 
-    mIpc->onRequest("report.slicerOpen", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("report.slicerOpen", [this](const IPCRequest& request) {
         auto        params = request.params;
         std::string url    = params.value("url", "");
         wxGetApp().CallAfter([url]() {
             GUI::wxGetApp().request_model_download(wxString(url));
         });
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
-    mIpc->onRequest("report.websiteOpen", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("report.websiteOpen", [this](const IPCRequest& request) {
         auto        params = request.params;
         std::string url    = params.value("url", "");
          wxGetApp().CallAfter([url]() {
             wxLaunchDefaultBrowser(url);
         });
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
-    mIpc->onRequest("reload", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("reload", [this](const IPCRequest& request) {
         std::shared_ptr<INetworkHelper> networkHelper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
         if (networkHelper) {
             wxString url = from_u8(networkHelper->getOnlineModelsUrl());
@@ -390,12 +390,12 @@ void OnlineModelsHomepageView::setupIPCHandlers()
                 loadUrl(url);
             });
         }
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
-    mIpc->onRequest("isLoading", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("isLoading", [this](const IPCRequest& request) {
         nlohmann::json data = nlohmann::json::object();
         data["isLoading"] = mIsLoading;
-        return webviewIpc::IPCResult::success(data);
+        return IPCResult::success(data);
     });
 }
 void OnlineModelsHomepageView::onUserInfoUpdated(const UserNetworkInfo& userNetworkInfo)
@@ -428,7 +428,22 @@ void OnlineModelsHomepageView::onRegionChanged()
     }
 }
 
-webviewIpc::IPCResult OnlineModelsHomepageView::handleReady()
+void OnlineModelsHomepageView::onThemeChanged()
+{
+    lock_guard<mutex> lock(mUserInfoMutex);
+    //reload online models page
+    mIsReady = false;
+    mRefreshUserInfo = UserNetworkInfo();
+    std::shared_ptr<INetworkHelper> networkHelper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
+    if (networkHelper) {
+        wxString url = from_u8(networkHelper->getOnlineModelsUrl());
+        wxGetApp().CallAfter([this, url]() {
+            loadUrl(url);
+        });
+    }
+}
+
+IPCResult OnlineModelsHomepageView::handleReady()
 {
     lock_guard<mutex> lock(mUserInfoMutex);
     mIsReady = true;
@@ -438,7 +453,7 @@ webviewIpc::IPCResult OnlineModelsHomepageView::handleReady()
         mRefreshUserInfo = UserNetworkInfo();
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": OnlineModelsHomepageView sent user info to WebView";
     }
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
 void OnlineModelsHomepageView::onWebViewLoaded(wxWebViewEvent& event) {

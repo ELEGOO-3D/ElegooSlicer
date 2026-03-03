@@ -21,7 +21,7 @@ if "%1" == "help" (
     echo.
     echo Parameters:
     echo   slicer       - Only compile the slicer, skip dependencies build
-    echo   only_deps    - Only build dependencies, skip slicer build
+    echo   onlydeps    - Only build dependencies, skip slicer build
     echo   packinstall  - Build slicer and create installer package
     echo   onlypack     - Only create installer package, skip build
     echo   sign         - Sign the executable with digital signature
@@ -37,7 +37,7 @@ if "%1" == "help" (
     echo   build_release_windows.bat slicer
     echo   build_release_windows.bat vs2019 packinstall sign
     echo   build_release_windows.bat test slicer
-    echo   build_release_windows.bat only_deps
+    echo   build_release_windows.bat onlydeps
     echo.
     echo ============================================================================
     echo.
@@ -137,17 +137,21 @@ echo.
 if "%debug%"=="ON" (
     set build_type=Debug
     set build_dir=build-dbg
+    set enable_debug_output=1
 ) else (
     if "%debuginfo%"=="ON" (
         set build_type=RelWithDebInfo
         set build_dir=build-dbginfo
+        set enable_debug_output=1
     ) else (
         set build_type=Release
         set build_dir=build
+        set enable_debug_output=0
     )
 )
 echo [INFO] Build Type: %build_type%
 echo [INFO] Build Directory: %build_dir%
+echo [INFO] Enable Debug Output: %enable_debug_output%
 echo.
 
 
@@ -265,7 +269,7 @@ mkdir %build_dir% 2>nul
 cd %build_dir%
 
 @echo on
-cmake .. -G "%VS_GENERATOR%" -A x64 -DELEGOO_INTERNAL_TESTING=%ELEGOO_INTERNAL_TESTING%  -DBBL_RELEASE_TO_PUBLIC=1 -DCMAKE_PREFIX_PATH="%DEPS%/usr/local" -DCMAKE_INSTALL_PREFIX="./ElegooSlicer" -DCMAKE_BUILD_TYPE=%build_type% -DWIN10SDK_PATH="%WindowsSdkDir%Include\%WindowsSDKVersion%\"
+cmake .. -G "%VS_GENERATOR%" -A x64 -DELEGOO_INTERNAL_TESTING=%ELEGOO_INTERNAL_TESTING%  -DBBL_RELEASE_TO_PUBLIC=1 -DCMAKE_PREFIX_PATH="%DEPS%/usr/local" -DCMAKE_INSTALL_PREFIX="./ElegooSlicer" -DCMAKE_BUILD_TYPE=%build_type% -DELEGOO_ENABLE_DEBUG_OUTPUT=%enable_debug_output% -DWIN10SDK_PATH="%WindowsSdkDir%Include\%WindowsSDKVersion%\"
 cmake --build . --config %build_type% --target ALL_BUILD -- -m
 @echo off
 

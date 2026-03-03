@@ -22,36 +22,32 @@ struct PrinterConnectStatusEvent {
     std::string printerId;
     PrinterConnectStatus status;
     std::chrono::system_clock::time_point timestamp;
-    NetworkType networkType;
-    PrinterConnectStatusEvent(const std::string& id, const PrinterConnectStatus& s, const NetworkType& nt)
-        : printerId(id), networkType(nt), status(s), timestamp(std::chrono::system_clock::now()) {}
+    PrinterConnectStatusEvent(const std::string& id, const PrinterConnectStatus& s)
+        : printerId(id), status(s), timestamp(std::chrono::system_clock::now()) {}
 };
 
 struct PrinterStatusEvent {
     std::string printerId;
     PrinterStatus status;
     std::chrono::system_clock::time_point timestamp;
-    NetworkType networkType;
-    PrinterStatusEvent(const std::string& id, const PrinterStatus& s, const NetworkType& nt)
-        : printerId(id), networkType(nt), status(s), timestamp(std::chrono::system_clock::now()) {}
+    PrinterStatusEvent(const std::string& id, const PrinterStatus& s)
+        : printerId(id), status(s), timestamp(std::chrono::system_clock::now()) {}
 };
 
 struct PrinterPrintTaskEvent {
     std::string printerId;
     PrinterPrintTask task;
     std::chrono::system_clock::time_point timestamp;
-    NetworkType networkType;
-    PrinterPrintTaskEvent(const std::string& id, const PrinterPrintTask& t, const NetworkType& nt)
-        : printerId(id), networkType(nt), task(t), timestamp(std::chrono::system_clock::now()) {}
+    PrinterPrintTaskEvent(const std::string& id, const PrinterPrintTask& t)
+        : printerId(id), task(t), timestamp(std::chrono::system_clock::now()) {}
 };
 
 struct PrinterAttributesEvent {
     std::string printerId;    
     PrinterNetworkInfo printerInfo;
     std::chrono::system_clock::time_point timestamp;
-    NetworkType networkType;
-    PrinterAttributesEvent(const std::string& id, const PrinterNetworkInfo& info, const NetworkType& nt)
-        : printerId(id), networkType(nt), printerInfo(info), timestamp(std::chrono::system_clock::now()) {}
+    PrinterAttributesEvent(const std::string& id, const PrinterNetworkInfo& info)
+        : printerId(id), printerInfo(info), timestamp(std::chrono::system_clock::now()) {}
 };
 
 
@@ -59,9 +55,8 @@ struct PrinterEventRawEvent {
     std::string printerId;
     std::string event;
     std::chrono::system_clock::time_point timestamp;
-    NetworkType networkType;
-    PrinterEventRawEvent(const std::string& id, const std::string& e, const NetworkType& nt)
-        : printerId(id), networkType(nt), event(e), timestamp(std::chrono::system_clock::now()) {}
+    PrinterEventRawEvent(const std::string& id, const std::string& e)
+        : printerId(id), event(e), timestamp(std::chrono::system_clock::now()) {}
 };
 
 // User network event(iot)
@@ -95,8 +90,14 @@ struct UserOnlineStatusChangedEvent {
         : isOnline(isOnline), timestamp(std::chrono::system_clock::now()) {}
 };
 
+struct UserInfoChangedEvent {   
+    std::chrono::system_clock::time_point timestamp;
+    UserInfoChangedEvent()
+        : timestamp(std::chrono::system_clock::now()) {}
+};
+
 using PrinterEvent = std::variant<PrinterConnectStatusEvent, PrinterStatusEvent, PrinterPrintTaskEvent, PrinterAttributesEvent, PrinterEventRawEvent>;
-using UserEvent = std::variant<UserRtcTokenEvent, UserRtmMessageEvent, UserLoggedInElsewhereEvent, UserOnlineStatusChangedEvent>;
+using UserEvent = std::variant<UserRtcTokenEvent, UserRtmMessageEvent, UserLoggedInElsewhereEvent, UserOnlineStatusChangedEvent, UserInfoChangedEvent>;
 
 template<typename EventType>
 class EventSignal {
@@ -131,7 +132,7 @@ public:
     
     // get handler count
     size_t handlerCount() const {
-        std::lock_guard<std::mutex> lock(mHandlersMutex);
+        std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(mHandlersMutex));
         return mHandlers.size();
     }
 };
@@ -166,6 +167,7 @@ public:
     EventSignal<UserRtmMessageEvent> rtmMessageChanged;
     EventSignal<UserLoggedInElsewhereEvent> loggedInElsewhereChanged;
     EventSignal<UserOnlineStatusChangedEvent> onlineStatusChanged;
+    EventSignal<UserInfoChangedEvent> userInfoChanged;
 
 private:
     UserNetworkEvent() = default;

@@ -51,3 +51,6 @@ work/
 example/
 .clangd
 dev_log/
+src/png/
+src/tiff/
+src/zlib/

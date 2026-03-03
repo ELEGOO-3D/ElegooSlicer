@@ -1,4 +1,6 @@
 #include "UserNetworkManager.hpp"
+#include "IPCClient.hpp"
+#include "MultiInstanceCoordinator.hpp"
 #include "PrinterCache.hpp"
 #include "JsonUtils.hpp"
 #include "UserDataStorage.hpp"
@@ -20,13 +22,9 @@
 #define CHECK_INITIALIZED(returnVal) \
     { \
         std::lock_guard<std::recursive_mutex> __initLock(mInitMutex); \
-        if(!mIsInitialized.load()) { \
+        if (!mIsInitialized.load()) { \
             using ValueType = std::decay_t<decltype(returnVal)>; \
-            if(MultiInstanceCoordinator::getInstance()->isMaster()) { \
-                return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, returnVal); \
-            } else { \
-                return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::NOT_MAIN_CLIENT, returnVal); \
-            } \
+            return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, returnVal); \
         } \
     }
 namespace Slic3r {
@@ -39,6 +37,11 @@ UserNetworkManager::~UserNetworkManager() { uninit(); }
 
 void UserNetworkManager::init()
 {
+    // Only master instance initializes network components
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return;
+    }
+    
     std::lock_guard<std::recursive_mutex> lock(mInitMutex);
     if (mIsInitialized.load()) {
         return;
@@ -84,8 +87,11 @@ void UserNetworkManager::uninit()
 
 PrinterNetworkResult<UserNetworkInfo> UserNetworkManager::getRtcToken()
 {
-    CHECK_INITIALIZED(UserNetworkInfo());
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getRtcToken();
+    }
     
+    CHECK_INITIALIZED(UserNetworkInfo());
     std::shared_ptr<IUserNetwork> network = getNetwork();
     if (!network) {
         if(getUserInfo().userId.empty()) {
@@ -106,6 +112,10 @@ PrinterNetworkResult<UserNetworkInfo> UserNetworkManager::getRtcToken()
 
 PrinterNetworkResult<PrinterNetworkInfo> UserNetworkManager::bindWANPrinter(const PrinterNetworkInfo& printerNetworkInfo)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->bindWANPrinter(printerNetworkInfo);
+    }
+    
     CHECK_INITIALIZED(PrinterNetworkInfo());
     std::shared_ptr<IUserNetwork> network = getNetwork();
     if (!network) {
@@ -127,6 +137,10 @@ PrinterNetworkResult<PrinterNetworkInfo> UserNetworkManager::bindWANPrinter(cons
 }
 PrinterNetworkResult<bool> UserNetworkManager::unbindWANPrinter(const std::string& serialNumber)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->unbindWANPrinter(serialNumber);
+    }
+    
     CHECK_INITIALIZED(false);
     std::shared_ptr<IUserNetwork> network = getNetwork();
     if (!network) {
@@ -146,6 +160,10 @@ PrinterNetworkResult<bool> UserNetworkManager::unbindWANPrinter(const std::strin
 
 PrinterNetworkResult<std::vector<PrinterNetworkInfo>> UserNetworkManager::getUserBoundPrinters()
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getUserBoundPrinters();
+    }
+    
     CHECK_INITIALIZED(std::vector<PrinterNetworkInfo>());
 
     std::unique_lock<std::timed_mutex> lock(mMonitorMutex, std::defer_lock);
@@ -176,6 +194,11 @@ PrinterNetworkResult<std::vector<PrinterNetworkInfo>> UserNetworkManager::getUse
 
 void UserNetworkManager::checkUserAuthStatus(const UserNetworkInfo& requestUserInfo, const PrinterNetworkErrorCode& errorCode)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        IPCClient::getInstance()->checkUserAuthStatus(requestUserInfo, errorCode);
+        return;
+    }
+    
     UserNetworkInfo currentUserInfo = getUserInfo();
     
     // 1. Check if user changed
@@ -219,7 +242,11 @@ void UserNetworkManager::checkUserAuthStatus(const UserNetworkInfo& requestUserI
     }
 }
 UserNetworkInfo UserNetworkManager::getUserInfo()
-{   
+{
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getUserInfo();
+    }
+    
     std::lock_guard<std::recursive_mutex> userLock(mUserMutex);
     mUserInfo.loginErrorMessage = getLoginErrorMessage(mUserInfo);
     return mUserInfo;
@@ -227,6 +254,11 @@ UserNetworkInfo UserNetworkManager::getUserInfo()
 
 void UserNetworkManager::logout()
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        IPCClient::getInstance()->logout();
+        return;
+    }
+    
     std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     mUserInfo = UserNetworkInfo();
     saveUserInfo(mUserInfo);
@@ -238,9 +270,28 @@ void UserNetworkManager::logout()
 }
 void UserNetworkManager::login(const UserNetworkInfo& userInfo)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        IPCClient::getInstance()->login(userInfo);
+        return;
+    }
+    
     std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     mUserInfo = userInfo;
     mUserInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
+    
+    // 打印token到日志，方便在接口工具中测试
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
+                            << boost::format(": User login success, userId: %s, token: %s, refreshToken: %s")
+                                   % userInfo.userId % userInfo.token % userInfo.refreshToken;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
+                            << boost::format(": ========== TOKEN FOR API TEST ==========");
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
+                            << boost::format(": Access Token: %s") % userInfo.token;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
+                            << boost::format(": Refresh Token: %s") % userInfo.refreshToken;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
+                            << boost::format(": ==========================================");
+    
     saveUserInfo(mUserInfo);
     notifyUserInfoUpdated();
     mUserNetwork = nullptr; 
@@ -339,6 +390,10 @@ void UserNetworkManager::notifyUserInfoUpdated()
     if (wxGetApp().mainframe && wxGetApp().mainframe->is_loaded()) {
         auto evt = new wxCommandEvent(EVT_USER_INFO_UPDATED);
         wxQueueEvent(wxGetApp().mainframe, evt);
+
+        if(MultiInstanceCoordinator::getInstance()->isMaster()) {
+            UserNetworkEvent::getInstance()->userInfoChanged.emit(UserInfoChangedEvent());
+        }
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                 << boost::format(": user info updated, send event to mainframe, user id: %s, login status: %d")
                                        % mUserInfo.userId % mUserInfo.loginStatus;
@@ -351,6 +406,10 @@ void UserNetworkManager::notifyUserInfoUpdated()
 
 PrinterNetworkResult<bool> UserNetworkManager::checkUserNeedReLogin()
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->checkUserNeedReLogin();
+    }
+    
     CHECK_INITIALIZED(false);
     UserNetworkInfo currentUserInfo = getUserInfo();
     if (needReLogin(currentUserInfo)) {
@@ -482,6 +541,10 @@ bool UserNetworkManager::checkNeedRefreshToken(const UserNetworkInfo& userInfo)
 
 UserNetworkInfo UserNetworkManager::refreshToken(const UserNetworkInfo& userInfo)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->refreshToken(userInfo);
+    }
+    
     {
         std::lock_guard<std::recursive_mutex> lock(mInitMutex);
         if(!mIsInitialized.load()) {

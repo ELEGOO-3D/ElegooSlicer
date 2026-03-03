@@ -1,4 +1,5 @@
 #include "WebviewIPCManager.h"
+#include "JsonUtils.hpp"
 #include <chrono>
 #include <thread>
 #include <condition_variable>
@@ -6,10 +7,18 @@
 #include <slic3r/GUI/Widgets/WebView.hpp>
 #include "slic3r/GUI/GUI_App.hpp"
 
+namespace Slic3r {
 namespace webviewIpc {
 
 // ThreadPool implementation
 ThreadPool::ThreadPool(size_t numThreads) : m_stop(false) {
+    
+    if( numThreads == 0 )
+    {
+        numThreads = std::thread::hardware_concurrency();
+        if (numThreads == 0) numThreads = 4;
+    }
+
     for (size_t i = 0; i < numThreads; ++i) {
         m_workers.emplace_back(&ThreadPool::workerThread, this);
     }
@@ -146,105 +155,15 @@ void WebviewIPCManager::onScriptMessage(wxWebViewEvent& event){
     onMessageReceived(message.ToUTF8().data());
 }
 void WebviewIPCManager::onMessageReceived(const std::string& message) {
-    try {
-        json jsonMessage = parseMessage(message);
-        if (jsonMessage.is_null()) {
-            wxLogError("IPC: Message parsing resulted in null JSON");
-            return;
-        }
-        handleMessage(jsonMessage);
-    } catch (const json::parse_error& e) {
-        wxLogError("IPC: JSON parse error: %s", e.what());
-    } catch (const std::exception& e) {
-        wxLogError("IPC: Failed to parse message: %s", e.what());
-    }
-}
-
-// Helper function to safely extract string from JSON
-std::string WebviewIPCManager::safeGetString(const json& j, const std::string& key, const std::string& defaultValue) {
-    try {
-        if (j.contains(key) && j[key].is_string()) {
-            return j[key].get<std::string>();
-        }
-        return defaultValue;
-    } catch (const std::exception& e) {
-        wxLogWarning("IPC: Failed to extract string field '%s': %s", key.c_str(), e.what());
-        return defaultValue;
-    }
-}
-
-// Helper function to safely extract integer from JSON
-int WebviewIPCManager::safeGetInt(const json& j, const std::string& key, int defaultValue) {
-    try {
-        if (j.contains(key)) {
-            if (j[key].is_number_integer()) {
-                return j[key].get<int>();
-            } else if (j[key].is_string()) {
-                // Try to convert string to int
-                std::string str = j[key].get<std::string>();
-                return std::stoi(str);
-            }
-        }
-        return defaultValue;
-    } catch (const std::exception& e) {
-        wxLogWarning("IPC: Failed to extract integer field '%s': %s", key.c_str(), e.what());
-        return defaultValue;
-    }
-}
-
-// Helper function to safely extract JSON object
-json WebviewIPCManager::safeGetObject(const json& j, const std::string& key, const json& defaultValue) {
-    try {
-        if (j.contains(key)) {
-            if (j[key].is_object()) {
-                return j[key];
-            } else if (j[key].is_null()) {
-                return json::object();
-            }
-        }
-        return defaultValue;
-    } catch (const std::exception& e) {
-        wxLogWarning("IPC: Failed to extract object field '%s': %s", key.c_str(), e.what());
-        return defaultValue;
-    }
-}
-
-std::string WebviewIPCManager::serializeMessage(const json& message) {
-    try {
-        if (message.is_null()) {
-            wxLogWarning("IPC: Attempting to serialize null JSON message");
-            return "{}";
-        }
-        
-        return message.dump(-1, ' ', false, json::error_handler_t::replace);
-    } catch (const json::type_error& e) {
-        wxLogError("IPC: JSON type error during serialization: %s", e.what());
-        return "{}";
-    } catch (const std::exception& e) {
-        wxLogError("IPC: Unexpected error during message serialization: %s", e.what());
-        return "{}";
-    }
-}
-
-json WebviewIPCManager::parseMessage(const std::string& jsonStr) {
-    if (jsonStr.empty()) {
-        wxLogError("IPC: Received empty message");
-        return json();
+    json jsonMessage = parseIPCMessage(message);
+    if (jsonMessage.is_null()) {
+        return;
     }
     
     try {
-        json parsed = json::parse(jsonStr);
-        if (parsed.is_null()) {
-            wxLogError("IPC: Parsed JSON is null");
-            return json();
-        }
-        return parsed;
-    } catch (const json::parse_error& e) {
-        wxLogError("IPC: JSON parse error at byte %lu: %s", e.byte, e.what());
-        return json();
+        handleMessage(jsonMessage);
     } catch (const std::exception& e) {
-        wxLogError("IPC: Unexpected error during JSON parsing: %s", e.what());
-        return json();
+        wxLogError("IPC: Failed to handle message: %s", e.what());
     }
 }
 
@@ -254,7 +173,7 @@ void WebviewIPCManager::handleMessage(const json& message) {
         return;
     }
     
-    std::string type = safeGetString(message, "type", "request");
+    std::string type = JsonUtils::safeGetString(message, "type", "request");
     
     if (type == "request") {
         handleRequest(message);
@@ -273,8 +192,8 @@ void WebviewIPCManager::handleRequest(const json& message) {
         return;
     }
 
-    std::string id = safeGetString(message, "id", "");
-    std::string method = safeGetString(message, "method", "");
+    std::string id = JsonUtils::safeGetString(message, "id", "");
+    std::string method = JsonUtils::safeGetString(message, "method", "");
     
     if (id.empty()) {
         wxLogError("IPC: Request message missing or invalid id field");
@@ -288,7 +207,7 @@ void WebviewIPCManager::handleRequest(const json& message) {
         return;
     }
     
-    json params = safeGetObject(message, "params", json::object());
+    json params = JsonUtils::safeGetJson(message, "params", json::object());
     
     IPCRequest request(id, method, params);
     
@@ -298,7 +217,7 @@ void WebviewIPCManager::handleRequest(const json& message) {
     auto asyncWithEventsIt = m_asyncRequestHandlersWithEvents.find(method);
     if (asyncWithEventsIt != m_asyncRequestHandlersWithEvents.end()) {
         // Capture handler and request data
-        AsyncRequestHandlerWithEvents handler = asyncWithEventsIt->second;
+        IPCAsyncRequestHandlerWithEvents handler = asyncWithEventsIt->second;
         
         // Submit to thread pool for async execution
         m_threadPool->enqueue([this, handler, request, id, method]() {
@@ -325,7 +244,7 @@ void WebviewIPCManager::handleRequest(const json& message) {
     auto asyncIt = m_asyncRequestHandlers.find(method);
     if (asyncIt != m_asyncRequestHandlers.end()) {
         // Capture handler and request data
-        AsyncRequestHandler handler = asyncIt->second;
+        IPCAsyncRequestHandler handler = asyncIt->second;
         
         // Submit to thread pool for async execution
         m_threadPool->enqueue([this, handler, request, id, method]() {
@@ -348,7 +267,7 @@ void WebviewIPCManager::handleRequest(const json& message) {
     auto syncIt = m_requestHandlers.find(method);
     if (syncIt != m_requestHandlers.end()) {
         // Capture handler and request data
-        RequestHandler handler = syncIt->second;
+        IPCRequestHandler handler = syncIt->second;
         
         // Submit to thread pool for async execution
         m_threadPool->enqueue([this, handler, request, id, method]() {
@@ -377,7 +296,7 @@ void WebviewIPCManager::handleResponse(const json& message) {
         return;
     }
     
-    std::string id = safeGetString(message, "id", "");
+    std::string id = JsonUtils::safeGetString(message, "id", "");
     if (id.empty()) {
         wxLogError("IPC: Response message missing or invalid id field");
         return;
@@ -389,9 +308,9 @@ void WebviewIPCManager::handleResponse(const json& message) {
         auto& pendingRequest = it->second;
 
         // Create IPCResult from response message with safe extraction
-        int code = safeGetInt(message, "code", 0);
-        std::string msg = safeGetString(message, "message", "");
-        json data = safeGetObject(message, "data", json::object());
+        int code = JsonUtils::safeGetInt(message, "code", 0);
+        std::string msg = JsonUtils::safeGetString(message, "message", "");
+        json data = JsonUtils::safeGetJson(message, "data", json::object());
 
         IPCResult result(code, msg, data);
         
@@ -417,14 +336,14 @@ void WebviewIPCManager::handleEvent(const json& message) {
         return;
     }
     
-    std::string method = safeGetString(message, "method", "");
+    std::string method = JsonUtils::safeGetString(message, "method", "");
     if (method.empty()) {
         wxLogError("IPC: Event message missing or invalid method field");
         return;
     }
     
-    std::string id = safeGetString(message, "id", "");
-    json data = safeGetObject(message, "data", json::object());
+    std::string id = JsonUtils::safeGetString(message, "id", "");
+    json data = JsonUtils::safeGetJson(message, "data", json::object());
 
     IPCEvent event(method, data, id);
     
@@ -433,7 +352,7 @@ void WebviewIPCManager::handleEvent(const json& message) {
         std::lock_guard<std::mutex> lock(m_pendingRequestsMutex);
         auto it = m_pendingRequests.find(id);
         if (it != m_pendingRequests.end() && it->second->hasEventCallback) {
-            RequestEventHandler eventCallback = it->second->eventCallback;
+            IPCRequestEventHandler eventCallback = it->second->eventCallback;
             
             // Execute in thread pool
             m_threadPool->enqueue([eventCallback, event, method, id]() {
@@ -448,7 +367,7 @@ void WebviewIPCManager::handleEvent(const json& message) {
     }
     
     // Then handle global event handlers - execute in thread pool
-    std::vector<EventHandler> handlers;
+    std::vector<IPCEventHandler> handlers;
     {
         std::lock_guard<std::mutex> lock(m_eventHandlersMutex);
         auto it = m_eventHandlers.find(method);
@@ -471,7 +390,7 @@ void WebviewIPCManager::handleEvent(const json& message) {
 }
 
 void WebviewIPCManager::request(const std::string& method, const json& params, 
-                        ResponseHandler callback, int timeout) {
+                        IPCResponseHandler callback, int timeout) {
     std::string id = generateRequestId();
     
     if(callback)
@@ -493,7 +412,7 @@ void WebviewIPCManager::request(const std::string& method, const json& params,
 }
 
 void WebviewIPCManager::requestWithEvents(const std::string& method, const json& params,
-                                  ResponseHandler responseCallback, RequestEventHandler eventCallback,
+                                  IPCResponseHandler responseCallback, IPCRequestEventHandler eventCallback,
                                   int timeout) {
     std::string id = generateRequestId();
 
@@ -574,17 +493,17 @@ void WebviewIPCManager::sendEvent(const std::string& method, const json& data, c
     sendEvent(event);
 }
 
-void WebviewIPCManager::onRequest(const std::string& method, RequestHandler handler) {
+void WebviewIPCManager::onRequest(const std::string& method, IPCRequestHandler handler) {
     std::lock_guard<std::mutex> lock(m_requestHandlersMutex);
     m_requestHandlers[method] = std::move(handler);
 }
 
-void WebviewIPCManager::onRequestAsync(const std::string& method, AsyncRequestHandler handler) {
+void WebviewIPCManager::onRequestAsync(const std::string& method, IPCAsyncRequestHandler handler) {
     std::lock_guard<std::mutex> lock(m_requestHandlersMutex);
     m_asyncRequestHandlers[method] = std::move(handler);
 }
 
-void WebviewIPCManager::onRequestAsyncWithEvents(const std::string& method, AsyncRequestHandlerWithEvents handler) {
+void WebviewIPCManager::onRequestAsyncWithEvents(const std::string& method, IPCAsyncRequestHandlerWithEvents handler) {
     std::lock_guard<std::mutex> lock(m_requestHandlersMutex);
     m_asyncRequestHandlersWithEvents[method] = std::move(handler);
 }
@@ -596,19 +515,19 @@ void WebviewIPCManager::offRequest(const std::string& method) {
     m_asyncRequestHandlersWithEvents.erase(method);
 }
 
-void WebviewIPCManager::onEvent(const std::string& method, EventHandler handler) {
+void WebviewIPCManager::onEvent(const std::string& method, IPCEventHandler handler) {
     std::lock_guard<std::mutex> lock(m_eventHandlersMutex);
     m_eventHandlers[method].push_back(std::move(handler));
 }
 
-void WebviewIPCManager::offEvent(const std::string& method, const EventHandler& handler) {
+void WebviewIPCManager::offEvent(const std::string& method, const IPCEventHandler& handler) {
     std::lock_guard<std::mutex> lock(m_eventHandlersMutex);
     auto it = m_eventHandlers.find(method);
     if (it != m_eventHandlers.end()) {
         auto& handlers = it->second;
         // Note: This requires function object comparison, may need other identification methods in actual use
         handlers.erase(std::remove_if(handlers.begin(), handlers.end(),
-            [&handler](const EventHandler& h) {
+            [&handler](const IPCEventHandler& h) {
                 // Comparison implementation needed based on actual situation
                 return false; // Simplified implementation
             }), handlers.end());
@@ -720,4 +639,6 @@ void WebviewIPCManager::stopTimeoutChecker() {
         m_timeoutThread.join();
     }
 }
-}
+
+} // namespace webviewIpc
+} // namespace Slic3r

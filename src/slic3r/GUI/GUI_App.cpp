@@ -118,6 +118,7 @@
 
 #include "Elegoo/UserLoginView.hpp"
 #include "slic3r/Utils/Elegoo/PrinterNetwork.hpp"
+#include "Elegoo/BeginnerGuideView.hpp"
 //#ifdef WIN32
 //#include "BaseException.h"
 //#endif
@@ -148,7 +149,7 @@ typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS2)(
 #endif
 
 #ifdef WIN32
-#include "dev-utils/BaseException.h"
+#include "dev-utils/CrashReporter.h"
 #endif
 
 #if ENABLE_THUMBNAIL_GENERATOR_DEBUG
@@ -987,6 +988,12 @@ void GUI_App::post_init()
     if (this->preset_updater) { // G-Code Viewer does not initialize preset_updater.
         CallAfter([this] {
             bool cw_showed = this->config_wizard_startup();
+            
+            // Show BeginnerGuideView on first startup if it hasn't been shown before
+            // ShowModal() will block until the dialog is closed, so version check will wait
+            if (!app_config->get_beginner_guide_shown()) {
+                ShowBeginnerGuide();
+            }
 
             std::string http_url = get_http_url(app_config->get_country_code());
             std::string language = GUI::into_u8(current_language_code());
@@ -1038,6 +1045,7 @@ void GUI_App::post_init()
     CallAfter([this] {
         check_message();
     });
+
 
     DeviceManager::load_filaments_blacklist_config();
 
@@ -2291,8 +2299,8 @@ bool GUI_App::on_init_inner()
 #endif
 
 #ifdef WIN32
-    //BBS set crash log folder
-    CBaseException::set_log_folder(data_dir());
+    // Initialize Crashpad crash reporter
+    CrashReporter::init(data_dir());
 #endif
 
     wxGetApp().Bind(wxEVT_QUERY_END_SESSION, [this](auto & e) {
@@ -3567,6 +3575,15 @@ void GUI_App::ShowDownNetPluginDlg() {
         ;
     }
 #endif
+}
+
+void GUI_App::ShowBeginnerGuide(){
+    BeginnerGuideView guideDlg(nullptr);
+    guideDlg.ShowModal();
+    
+    // Mark that beginner guide has been shown
+    app_config->set_beginner_guide_shown(true);
+    app_config->save();
 }
 
 void GUI_App::ShowUserLogin(bool show)

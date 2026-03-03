@@ -12,12 +12,14 @@
 #include <wx/osx/webview_webkit.h>
 #endif
 #include <wx/uri.h>
+#include <wx/utils.h>
 #if defined(__WIN32__) || defined(__WXMAC__)
 #include "wx/private/jsscriptwrapper.h"
 #endif
 
 #ifdef __WIN32__
 #include <WebView2.h>
+#include <wrl/client.h>
 #include <Shellapi.h>
 #include <slic3r/Utils/Http.hpp>
 #elif defined __linux__
@@ -105,7 +107,58 @@ public:
         // Clean up any registered script message handlers
         RemoveScriptMessageHandler("wx");
     }
-    bool SetUserAgent(const wxString &userAgent)
+    
+    void DisableUnnecessaryPermissions()
+    {
+        ICoreWebView2 *webView2 = (ICoreWebView2 *) GetNativeBackend();
+        if (!webView2) {
+            pendingPermissionSetup = true;
+            return;
+        }
+
+        // Create permission handler
+        class PermissionHandler : public ICoreWebView2PermissionRequestedEventHandler {
+        public:
+            virtual ~PermissionHandler() = default;
+            
+            HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override {
+                if (riid == IID_IUnknown || riid == IID_ICoreWebView2PermissionRequestedEventHandler) {
+                    *ppvObject = this;
+                    AddRef();
+                    return S_OK;
+                }
+                return E_NOINTERFACE;
+            }
+            ULONG STDMETHODCALLTYPE AddRef() override { return ++refCount; }
+            ULONG STDMETHODCALLTYPE Release() override {
+                ULONG count = --refCount;
+                if (count == 0) delete this;
+                return count;
+            }
+            HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) override {
+                COREWEBVIEW2_PERMISSION_KIND kind;
+                args->get_PermissionKind(&kind);
+                
+                // Deny geolocation, camera, and microphone permissions
+                if (kind == COREWEBVIEW2_PERMISSION_KIND_GEOLOCATION ||
+                    kind == COREWEBVIEW2_PERMISSION_KIND_CAMERA ||
+                    kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE) {
+                    args->put_State(COREWEBVIEW2_PERMISSION_STATE_DENY);
+                    BOOST_LOG_TRIVIAL(info) << "WebView2: Denied permission request (kind: " << kind << ")";
+                }
+                return S_OK;
+            }
+        private:
+            std::atomic<ULONG> refCount{1};
+        };
+
+        EventRegistrationToken token;
+        webView2->add_PermissionRequested(new PermissionHandler(), &token);
+        
+        pendingPermissionSetup = false;
+    }
+    
+    bool SetUserAgent(const wxString &userAgent) override
     {
         bool dark = userAgent.Contains("dark");
         SetColorScheme(dark ? COREWEBVIEW2_PREFERRED_COLOR_SCHEME_DARK : COREWEBVIEW2_PREFERRED_COLOR_SCHEME_LIGHT);
@@ -166,11 +219,16 @@ public:
             thiz->pendingColorScheme = COREWEBVIEW2_PREFERRED_COLOR_SCHEME_AUTO;
             thiz->SetColorScheme(colorScheme);
         }
+        if (pendingPermissionSetup) {
+            auto thiz = const_cast<WebViewEdge *>(this);
+            thiz->DisableUnnecessaryPermissions();
+        }
         wxWebViewEdge::DoGetClientSize(x, y);
     };
 private:
     wxString pendingUserAgent;
     COREWEBVIEW2_PREFERRED_COLOR_SCHEME pendingColorScheme = COREWEBVIEW2_PREFERRED_COLOR_SCHEME_AUTO;
+    bool pendingPermissionSetup = false;
 };
 
 #elif defined __WXOSX__
@@ -279,6 +337,7 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
         BOOST_LOG_TRIVIAL(info) << "WebView2: Set WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="
                                 << additional_args.ToUTF8().data();
     }
+
     wxWebView* webView = new WebViewEdge;
 #elif defined(__WXOSX__)
     wxWebView *webView = new WebViewWebKit;
@@ -292,6 +351,10 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52", ELEGOOSLICER_VERSION, 
             Slic3r::GUI::wxGetApp().dark_mode() ? "dark" : "light"));
         webView->Create(parent, wxID_ANY, url2, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE);
+        
+        // Disable unnecessary permissions (geolocation, camera, microphone)
+        static_cast<WebViewEdge*>(webView)->DisableUnnecessaryPermissions();
+        
         // We register the wxfs:// protocol for testing purposes
         webView->RegisterHandler(wxSharedPtr<wxWebViewHandler>(new wxWebViewArchiveHandler("bbl")));
         // And the memory: file system

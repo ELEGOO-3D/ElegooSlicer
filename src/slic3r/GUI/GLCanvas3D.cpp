@@ -1773,7 +1773,7 @@ void GLCanvas3D::zoom_to_volumes()
 void GLCanvas3D::zoom_to_selection()
 {
     if (!m_selection.is_empty())
-        _zoom_to_box(m_selection.get_bounding_box());
+        _zoom_to_box(m_selection.get_bounding_box(), 1.5);
 }
 
 void GLCanvas3D::zoom_to_gcode()
@@ -5898,6 +5898,71 @@ void GLCanvas3D::_render_3d_navigator()
     const auto result = ImGuizmo::ViewManipulate(cameraView, cameraProjection, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, nullptr,
                                                  camDistance, ImVec2(viewManipulateLeft, viewManipulateTop - size), ImVec2(size, size),
                                                  0x00101010);
+
+    const float focus_button_margin = 8.0f * sc;
+    const float focus_button_size = 32.0f;
+    const float focus_button_safe_padding = 2.0f;
+    const float focus_button_window_size = focus_button_size + 2.0f * focus_button_safe_padding;
+    const float focus_button_bottom_offset = 12.0f * sc;
+    ImGui::SetNextWindowPos(ImVec2(viewManipulateLeft + size + focus_button_margin, viewManipulateTop - focus_button_window_size - focus_button_bottom_offset), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(focus_button_window_size, focus_button_window_size), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.f, 0.f, 0.f, 0.f));
+    if (ImGui::Begin("##focus_selection_or_bed", nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground)) {
+        static GLTexture reset_zoom_icon;
+        static GLTexture reset_zoom_click_icon;
+        if (reset_zoom_icon.get_id() == 0 || reset_zoom_click_icon.get_id() == 0) {
+            const std::string path = resources_dir() + "/images/";
+            reset_zoom_icon.load_from_svg_file(path + "reset_zoom.svg", true, false, true, 512);
+            reset_zoom_click_icon.load_from_svg_file(path + "reset_zoom_click.svg", true, false, true, 512);
+        }
+
+        bool pressed = false;
+        const ImTextureID normal_id = (ImTextureID)(intptr_t)reset_zoom_icon.get_id();
+        const ImTextureID hover_id  = (ImTextureID)(intptr_t)reset_zoom_click_icon.get_id();
+        ImGui::SetCursorPos(ImVec2(focus_button_safe_padding, focus_button_safe_padding));
+        if (normal_id != nullptr && hover_id != nullptr) {
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 0.0f));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.f, 0.f, 0.f, 0.f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.f, 0.f, 0.f, 0.f));
+            pressed = ImGui::ImageButton3(normal_id, hover_id, ImVec2(focus_button_size, focus_button_size));
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar(2);
+        } else {
+            pressed = ImGui::Button(_u8L("Fit").c_str(), ImVec2(-1.0f, -1.0f));
+        }
+
+        if (pressed) {
+            select_view("plate");
+            if (m_selection.is_empty())
+                zoom_to_bed();
+            else
+                zoom_to_selection();
+            request_extra_frame();
+            m_dirty = true;
+        }
+
+        if (ImGui::IsItemHovered()) {
+            std::string tooltip = _u8L("Focus selected model, or whole bed if nothing is selected");
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f * sc, 3.0f * sc));
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 3.0f * sc);
+            ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGuiWrapper::COL_WINDOW_BACKGROUND);
+            ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.f, 0.f, 0.f, 0.f));
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.f, 1.f, 1.f, 1.f));
+            ImGui::BeginTooltip();
+            ImGui::TextUnformatted(tooltip.c_str());
+            ImGui::EndTooltip();
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar(2);
+        }
+    }
+    ImGui::End();
+    ImGui::PopStyleColor(1);
+    ImGui::PopStyleVar();
 
     if (result.changed) {
         for (unsigned int c = 0; c < 4; ++c) {

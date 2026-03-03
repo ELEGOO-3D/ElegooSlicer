@@ -30,6 +30,8 @@
 #include "Jobs/Worker.hpp"
 #include "GUI_Utils.hpp"
 #include "Widgets/TextInput.hpp"
+#include "Widgets/CheckBox.hpp"
+#include "Widgets/Label.hpp"
 #include "Jobs/PrintJob.hpp"
 #include "Jobs/SendJob.hpp"
 #include "DeviceManager.hpp"

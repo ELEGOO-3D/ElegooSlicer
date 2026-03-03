@@ -381,8 +381,8 @@ const PrintSendApp = {
             console.log('Selected MMS Tray:', tray);
             for (let i = 0; i < this.printInfo.filamentList.length; i++) {
                 if (this.printInfo.filamentList[i].index === filamentIndex) {
-                    const filament = this.printInfo.filamentList[i];
-                    if (filament.filamentType !== tray.filamentType && tray.filamentType !== '') {
+                    const filament = this.printInfo.filamentList[i]; 
+                    if ((filament.filamentType !== tray.filamentType && tray.filamentType !== '') && (filament.filamentName !== tray.filamentPresetName && tray.filamentName !== '')) {
                         this.showStatusTip(this.$t('printSend.filamentTypeNotMatch'));
                         return;
                     }

@@ -72,9 +72,6 @@ using namespace nlohmann;
 #include "ElegooSlicer.hpp"
 //BBS: add exception handler for win32
 #include <wx/stdpaths.h>
-#ifdef WIN32
-#include "dev-utils/BaseException.h"
-#endif
 #include "slic3r/GUI/PartPlate.hpp"
 #include "slic3r/GUI/BitmapCache.hpp"
 #include "slic3r/GUI/OpenGLManager.hpp"
@@ -1403,7 +1400,7 @@ int CLI::run(int argc, char **argv)
                         BOOST_LOG_TRIVIAL(info) << "object "<<o->name <<", id :" << o->id().id << ", from bbl 3mf\n";
                     }*/
 
-                    Semver cli_ver = *Semver::parse(ORCA_COMPATIBLE_VERSION);
+                    Semver cli_ver = *Semver::parse(SLIC3R_VERSION);
                     if (!allow_newer_file && ((cli_ver.maj() != file_version.maj()) || (cli_ver.min() < file_version.min()))){
                         BOOST_LOG_TRIVIAL(error) << boost::format("Version Check: File Version %1% not supported by current cli version %2%")%file_version.to_string() %ORCA_COMPATIBLE_VERSION;
                         record_exit_reson(outfile_dir, CLI_FILE_VERSION_NOT_SUPPORTED, 0, cli_errors[CLI_FILE_VERSION_NOT_SUPPORTED], sliced_info);
@@ -6042,6 +6039,13 @@ void attach_console_on_demand(){
     static bool console_attached = false;
 
     if (!console_attached) {
+        // Skip console attachment when running under a debugger
+        // to preserve VS Code Debug Console output
+        if (IsDebuggerPresent()) {
+            console_attached = true; // Mark as handled to avoid repeated checks
+            return;
+        }
+        
         // Try attaching to the parent console first
         if (AttachConsole(ATTACH_PARENT_PROCESS)) {
             console_attached = true;
@@ -6337,13 +6341,7 @@ extern "C" {
         for (size_t i = 0; i < argc; ++ i)
             argv_ptrs[i] = argv_narrow[i].data();
 
-//BBS: register default exception handler
-#if BBL_RELEASE_TO_PUBLIC
-        SET_DEFULTER_HANDLER();
-#else
-        //AddVectoredExceptionHandler(1, CBaseException::UnhandledExceptionFilter);
-        SET_DEFULTER_HANDLER();
-#endif
+// Crash reporter is automatically initialized in GUI_App::OnInit()
         std::set_new_handler([]() {
             int *a = nullptr;
             *a     = 0;

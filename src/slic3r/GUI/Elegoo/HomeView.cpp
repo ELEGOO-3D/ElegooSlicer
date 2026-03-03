@@ -102,9 +102,9 @@ void HomeView::createHomepageViews()
     mHomepageViews["recent"]->Show(false); // Initially hidden
 
     // Create Online Models homepage view
-    mHomepageViews["online-models"] = new OnlineModelsHomepageView(mContentPanel);
-    mContentSizer->Add(mHomepageViews["online-models"], 1, wxEXPAND | wxALL, 0);
-    mHomepageViews["online-models"]->Show(false); // Initially hidden
+    // mHomepageViews["online-models"] = new OnlineModelsHomepageView(mContentPanel);
+    // mContentSizer->Add(mHomepageViews["online-models"], 1, wxEXPAND | wxALL, 0);
+    // mHomepageViews["online-models"]->Show(false); // Initially hidden
 
     // Initialize all views
     for (auto& pair : mHomepageViews) {
@@ -131,6 +131,16 @@ void HomeView::showPage(const wxString& pageName)
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": showing view: %s") % pageName;
     } else {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": view not found: %s") % pageName;
+        if(pageName=="online-models"){
+            // Lazy create online models view if not exists
+            mHomepageViews["online-models"] = new OnlineModelsHomepageView(mContentPanel);
+            mContentSizer->Add(mHomepageViews["online-models"], 1, wxEXPAND | wxALL, 0);
+            mHomepageViews["online-models"]->initialize();
+            mCurrentView = mHomepageViews["online-models"];
+            mCurrentView->Show(true);
+            mContentSizer->Layout();
+            BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": lazily created and showing view: %s") % pageName;
+        }
     }
 }
 
@@ -142,35 +152,35 @@ void HomeView::setupIPCHandlers()
         return;
 
     // Navigation handler - this is the key handler for switching pages
-    mIpc->onRequest("navigateToPage", [this](const webviewIpc::IPCRequest& request) { return handleNavigateToPage(request.params); });
-    mIpc->onRequest("getUserInfo", [this](const webviewIpc::IPCRequest& request) { return handleGetUserInfo(); });
-    mIpc->onRequestAsync("logout", [this](const webviewIpc::IPCRequest& request,
-                                          std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequest("navigateToPage", [this](const IPCRequest& request) { return handleNavigateToPage(request.params); });
+    mIpc->onRequest("getUserInfo", [this](const IPCRequest& request) { return handleGetUserInfo(); });
+    mIpc->onRequestAsync("logout", [this](const IPCRequest& request,
+                                          std::function<void(const IPCResult&)> sendResponse) {
 
             try {
                 auto result = handleLogout();
                 sendResponse(result);
             } catch (const std::exception& e) {
-                    sendResponse(webviewIpc::IPCResult::error(std::string("Logout failed: ") + e.what()));
+                    sendResponse(IPCResult::error(std::string("Logout failed: ") + e.what()));
             } catch (...) {
-                    sendResponse(webviewIpc::IPCResult::error("Logout failed: Unknown error"));
+                    sendResponse(IPCResult::error("Logout failed: Unknown error"));
             }
     });
-    mIpc->onRequest("showLoginDialog", [this](const webviewIpc::IPCRequest& request) { return handleShowLoginDialog(); });
-    mIpc->onRequest("checkLoginStatus", [this](const webviewIpc::IPCRequest& request) { return handleCheckLoginStatus(); });
-    mIpc->onRequest("getRegion", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("showLoginDialog", [this](const IPCRequest& request) { return handleShowLoginDialog(); });
+    mIpc->onRequest("checkLoginStatus", [this](const IPCRequest& request) { return handleCheckLoginStatus(); });
+    mIpc->onRequest("getRegion", [this](const IPCRequest& request) {
         std::shared_ptr<INetworkHelper> networkHelper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
         std::string region = networkHelper ? networkHelper->getRegion() : "";
-        return webviewIpc::IPCResult::success(region);
+        return IPCResult::success(region);
     });
-    mIpc->onRequest("ready", [this](const webviewIpc::IPCRequest& request) { return handleReady(); });
+    mIpc->onRequest("ready", [this](const IPCRequest& request) { return handleReady(); });
 }
 
 void HomeView::cleanupIPC()
 {
 }
 
-webviewIpc::IPCResult HomeView::handleNavigateToPage(const nlohmann::json& data)
+IPCResult HomeView::handleNavigateToPage(const nlohmann::json& data)
 {
     std::string pageName   = data.value("page", "recent");
     wxString    wxPageName = wxString::FromUTF8(pageName);
@@ -178,28 +188,28 @@ webviewIpc::IPCResult HomeView::handleNavigateToPage(const nlohmann::json& data)
     // Debug: Print the page name
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": navigating to page: %s") % wxPageName;
 
-    // Check if the page exists
-    auto it = mHomepageViews.find(wxPageName);
-    if (it == mHomepageViews.end()) {
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": page not found: %s") % wxPageName;
-        return webviewIpc::IPCResult::success();
-    }
+    // // Check if the page exists
+    // auto it = mHomepageViews.find(wxPageName);
+    // if (it == mHomepageViews.end()) {
+    //     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": page not found: %s") % wxPageName;
+    //     return IPCResult::success();
+    // }
     wxGetApp().CallAfter([this, wxPageName]() {
         switchToPage(wxPageName);
     });
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult HomeView::handleGetUserInfo()
+IPCResult HomeView::handleGetUserInfo()
 {
     // Get user network info
     UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();   
     nlohmann::json data; 
     data = convertUserNetworkInfoToJson(userNetworkInfo);
-    return webviewIpc::IPCResult::success(data);
+    return IPCResult::success(data);
 }
 
-webviewIpc::IPCResult HomeView::handleReady()
+IPCResult HomeView::handleReady()
 {
     lock_guard<mutex> lock(mUserInfoMutex);
     mIsReady = true;
@@ -211,13 +221,13 @@ webviewIpc::IPCResult HomeView::handleReady()
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": sent pending user info to WebView";
     }
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": ready";
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult HomeView::handleLogout()
+IPCResult HomeView::handleLogout()
 {
     UserNetworkManager::getInstance()->logout();
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
 void HomeView::onWebViewLoaded(wxWebViewEvent& event)
@@ -292,16 +302,16 @@ void HomeView::sendRecentList(int images)
     }
 }
 
-webviewIpc::IPCResult HomeView::handleShowLoginDialog()
+IPCResult HomeView::handleShowLoginDialog()
 {
     // Send event to MainFrame to show login dialog
     auto evt = new wxCommandEvent(EVT_USER_LOGIN);
     wxQueueEvent(wxGetApp().mainframe, evt);
     
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
 
-webviewIpc::IPCResult HomeView::handleCheckLoginStatus()
+IPCResult HomeView::handleCheckLoginStatus()
 {
     UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();
     auto result = UserNetworkManager::getInstance()->checkUserNeedReLogin();
@@ -311,15 +321,15 @@ webviewIpc::IPCResult HomeView::handleCheckLoginStatus()
             //need re-login
             auto evt = new wxCommandEvent(EVT_USER_LOGIN);
             wxQueueEvent(wxGetApp().mainframe, evt);
-            return webviewIpc::IPCResult::error();
+            return IPCResult::error();
         } 
     } else {
         show_error(wxGetApp().mainframe, result.message);
-        return webviewIpc::IPCResult::error(result.message);
+        return IPCResult::error(result.message);
     }
     //don't need to re-login, return user info
     nlohmann::json  data = convertUserNetworkInfoToJson(userNetworkInfo);
-    return webviewIpc::IPCResult::success(data);
+    return IPCResult::success(data);
 }
 void HomeView::updateMode()
 {
@@ -365,7 +375,13 @@ void HomeView::onRegionChanged()
     
     refreshUserInfo();
 }
-
+void HomeView::onThemeChanged()
+{
+    //send event to homepage views
+    for (auto& pair : mHomepageViews) {
+        pair.second->onThemeChanged();
+    }
+}
 void HomeView::initializeNavigationWebView()
 {
     // Only initialize once

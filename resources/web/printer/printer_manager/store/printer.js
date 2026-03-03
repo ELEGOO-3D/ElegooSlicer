@@ -8,7 +8,6 @@ const usePrinterStore = defineStore('printer', {
     printers: [],
     printerModelList: null,
     statusUpdateInterval: null,
-    isMainClient: true,
     licenseExpiredDevices: [],
     userInfo: {
       userId: null,
@@ -172,9 +171,6 @@ const usePrinterStore = defineStore('printer', {
         // Update printers list and main client status
         if (response && typeof response === 'object') {
           this.printers = Array.isArray(response.printers) ? response.printers : [];
-          if (typeof response.isMainClient === 'boolean') {
-            this.isMainClient = response.isMainClient;
-          }
         }
       } catch (error) {
         console.error('Failed to request printer list:', error);
@@ -445,6 +441,7 @@ const usePrinterStore = defineStore('printer', {
     },
 
     getLicenseStatusBySN(serialNumber) {
+
       if (!serialNumber || !this.licenseExpiredDevices || this.licenseExpiredDevices.length === 0) {
         return null;
       }

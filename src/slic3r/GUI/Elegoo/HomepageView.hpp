@@ -19,6 +19,7 @@ public:
     virtual void updateMode() {}
     virtual void onUserInfoUpdated(const UserNetworkInfo& userNetworkInfo) {}
     virtual void onRegionChanged() {}
+    virtual void onThemeChanged() {}
 
     const wxString& getName() const { return mName; }
     const bool isReady() const { return mIsReady; }
@@ -44,13 +45,13 @@ private:
     void setupIPCHandlers();
  
     // IPC handlers
-    webviewIpc::IPCResult handleGetRecentFiles(const nlohmann::json& data);
-    webviewIpc::IPCResult handleClearRecentFiles(const nlohmann::json& data);
-    webviewIpc::IPCResult handleOpenFile(const nlohmann::json& data);
-    webviewIpc::IPCResult handleCreateNewProject(const nlohmann::json& data);
-    webviewIpc::IPCResult handleOpenProject(const nlohmann::json& data);
-    webviewIpc::IPCResult handleOpenFileInExplorer(const nlohmann::json& data);
-    webviewIpc::IPCResult handleRemoveFromRecent(const nlohmann::json& data);
+    IPCResult handleGetRecentFiles(const nlohmann::json& data);
+    IPCResult handleClearRecentFiles(const nlohmann::json& data);
+    IPCResult handleOpenFile(const nlohmann::json& data);
+    IPCResult handleCreateNewProject(const nlohmann::json& data);
+    IPCResult handleOpenProject(const nlohmann::json& data);
+    IPCResult handleOpenFileInExplorer(const nlohmann::json& data);
+    IPCResult handleRemoveFromRecent(const nlohmann::json& data);
     
     // Event handlers
     void onWebViewLoaded(wxWebViewEvent& event);
@@ -75,6 +76,7 @@ public:
     void updateMode() override;
     void onUserInfoUpdated(const UserNetworkInfo& userNetworkInfo) override;
     void onRegionChanged() override;
+    void onThemeChanged() override;
  
 private:
     void initUI();
@@ -85,7 +87,7 @@ private:
     void onWebViewError(wxWebViewEvent& event);
     void OnNavigationRequest(wxWebViewEvent& event);
     void OnNavigationComplete(wxWebViewEvent& event);
-    webviewIpc::IPCResult handleReady();
+    IPCResult handleReady();
 
     void loadUrl(const wxString& url);
     void loadFailedPage();

@@ -1125,10 +1125,6 @@
             "sub_path": "filament/fdm_filament_ppa.json"
         },
         {
-            "name": "fdm_filament_paht",
-            "sub_path": "filament/fdm_filament_paht.json"
-        },
-        {
             "name": "Generic ABS @base",
             "sub_path": "filament/BASE/Generic ABS @base.json"
         },

@@ -39,6 +39,7 @@ private:
         std::string filamentAlias;
         std::string filamentName;
         std::string filamentType;
+        int priority; // 1=vendor specific, 2=vendor generic, 3=orca generic
     };
 
     struct PrinterPresetInfo
@@ -48,32 +49,31 @@ private:
     };
 
     std::map<std::string, std::vector<PresetFilamentInfo>> buildPresetFilamentMap(
-        const PresetBundle& bundle, 
         const PrinterNetworkInfo& printerNetworkInfo,
-        const std::map<std::string, PrinterPresetInfo>& printerPresetMap,
-        const std::vector<double>& currentProjectNozzleDiameters,
-        bool isGeneric, bool compatible);
+        const std::vector<double>& currentProjectNozzleDiameters);
     
     bool isFilamentCompatible(const Preset& filament,
                              const PrinterNetworkInfo& printerNetworkInfo,
                              const std::map<std::string, PrinterPresetInfo>& printerPresetMap,
                              const std::vector<double>& currentProjectNozzleDiameters);
     
-    bool tryMatchFilament(PrinterMmsTray& tray,
-                         const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap,
-                         const PrinterNetworkInfo& printerNetworkInfo,
-                         bool isGeneric);
-    
-    bool isNamesMatch(const PrinterMmsTray& tray,
-                     const PresetFilamentInfo& filamentInfo,
-                     const PrinterNetworkInfo& printerNetworkInfo,
-                     bool isGeneric);
-
-    bool tryMatchFilamentByFilamentType(PrinterMmsTray& tray,
-                                        const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap,
-                                        const PrinterNetworkInfo& printerNetworkInfo,
-                                        bool isGeneric);
     bool checkTrayIsReady(const PrinterMmsTray& tray);
+
+    void processFilamentsFromBundle(
+        const PresetBundle& bundle,
+        std::map<std::string, std::vector<PresetFilamentInfo>>& mergedPresetMap,
+        const PrinterNetworkInfo& printerNetworkInfo,
+        const std::map<std::string, PrinterPresetInfo>& printerPresetMap,
+        const std::vector<double>& currentProjectNozzleDiameters,
+        int priority,
+        bool isGeneric,
+        bool checkCompatible);
+
+    PresetFilamentInfo matchFilamentPreset(
+        const std::string& filamentName,
+        const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap,
+        const PrinterNetworkInfo& printerNetworkInfo,
+        const std::string& filamentType);
 
 
     std::mutex mFilamentMmsMappingMutex;

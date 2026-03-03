@@ -31,6 +31,33 @@ const langMessages = {
       "noRecentFiles": "No recent files available",
       "remove": "Remove",
     },
+    "guide": {
+      "title": "User Guide",
+      "subtitle": "Get up to speed on every feature of ElegooSlicer and start your 3D-printing journey!",
+      "prev": "Previous",
+      "next": "Next",
+      "skip": "Skip & Explore",
+      "finish": "Explore",
+    },
+    "tutorials": {
+      "tutorial1": {
+        "title": "Quick Slicing",
+        "step1Desc": "Select the printer, filament, and corresponding process parameters you need.",
+        "step2Desc": "Click \"Add\" to import the model file.",
+        "step3Desc": "Click Start Slicing and wait for completion.",
+        "step4Desc": "Slicing complete! Export your file or send it directly to your printer. Details in the next step."
+      },
+      "tutorial2": {
+        "title": "Starting a Print",
+        "step1Desc": "After slicing, you can export it or start printing directly.",
+        "step2Desc": "In the print window, please ensure the target printer and related settings."
+      },
+      "tutorial3": {
+        "title": "Connecting Printer",
+        "step1Desc": "Click Add Printer. Before doing so, please ensure that the printer and the software are on the same network.",
+        "step2Desc": "Select your printer and complete the pairing/connection."
+      }
+    },
     "printerManager": {
       "connectedPrinters": "Connected Printers",
       "addPrinter": "Add Printer",
@@ -72,7 +99,6 @@ const langMessages = {
       "addPrinterSuccess": "Printer added successfully.",
       "modifySuccess": "Modified successfully.",
       "loginToView": "Please {0} to view",
-      "isNotMainClient": "Please check if multiple clients are open and continue on the main client.",
       "login": "login",
       "licenseExpired": "Network configuration expired. Click \"Details\" to reacquire.",
       "licenseRenewToConfirm": "Network configuration initialized. Please restart the printer to complete the update.",
@@ -266,6 +292,33 @@ const langMessages = {
       "noRecentFiles": "暂无最近文件",
       "remove": "移除",
     },
+    "guide": {
+      "title": "操作指南",
+      "subtitle": "快速了解ElegooSlicer的所有功能，开启你的3D打印之路！",
+      "prev": "上一步",
+      "next": "下一步",
+      "skip": "自行探索",
+      "finish": "完成",
+    },
+    "tutorials": {
+      "tutorial1": {
+        "title": "如何快速完成切片",
+        "step1Desc": "选择所需的打印机、耗材参数，以及对应的工艺参数",
+        "step2Desc": "点击添加，导入即将打印的模型文件",
+        "step3Desc": "点击开始切片，等待切片完成",
+        "step4Desc": "切片完成！现在你可以将文件导出或者直接发送到打印机，详见下一步"
+      },
+      "tutorial2": {
+        "title": "如何启动打印",
+        "step1Desc": "切片完成后，可选择导出或者直接启动打印",
+        "step2Desc": "在启动打印窗口中，请正确选择目标打印机以及相关设置"
+      },
+      "tutorial3": {
+        "title": "如何连接打印机",
+        "step1Desc": "点击添加打印机，在这之前请确保打印机与软件使用了同一个网络",
+        "step2Desc": "选择目标打印机，并完成绑定/连接"
+      }
+    },
     "printerManager": {
       "localPrinters": "本地打印机",
       "networkPrinters": "我的打印机",
@@ -307,7 +360,6 @@ const langMessages = {
       "addPrinterSuccess": "添加打印机成功",
       "modifySuccess": "修改成功",
       "loginToView": "请{0}账号后查看",
-      "isNotMainClient": "请检查是否已经开启了多个客户端，请在主客户端上继续操作",
       "login": "登录",
       "licenseExpired": "网络配置已过期，请点击“详情”进行重新获取",
       "licenseRenewToConfirm": "网络配置已经完成初始化，请前往打印机处重启设备完成更新",

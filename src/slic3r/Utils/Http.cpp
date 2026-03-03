@@ -492,7 +492,7 @@ void Http::priv::set_range(const std::string& range)
 {
 	if (range.empty())
 		return;
-	BOOST_LOG_TRIVIAL(warning) << "Resume download from byte: " << range;
+	BOOST_LOG_TRIVIAL(info) << "Resume download from byte: " << range;
 	::curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
 }
 
@@ -519,15 +519,15 @@ void Http::priv::http_perform()
 	char* url_ptr = nullptr;
 	::curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &url_ptr);
 	if (url_ptr) {
-		BOOST_LOG_TRIVIAL(warning) << "HTTP Request: " << url_ptr;
+		BOOST_LOG_TRIVIAL(info) << "HTTP Request: " << url_ptr;
 	}
 	
 	// Log request headers
 	if (headerlist) {
-		BOOST_LOG_TRIVIAL(warning) << "Request Headers:";
+		BOOST_LOG_TRIVIAL(info) << "Request Headers:";
 		curl_slist* current = headerlist;
 		while (current) {
-			BOOST_LOG_TRIVIAL(warning) << "  " << current->data;
+			BOOST_LOG_TRIVIAL(info) << "  " << current->data;
 			current = current->next;
 		}
 	}
@@ -583,11 +583,11 @@ void Http::priv::http_perform()
 	::curl_easy_getinfo(curl, CURLINFO_EFFECTIVE_URL, &effective_url);
 	
 	// Log response
-	BOOST_LOG_TRIVIAL(warning) << "HTTP Response: Status=" << http_status << ", Size=" << buffer.size();
+	BOOST_LOG_TRIVIAL(info) << "HTTP Response: Status=" << http_status << ", Size=" << buffer.size();
 	
 	// Log response headers
 	if (!headers.empty()) {
-		BOOST_LOG_TRIVIAL(warning) << "Response Headers:";
+		BOOST_LOG_TRIVIAL(info) << "Response Headers:";
 		std::istringstream header_stream(headers);
 		std::string line;
 		while (std::getline(header_stream, line)) {
@@ -595,14 +595,14 @@ void Http::priv::http_perform()
 				if (line.back() == '\r') {
 					line.pop_back();
 				}
-				BOOST_LOG_TRIVIAL(warning) << "  " << line;
+				BOOST_LOG_TRIVIAL(info) << "  " << line;
 			}
 		}
 	}
 	
 	// Log error if request failed
 	if (res != CURLE_OK) {
-		BOOST_LOG_TRIVIAL(warning) << "HTTP request failed: " << ::curl_easy_strerror(res) << " (code: " << res << ")";
+		BOOST_LOG_TRIVIAL(error) << "HTTP request failed: " << ::curl_easy_strerror(res) << " (code: " << res << ")";
 	}
 
 	if (res != CURLE_OK) {

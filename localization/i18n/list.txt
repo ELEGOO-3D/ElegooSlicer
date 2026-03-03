@@ -213,3 +213,5 @@ src/slic3r/GUI/Elegoo/PrintSendDialogEx.hpp
 src/slic3r/GUI/Elegoo/UserLoginView.cpp
 src/slic3r/GUI/Elegoo/UserLoginView.hpp
 src/slic3r/GUI/Elegoo/PrinterMmsSyncView.cpp
+src/slic3r/GUI/Elegoo/BeginnerGuideView.hpp
+src/slic3r/GUI/Elegoo/BeginnerGuideView.hpp

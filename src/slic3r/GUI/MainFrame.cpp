@@ -38,6 +38,8 @@
 #include "GLCanvas3D.hpp"
 #include "Plater.hpp"
 #include "WebViewDialog.hpp"
+#include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
+#include "Gizmos/GLGizmosManager.hpp"
 #include "../Utils/Process.hpp"
 #include "format.hpp"
 // BBS
@@ -46,6 +48,9 @@
 #include "Widgets/ProgressDialog.hpp"
 #include "BindDialog.hpp"
 #include "../Utils/MacDarkMode.hpp"
+#ifdef WIN32
+#include "dev-utils/CrashReporter.h"
+#endif
 
 #include <fstream>
 #include <string_view>
@@ -73,6 +78,8 @@
 #include <slic3r/GUI/CreatePresetsDialog.hpp>
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
+#include "slic3r/Utils/Elegoo/IPCServer.hpp"
+#include "slic3r/Utils/Elegoo/IPCClient.hpp"
 
 
 namespace Slic3r {
@@ -85,6 +92,7 @@ wxDEFINE_EVENT(EVT_REGION_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_LOGIN_HANDLE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_INFO_UPDATED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_LOGOUT, wxCommandEvent);
+wxDEFINE_EVENT(EVT_ELEGOO_AI_ENABLED_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_VER, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_SHOW, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SHOW_IP_DIALOG, wxCommandEvent);
@@ -275,15 +283,28 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
 
     // Initialize multi-instance coordinator first
     MultiInstanceCoordinator::getInstance()->init();
-    MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([this](bool isMaster) {
+    PrinterManager::getInstance()->init();
+
+    // Initialize IPC server if master
+    if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+        IPCServer::getInstance()->start();
+    } else {
+        IPCClient::getInstance()->start();
+    }
+    // Register callback for role changes (slave <-> master)
+    MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([](bool isMaster) {
         if (isMaster) {
-            wxGetApp().CallAfter([this]() {
+            // Promoted to master
+            BOOST_LOG_TRIVIAL(info) << "Role change: slave promoted to master";
+            wxGetApp().CallAfter([]() {
+                IPCClient::getInstance()->stop(); 
+                IPCServer::getInstance()->start();
                 PrinterManager::getInstance()->init();
             });
-        }
+        } 
     });
-    // Initialize printer manager before initializing webview
-    PrinterManager::getInstance()->init();
+    
+
 
     // initialize tabpanel and menubar
     init_tabpanel();
@@ -394,6 +415,13 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         wxGetApp().CallAfter([this]() {
             if (m_home_view) {
                 m_home_view->onRegionChanged();
+            }
+        });
+    });
+    Bind(EVT_GLCANVAS_COLOR_MODE_CHANGED, [this](SimpleEvent&) {
+        wxGetApp().CallAfter([this]() {
+            if (m_home_view) {
+                m_home_view->onThemeChanged();
             }
         });
     });
@@ -1045,7 +1073,9 @@ void MainFrame::shutdown()
         delete m_printer_manager_view;
         m_printer_manager_view = nullptr;
     }
-    PrinterManager::getInstance()->close();
+    IPCServer::getInstance()->stop(); 
+    IPCClient::getInstance()->stop();  
+    PrinterManager::getInstance()->close();   
     MultiInstanceCoordinator::getInstance()->uninit();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "MainFrame::shutdown exit";
 }
@@ -2336,6 +2366,7 @@ static wxMenu* generate_help_menu()
 {
     wxMenu* helpMenu = new wxMenu();
 
+    append_menu_item(helpMenu, wxID_ANY, _L("Beginner Guide"), _L("Beginner Guide"), [](wxCommandEvent &) {wxGetApp().ShowBeginnerGuide();});
     // shortcut key
     append_menu_item(helpMenu, wxID_ANY, _L("Keyboard Shortcuts") + sep + "&?", _L("Show the list of the keyboard shortcuts"),
         [](wxCommandEvent&) { wxGetApp().keyboard_shortcuts(); });
@@ -2375,6 +2406,17 @@ static wxMenu* generate_help_menu()
             NetworkTestDialog dlg(wxGetApp().mainframe);
             dlg.ShowModal();
         });
+
+#if ELEGOO_INTERNAL_TESTING
+#ifdef WIN32
+    // Test crash (for testing crash reporting)
+    helpMenu->AppendSeparator();
+    append_menu_item(helpMenu, wxID_ANY, _L("Test Crash Report"), _L("Trigger a test crash to verify crash reporting"),
+        [](wxCommandEvent&) { 
+            CrashReporter::triggerTestCrash();
+        });
+#endif
+#endif
 
     // About
 #ifndef __APPLE__

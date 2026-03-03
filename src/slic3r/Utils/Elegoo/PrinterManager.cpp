@@ -1,4 +1,7 @@
 #include "PrinterManager.hpp"
+#include "PrinterUploadManager.hpp"
+#include "IPCClient.hpp"
+#include "MultiInstanceCoordinator.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
 #include <wx/app.h>
@@ -23,6 +26,7 @@
 #include "PrinterCache.hpp"
 #include "PrinterNetworkEvent.hpp"
 #include "ElegooLink.hpp"
+#include "ElegooLink.hpp"
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/Utils/Elegoo/PrinterPluginManager.hpp"
 #include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
@@ -33,230 +37,37 @@
 #define CHECK_INITIALIZED(returnValue) \
     { \
         std::lock_guard<std::mutex> __initLock(mInitializedMutex); \
-        if(!mIsInitialized.load()) { \
+        if (!mIsInitialized.load()) { \
             using ValueType = std::decay_t<decltype(returnValue)>; \
-            if(MultiInstanceCoordinator::getInstance()->isMaster()) { \
-                return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, returnValue); \
-            } else { \
-                return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::NOT_MAIN_CLIENT, returnValue); \
-            } \
+            return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, returnValue); \
         } \
     }
 
 namespace Slic3r {
 
-namespace fs = boost::filesystem;
-
-// Check and handle WAN network error (like token expiration)
-template<typename T>
-void PrinterManager::checkUserAuthStatus(const PrinterNetworkInfo&      printerNetworkInfo,
-                                         const PrinterNetworkResult<T>& result,
-                                         const UserNetworkInfo&         requestUserInfo)
+PrinterManager::PrinterManager()
+    : mIsInitialized(false)
+    , mMonitoring(false)
 {
-    if (printerNetworkInfo.networkType != NETWORK_TYPE_WAN) {
-        return;
-    }
-    // Check if error is token-related
-    if (result.isSuccess()) {
-        return;
-    }
-
-    // Check and update user auth status
-    UserNetworkManager::getInstance()->checkUserAuthStatus(requestUserInfo, result.code);
 }
-
-// Static member definitions for PrinterLock
-std::map<std::string, std::recursive_mutex> PrinterManager::PrinterLock::sPrinterMutexes;
-std::mutex                                  PrinterManager::PrinterLock::sMutex;
-
-PrinterManager::PrinterLock::PrinterLock(const std::string& printerId) : mPrinterMutex(nullptr)
-{
-    {
-        std::unique_lock<std::mutex> lock(sMutex);
-        auto                         it = sPrinterMutexes.find(printerId);
-        if (it == sPrinterMutexes.end()) {
-            it = sPrinterMutexes.try_emplace(printerId).first;
-        }
-        mPrinterMutex = &(it->second);
-    }
-
-    // Lock the specific printer's mutex (outside the sMutex lock)
-    if (mPrinterMutex) {
-        mPrinterMutex->lock();
-    }
-}
-
-PrinterManager::PrinterLock::~PrinterLock()
-{
-    if (mPrinterMutex) {
-        mPrinterMutex->unlock();
-    }
-}
-
-// Cached preset bundle - load only once
-static PresetBundle* getCachedSystemBundle()
-{
-    static std::unique_ptr<PresetBundle> cachedBundle;
-    static std::once_flag                initFlag;
-
-    std::call_once(initFlag, []() {
-        cachedBundle = std::make_unique<PresetBundle>();
-        cachedBundle->load_system_models_from_json(ForwardCompatibilitySubstitutionRule::EnableSilent);
-    });
-
-    return cachedBundle.get();
-}
-
-VendorProfile getMachineProfile(const std::string& vendorName, const std::string& machineModel, VendorProfile::PrinterModel& printerModel)
-{
-    std::string   profile_vendor_name;
-    VendorProfile machineProfile;
-    PresetBundle* bundle = getCachedSystemBundle();
-
-    for (const auto& vendor : bundle->vendors) {
-        const auto& vendor_profile = vendor.second;
-        if (boost::to_upper_copy(vendor_profile.name) == boost::to_upper_copy(vendorName)) {
-            // find the profile model name from the vendor profile
-            // The profile model name may not contain the vendor name, so we need to add the vendor name
-            for (const auto& model : vendor_profile.models) {
-                std::string profileModelName     = boost::to_upper_copy(model.name);
-                std::string discoverMachineModel = boost::to_upper_copy(machineModel);
-
-                if (profileModelName.find(boost::to_upper_copy(vendorName)) == std::string::npos) {
-                    profileModelName = boost::to_upper_copy(vendorName) + " " + profileModelName;
-                }
-
-                if (discoverMachineModel.find(boost::to_upper_copy(vendorName)) == std::string::npos) {
-                    discoverMachineModel = boost::to_upper_copy(vendorName) + " " + discoverMachineModel;
-                }
-
-                if (profileModelName == discoverMachineModel) {
-                    machineProfile = vendor_profile;
-                    printerModel   = model;
-                    break;
-                }
-            }
-            break;
-        }
-    }
-    return machineProfile;
-}
-
-void PrinterManager::validateAndCompletePrinterInfo(PrinterNetworkInfo& printerInfo)
-{
-    // Validate and update vendor and model info
-    VendorProfile::PrinterModel printerModel;
-    VendorProfile               machineProfile = getMachineProfile(printerInfo.vendor, printerInfo.printerModel, printerModel);
-
-    if (machineProfile.name.empty()) {
-        return; // No matching profile found
-    }
-
-    printerInfo.vendor = machineProfile.name;
-    if (printerInfo.printerName.empty()) {
-        printerInfo.printerName = printerModel.name;
-    }
-    printerInfo.printerModel = printerModel.name;
-
-    // Update hostType to keep consistent with system preset
-    auto vendorPrinterModelConfigMap = getVendorPrinterModelConfig();
-    if (vendorPrinterModelConfigMap.find(printerInfo.vendor) != vendorPrinterModelConfigMap.end()) {
-        auto modelConfigMap = vendorPrinterModelConfigMap[printerInfo.vendor];
-        if (modelConfigMap.find(printerInfo.printerModel) != modelConfigMap.end()) {
-            auto        config      = modelConfigMap[printerInfo.printerModel];
-            const auto  opt         = config.option<ConfigOptionEnum<PrintHostType>>("host_type");
-            const auto  hostType    = opt != nullptr ? opt->value : htOctoPrint;
-            std::string hostTypeStr = PrintHost::get_print_host_type_str(hostType);
-            if (!hostTypeStr.empty()) {
-                printerInfo.hostType = hostTypeStr;
-            }
-        }
-    }
-}
-
-std::map<std::string, std::map<std::string, DynamicPrintConfig>> PrinterManager::getVendorPrinterModelConfig()
-{
-    // Cache the vendor printer model config - build only once
-    static std::map<std::string, std::map<std::string, DynamicPrintConfig>> cachedConfig;
-    static std::once_flag                                                   initFlag;
-
-    std::call_once(initFlag, []() {
-        PresetBundle* bundle = getCachedSystemBundle();
-
-        for (const auto& vendor : bundle->vendors) {
-            const std::string& vendorName = vendor.first;
-            PresetBundle       vendorBundle;
-            try {
-                // load the vendor configs from the resources dir
-                vendorBundle.load_vendor_configs_from_json((boost::filesystem::path(Slic3r::resources_dir()) / "profiles").string(),
-                                                           vendorName, PresetBundle::LoadMachineOnly,
-                                                           ForwardCompatibilitySubstitutionRule::EnableSilent, nullptr);
-            } catch (const std::exception& e) {
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": load vendor %s error: %s") % vendorName % e.what();
-                continue;
-            }
-            for (const auto& printer : vendorBundle.printers) {
-                if (!printer.vendor) {
-                    continue;
-                }
-                auto printerModel = printer.config.option<ConfigOptionString>("printer_model");
-                if (!printerModel) {
-                    continue;
-                }
-
-                std::string modelName = printerModel->value;
-                if (PrintHost::support_device_list_management(printer.config)) {
-                    cachedConfig[printer.vendor->name][modelName] = printer.config;
-                }
-            }
-        }
-    });
-
-    return cachedConfig;
-}
-
-std::string PrinterManager::imageFileToBase64DataURI(const std::string& image_path)
-{
-    std::ifstream ifs(std::filesystem::u8path(image_path), std::ios::binary);
-    if (!ifs)
-        return "";
-    std::ostringstream oss;
-    oss << ifs.rdbuf();
-    std::string img_data = oss.str();
-    if (img_data.empty())
-        return "";
-    std::string encoded;
-    encoded.resize(boost::beast::detail::base64::encoded_size(img_data.size()));
-    encoded.resize(boost::beast::detail::base64::encode(&encoded[0], img_data.data(), img_data.size()));
-    std::string ext = "png";
-    size_t      dot = image_path.find_last_of('.');
-    if (dot != std::string::npos) {
-        ext = image_path.substr(dot + 1);
-        boost::algorithm::to_lower(ext);
-    }
-    return "data:image/" + ext + ";base64," + encoded;
-}
-
-PrinterManager::PrinterManager() {}
 
 PrinterManager::~PrinterManager() {}
 
 void PrinterManager::init()
 {
-    // Only master instance initializes network components
-    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
-        return;
-    }
-
     std::lock_guard<std::mutex> lock(mInitializedMutex);
     if (mIsInitialized) {
         return;
     }
-     
-    // connect status changed event
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
+    PrinterUploadManager::getInstance()->init();
+
+    if(!MultiInstanceCoordinator::getInstance()->isMaster()){
+        return;
+    }    
+     // connect status changed event
+     PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
         // only update the connect status when the printer is disconnected
-        if(event.status != PRINTER_CONNECT_STATUS_CONNECTED) {
+        if (event.status != PRINTER_CONNECT_STATUS_CONNECTED) {
             PrinterCache::getInstance()->updatePrinterConnectStatus(event.printerId, event.status);
         }
     });
@@ -266,8 +77,9 @@ void PrinterManager::init()
         [this](const PrinterStatusEvent& event) { PrinterCache::getInstance()->updatePrinterStatus(event.printerId, event.status); });
 
     // printer print task changed event
-    PrinterNetworkEvent::getInstance()->printTaskChanged.connect(
-        [this](const PrinterPrintTaskEvent& event) { PrinterCache::getInstance()->updatePrinterPrintTask(event.printerId, event.task); });
+    PrinterNetworkEvent::getInstance()->printTaskChanged.connect([this](const PrinterPrintTaskEvent& event) {
+        PrinterCache::getInstance()->updatePrinterPrintTask(event.printerId, event.task);
+    });
 
     // printer attributes changed event
     PrinterNetworkEvent::getInstance()->attributesChanged.connect([this](const PrinterAttributesEvent& event) {
@@ -301,21 +113,27 @@ void PrinterManager::init()
 
     PrinterCache::getInstance()->loadPrinterList();
     syncOldPresetPrinters();
+    mMonitoring = true;
 
-    monitorPrinterConnectionsRunning = true;
-    mConnectionThread                = std::thread([this]() { monitorPrinterConnections(); });
-    mWanPrinterConnectionThread      = std::thread([this]() { monitorWanPrinterConnections(); });
-    mIsInitialized                   = true;
+    mConnectionThread           = std::thread([this]() { monitorPrinterConnections(); });
+    mWanPrinterConnectionThread = std::thread([this]() { monitorWanPrinterConnections(); });
+
+    
+    mIsInitialized = true;
 }
 
 void PrinterManager::close()
 {
     std::lock_guard<std::mutex> lock(mInitializedMutex);
+    PrinterUploadManager::getInstance()->close();
+
     if (!mIsInitialized) {
         return;
     }
-    mIsInitialized                   = false;
-    monitorPrinterConnectionsRunning = false;
+    
+    mIsInitialized = false;
+    mMonitoring = false;
+
     // Disconnect all PrinterNetworkEvent signals
     PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnectAll();
     PrinterNetworkEvent::getInstance()->statusChanged.disconnectAll();
@@ -348,8 +166,11 @@ void PrinterManager::close()
 }
 PrinterNetworkResult<bool> PrinterManager::deletePrinter(const std::string& printerId)
 {
-    PrinterLock lock(printerId); // lock the printer to prevent the printer info from being modified
-
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->deletePrinter(printerId);
+    }
+    
+    PrinterLock lock(printerId);
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, false);
@@ -381,8 +202,12 @@ PrinterNetworkResult<bool> PrinterManager::deletePrinter(const std::string& prin
 }
 PrinterNetworkResult<bool> PrinterManager::updatePrinterName(const std::string& printerId, const std::string& printerName)
 {
-    PrinterLock lock(printerId); // lock the printer to prevent the printer info from being modified
-    auto        printer = PrinterCache::getInstance()->getPrinter(printerId);
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->updatePrinterName(printerId, printerName);
+    }
+    
+    PrinterLock lock(printerId);
+    auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, false);
     }
@@ -409,7 +234,11 @@ PrinterNetworkResult<bool> PrinterManager::updatePrinterName(const std::string& 
 }
 PrinterNetworkResult<bool> PrinterManager::updatePrinterHost(const std::string& printerId, const std::string& host)
 {
-    PrinterLock                     lock(printerId);
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->updatePrinterHost(printerId, host);
+    }
+    
+    PrinterLock lock(printerId);
     std::vector<PrinterNetworkInfo> printers = PrinterCache::getInstance()->getPrinters();
     for (auto& p : printers) {
         if (!host.empty() && p.host == host && p.printerId != printerId) {
@@ -464,7 +293,11 @@ PrinterNetworkResult<bool> PrinterManager::updatePrinterHost(const std::string& 
 }
 PrinterNetworkResult<bool> PrinterManager::updatePhysicalPrinter(const std::string& printerId, const PrinterNetworkInfo& printerInfo)
 {
-    PrinterLock                     lock(printerId);
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->updatePhysicalPrinter(printerId, printerInfo);
+    }
+    
+    PrinterLock lock(printerId);
     std::vector<PrinterNetworkInfo> printers = PrinterCache::getInstance()->getPrinters();
     for (auto& p : printers) {
         if (!printerInfo.host.empty() && p.host == printerInfo.host && p.printerId != printerId) {
@@ -537,7 +370,12 @@ PrinterNetworkResult<bool> PrinterManager::updatePhysicalPrinter(const std::stri
 }
 PrinterNetworkResult<bool> PrinterManager::addPrinter(PrinterNetworkInfo& printerNetworkInfo)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->addPrinter(printerNetworkInfo);
+    }
+    
     CHECK_INITIALIZED(false);
+    
     // Use a static mutex to serialize printer addition to prevent race conditions
     std::lock_guard<std::mutex> lock(mAddPrinterMutex);
 
@@ -621,9 +459,12 @@ PrinterNetworkResult<bool> PrinterManager::addPrinter(PrinterNetworkInfo& printe
                                       printerNetworkInfo.printerName % printerNetworkInfo.printerModel % addResult.message;
     return addResult;
 }
-
 PrinterNetworkResult<bool> PrinterManager::cancelBindPrinter(const PrinterNetworkInfo& printerNetworkInfo)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->cancelBindPrinter(printerNetworkInfo);
+    }
+    
     std::shared_ptr<IPrinterNetwork> network = NetworkFactory::createPrinterNetwork(printerNetworkInfo);
     if (!network) {
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::NETWORK_ERROR, false);
@@ -632,7 +473,12 @@ PrinterNetworkResult<bool> PrinterManager::cancelBindPrinter(const PrinterNetwor
 }
 PrinterNetworkResult<std::vector<PrinterNetworkInfo>> PrinterManager::discoverPrinter()
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->discoverPrinter();
+    }
+    
     CHECK_INITIALIZED(std::vector<PrinterNetworkInfo>());
+    
     // Use a static mutex to serialize printer discovery to prevent race conditions
     static std::mutex           discoverPrinterMutex;
     std::lock_guard<std::mutex> lock(discoverPrinterMutex);
@@ -686,17 +532,23 @@ PrinterNetworkResult<std::vector<PrinterNetworkInfo>> PrinterManager::discoverPr
     }
     return PrinterNetworkResult<std::vector<PrinterNetworkInfo>>(PrinterNetworkErrorCode::SUCCESS, printersToAdd);
 }
-
 std::vector<PrinterNetworkInfo> PrinterManager::getPrinterList()
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getPrinterList();
+    }
+    
     auto printers = PrinterCache::getInstance()->getPrinters();
     std::sort(printers.begin(), printers.end(),
               [](const PrinterNetworkInfo& a, const PrinterNetworkInfo& b) { return a.addTime < b.addTime; });
     return printers;
 }
-
 PrinterNetworkInfo PrinterManager::getPrinterNetworkInfo(const std::string& printerId)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getPrinterNetworkInfo(printerId);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (printer.has_value()) {
         return printer.value();
@@ -704,93 +556,12 @@ PrinterNetworkInfo PrinterManager::getPrinterNetworkInfo(const std::string& prin
     BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
     return PrinterNetworkInfo();
 }
-
-PrinterNetworkResult<bool> PrinterManager::upload(PrinterNetworkParams& params)
-{
-    auto                       printer = PrinterCache::getInstance()->getPrinter(params.printerId);
-    PrinterNetworkResult<bool> result(PrinterNetworkErrorCode::SUCCESS, false);
-    bool                       isSendPrintTaskFailed = false;
-
-    do {
-        if (!printer.has_value()) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, file name: %s") % params.fileName;
-            result.code = PrinterNetworkErrorCode::PRINTER_NOT_FOUND;
-            break;
-        }
-        if (printer.value().connectStatus != PRINTER_CONNECT_STATUS_CONNECTED) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not connected, file name: %s") % params.fileName;
-            result.code = PrinterNetworkErrorCode::PRINTER_CONNECTION_ERROR;
-            break;
-        }
-        if(printer.value().networkType == NETWORK_TYPE_WAN) {
-           try {
-               boost::filesystem::path filePath(params.filePath);
-               boost::uintmax_t fileSize = boost::filesystem::file_size(filePath);
-               if(fileSize > 500 * 1024 * 1024) {
-                   result = PrinterNetworkResult<bool>(PrinterNetworkErrorCode::FILE_TOO_LARGE, false);
-                   break;
-               }
-           } catch (const boost::filesystem::filesystem_error& e) {
-               BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": failed to get file size, path: %s, error: %s") % params.filePath % e.what();
-               result = PrinterNetworkResult<bool>(PrinterNetworkErrorCode::FILE_NOT_FOUND, false);
-               break;
-           }
-        }
-
-        std::shared_ptr<IPrinterNetwork> network = getPrinterNetwork(params.printerId);
-        if (!network) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": no network connection for printer: %s") % params.printerId;
-            result = PrinterNetworkResult<bool>(PrinterNetworkErrorCode::NETWORK_ERROR, false);
-            break;
-        }
-
-        // Record request context for WAN error checking
-        UserNetworkInfo requestUserInfo = UserNetworkManager::getInstance()->getUserInfo();
-        result                          = network->sendPrintFile(params);
-        if (result.isError()) {
-            checkUserAuthStatus(printer.value(), result, requestUserInfo);
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__
-                                     << boost::format(": failed to send print file to printer %s %s %s %s") %
-                                            network->getPrinterNetworkInfo().host % network->getPrinterNetworkInfo().printerName %
-                                            network->getPrinterNetworkInfo().printerModel % result.message;
-            break;
-        }
-        if (result.isSuccess()) {
-            BOOST_LOG_TRIVIAL(info) << __FUNCTION__
-                                    << boost::format(": file upload success %s %s %s, file name: %s") % printer.value().host %
-                                           printer.value().printerName % printer.value().printerModel % params.fileName;
-            if (params.uploadAndStartPrint) {
-                result = network->sendPrintTask(params);
-                if (result.isError()) {
-                    checkUserAuthStatus(printer.value(), result, requestUserInfo);
-                    isSendPrintTaskFailed = true;
-                }
-            }
-        }
-    } while (0);
-
-    if (result.isError()) {
-        if (isSendPrintTaskFailed) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__
-                                     << boost::format(": failed to send print task after file upload %s %s %s, file name: %s, error: %s") %
-                                            printer.value().host % printer.value().printerName % printer.value().printerModel %
-                                            params.fileName % result.message;
-        } else {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__
-                                     << boost::format(": failed to send print file %s %s %s, file name: %s, error: %s") %
-                                            printer.value().host % printer.value().printerName % printer.value().printerModel %
-                                            params.fileName % result.message;
-        }
-        if (params.errorFn) {
-            std::string errorMessage = isSendPrintTaskFailed ? _u8L("Send print task failed") : _u8L("Send print file failed");
-            params.errorFn(errorMessage + ", " + result.message);
-        }
-    }
-    return result;
-}
-
 PrinterNetworkResult<PrinterMmsGroup> PrinterManager::getPrinterMmsInfo(const std::string& printerId)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getPrinterMmsInfo(printerId);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
@@ -824,7 +595,6 @@ PrinterNetworkResult<PrinterMmsGroup> PrinterManager::getPrinterMmsInfo(const st
     return PrinterNetworkResult<PrinterMmsGroup>(result.isSuccess() ? PrinterNetworkErrorCode::PRINTER_INVALID_RESPONSE : result.code,
                                                  PrinterMmsGroup());
 }
-
 void PrinterManager::refreshWanPrinters()
 {
     std::lock_guard<std::mutex> lock(mWanPrintersMutex);
@@ -925,13 +695,16 @@ void PrinterManager::refreshWanPrinters()
         future.wait();
     }
 }
-
 // first get selected printer by modelName and printerId
 // if not found, get selected printer by modelName
 // if not found, get selected printer by printerId
 // if not found, return first printer
 PrinterNetworkInfo PrinterManager::getSelectedPrinter(const std::string& printerModel, const std::string& printerId)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getSelectedPrinter(printerModel, printerId);
+    }
+    
     auto               printers = getPrinterList();
     PrinterNetworkInfo selectedPrinter;
     if (!printerModel.empty() && !printerId.empty()) {
@@ -963,9 +736,12 @@ PrinterNetworkInfo PrinterManager::getSelectedPrinter(const std::string& printer
     }
     return selectedPrinter;
 }
-
 PrinterNetworkResult<PrinterPrintFileResponse> PrinterManager::getFileList(const std::string& printerId, int pageNumber, int pageSize)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getFileList(printerId, pageNumber, pageSize);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
@@ -987,9 +763,12 @@ PrinterNetworkResult<PrinterPrintFileResponse> PrinterManager::getFileList(const
     checkUserAuthStatus(printer.value(), result, requestUserInfo);
     return result;
 }
-
 PrinterNetworkResult<PrinterPrintFileResponse> PrinterManager::getFileDetail(const std::string& printerId, const std::string& fileName)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getFileDetail(printerId, fileName);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
@@ -1013,6 +792,10 @@ PrinterNetworkResult<PrinterPrintFileResponse> PrinterManager::getFileDetail(con
 }
 PrinterNetworkResult<PrinterPrintTaskResponse> PrinterManager::getPrintTaskList(const std::string& printerId, int pageNumber, int pageSize)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getPrintTaskList(printerId, pageNumber, pageSize);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
@@ -1036,6 +819,10 @@ PrinterNetworkResult<PrinterPrintTaskResponse> PrinterManager::getPrintTaskList(
 }
 PrinterNetworkResult<bool> PrinterManager::deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->deletePrintTasks(printerId, taskIds);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
@@ -1057,9 +844,12 @@ PrinterNetworkResult<bool> PrinterManager::deletePrintTasks(const std::string& p
     checkUserAuthStatus(printer.value(), result, requestUserInfo);
     return result;
 }
-
 PrinterNetworkResult<bool> PrinterManager::sendRtmMessage(const std::string& printerId, const std::string& message)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->sendRtmMessage(printerId, message);
+    }
+    
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
     if (!printer.has_value()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
@@ -1159,7 +949,7 @@ void PrinterManager::monitorPrinterConnections()
 {
     int loopIntervalSeconds = 10;
     mLastConnectionLoopTime = std::chrono::steady_clock::now() - std::chrono::seconds(loopIntervalSeconds);
-    while (monitorPrinterConnectionsRunning) {
+    while (mMonitoring.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         auto now     = std::chrono::steady_clock::now();
@@ -1219,7 +1009,7 @@ void PrinterManager::monitorWanPrinterConnections()
     int loopIntervalSeconds    = 10;
     mLastWanConnectionLoopTime = std::chrono::steady_clock::now() - std::chrono::seconds(loopIntervalSeconds);
 
-    while (monitorPrinterConnectionsRunning) {
+    while (mMonitoring.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         auto now     = std::chrono::steady_clock::now();
@@ -1528,4 +1318,196 @@ void PrinterManager::syncOldPresetPrinters()
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": error syncing preset printers: %s") % e.what();
     }
 }
+
+
+// Check and handle WAN network error (like token expiration)
+template<typename T>
+void PrinterManager::checkUserAuthStatus(const PrinterNetworkInfo&      printerNetworkInfo,
+                                         const PrinterNetworkResult<T>& result,
+                                         const UserNetworkInfo&         requestUserInfo)
+{
+    if (printerNetworkInfo.networkType != NETWORK_TYPE_WAN) {
+        return;
+    }
+    // Check if error is token-related
+    if (result.isSuccess()) {
+        return;
+    }
+
+    // Check and update user auth status
+    UserNetworkManager::getInstance()->checkUserAuthStatus(requestUserInfo, result.code);
+}
+
+// Static member definitions for PrinterLock
+std::map<std::string, std::recursive_mutex> PrinterManager::PrinterLock::sPrinterMutexes;
+std::mutex                                  PrinterManager::PrinterLock::sMutex;
+
+PrinterManager::PrinterLock::PrinterLock(const std::string& printerId) : mPrinterMutex(nullptr)
+{
+    {
+        std::unique_lock<std::mutex> lock(sMutex);
+        auto                         it = sPrinterMutexes.find(printerId);
+        if (it == sPrinterMutexes.end()) {
+            it = sPrinterMutexes.try_emplace(printerId).first;
+        }
+        mPrinterMutex = &(it->second);
+    }
+
+    // Lock the specific printer's mutex (outside the sMutex lock)
+    if (mPrinterMutex) {
+        mPrinterMutex->lock();
+    }
+}
+
+PrinterManager::PrinterLock::~PrinterLock()
+{
+    if (mPrinterMutex) {
+        mPrinterMutex->unlock();
+    }
+}
+
+// Cached preset bundle - load only once
+static PresetBundle* getCachedSystemBundle()
+{
+    static std::unique_ptr<PresetBundle> cachedBundle;
+    static std::once_flag                initFlag;
+
+    std::call_once(initFlag, []() {
+        cachedBundle = std::make_unique<PresetBundle>();
+        cachedBundle->load_system_models_from_json(ForwardCompatibilitySubstitutionRule::EnableSilent);
+    });
+
+    return cachedBundle.get();
+}
+
+VendorProfile getMachineProfile(const std::string& vendorName, const std::string& machineModel, VendorProfile::PrinterModel& printerModel)
+{
+    std::string   profile_vendor_name;
+    VendorProfile machineProfile;
+    PresetBundle* bundle = getCachedSystemBundle();
+
+    for (const auto& vendor : bundle->vendors) {
+        const auto& vendor_profile = vendor.second;
+        if (boost::to_upper_copy(vendor_profile.name) == boost::to_upper_copy(vendorName)) {
+            // find the profile model name from the vendor profile
+            // The profile model name may not contain the vendor name, so we need to add the vendor name
+            for (const auto& model : vendor_profile.models) {
+                std::string profileModelName     = boost::to_upper_copy(model.name);
+                std::string discoverMachineModel = boost::to_upper_copy(machineModel);
+
+                if (profileModelName.find(boost::to_upper_copy(vendorName)) == std::string::npos) {
+                    profileModelName = boost::to_upper_copy(vendorName) + " " + profileModelName;
+                }
+
+                if (discoverMachineModel.find(boost::to_upper_copy(vendorName)) == std::string::npos) {
+                    discoverMachineModel = boost::to_upper_copy(vendorName) + " " + discoverMachineModel;
+                }
+
+                if (profileModelName == discoverMachineModel) {
+                    machineProfile = vendor_profile;
+                    printerModel   = model;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    return machineProfile;
+}
+
+void PrinterManager::validateAndCompletePrinterInfo(PrinterNetworkInfo& printerInfo)
+{
+    // Validate and update vendor and model info
+    VendorProfile::PrinterModel printerModel;
+    VendorProfile               machineProfile = getMachineProfile(printerInfo.vendor, printerInfo.printerModel, printerModel);
+
+    if (machineProfile.name.empty()) {
+        return; // No matching profile found
+    }
+
+    printerInfo.vendor = machineProfile.name;
+    if (printerInfo.printerName.empty()) {
+        printerInfo.printerName = printerModel.name;
+    }
+    printerInfo.printerModel = printerModel.name;
+
+    // Update hostType to keep consistent with system preset
+    auto vendorPrinterModelConfigMap = getVendorPrinterModelConfig();
+    if (vendorPrinterModelConfigMap.find(printerInfo.vendor) != vendorPrinterModelConfigMap.end()) {
+        auto modelConfigMap = vendorPrinterModelConfigMap[printerInfo.vendor];
+        if (modelConfigMap.find(printerInfo.printerModel) != modelConfigMap.end()) {
+            auto        config      = modelConfigMap[printerInfo.printerModel];
+            const auto  opt         = config.option<ConfigOptionEnum<PrintHostType>>("host_type");
+            const auto  hostType    = opt != nullptr ? opt->value : htOctoPrint;
+            std::string hostTypeStr = PrintHost::get_print_host_type_str(hostType);
+            if (!hostTypeStr.empty()) {
+                printerInfo.hostType = hostTypeStr;
+            }
+        }
+    }
+}
+
+std::map<std::string, std::map<std::string, DynamicPrintConfig>> PrinterManager::getVendorPrinterModelConfig()
+{
+    // Cache the vendor printer model config - build only once
+    static std::map<std::string, std::map<std::string, DynamicPrintConfig>> cachedConfig;
+    static std::once_flag                                                   initFlag;
+
+    std::call_once(initFlag, []() {
+        PresetBundle* bundle = getCachedSystemBundle();
+
+        for (const auto& vendor : bundle->vendors) {
+            const std::string& vendorName = vendor.first;
+            PresetBundle       vendorBundle;
+            try {
+                // load the vendor configs from the resources dir
+                vendorBundle.load_vendor_configs_from_json((boost::filesystem::path(Slic3r::resources_dir()) / "profiles").string(),
+                                                           vendorName, PresetBundle::LoadMachineOnly,
+                                                           ForwardCompatibilitySubstitutionRule::EnableSilent, nullptr);
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": load vendor %s error: %s") % vendorName % e.what();
+                continue;
+            }
+            for (const auto& printer : vendorBundle.printers) {
+                if (!printer.vendor) {
+                    continue;
+                }
+                auto printerModel = printer.config.option<ConfigOptionString>("printer_model");
+                if (!printerModel) {
+                    continue;
+                }
+
+                std::string modelName = printerModel->value;
+                if (PrintHost::support_device_list_management(printer.config)) {
+                    cachedConfig[printer.vendor->name][modelName] = printer.config;
+                }
+            }
+        }
+    });
+
+    return cachedConfig;
+}
+
+std::string PrinterManager::imageFileToBase64DataURI(const std::string& image_path)
+{
+    std::ifstream ifs(std::filesystem::u8path(image_path), std::ios::binary);
+    if (!ifs)
+        return "";
+    std::ostringstream oss;
+    oss << ifs.rdbuf();
+    std::string img_data = oss.str();
+    if (img_data.empty())
+        return "";
+    std::string encoded;
+    encoded.resize(boost::beast::detail::base64::encoded_size(img_data.size()));
+    encoded.resize(boost::beast::detail::base64::encode(&encoded[0], img_data.data(), img_data.size()));
+    std::string ext = "png";
+    size_t      dot = image_path.find_last_of('.');
+    if (dot != std::string::npos) {
+        ext = image_path.substr(dot + 1);
+        boost::algorithm::to_lower(ext);
+    }
+    return "data:image/" + ext + ";base64," + encoded;
+}
+
 } // namespace Slic3r

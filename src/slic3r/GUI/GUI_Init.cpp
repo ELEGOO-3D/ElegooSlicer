@@ -18,6 +18,8 @@
 
 #ifdef _WIN32
     #include <windows.h>
+    // Forward declaration for attach_console_on_demand
+    void attach_console_on_demand();
 #endif // _WIN32
 
 #if __APPLE__
@@ -29,6 +31,13 @@ namespace GUI {
 
 int GUI_Run(GUI_InitParams &params)
 {
+#ifdef _WIN32
+#if defined(ELEGOO_ENABLE_DEBUG_OUTPUT) && ELEGOO_ENABLE_DEBUG_OUTPUT
+    // Attach console window for debug output (both OutputDebugString and stderr)
+    attach_console_on_demand();
+#endif
+#endif // _WIN32
+
 #if __APPLE__
     // On OSX, we use boost::process::spawn() to launch new instances of PrusaSlicer from another PrusaSlicer.
     // boost::process::spawn() sets SIGCHLD to SIGIGN for the child process, thus if a child PrusaSlicer spawns another

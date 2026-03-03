@@ -41,19 +41,19 @@ private:
     void onTabEndDrag(wxAuiNotebookEvent& event);
     void onTabChanged(wxAuiNotebookEvent& event);
 
-    webviewIpc::IPCResult getPrinterList();
-    webviewIpc::IPCResult discoverPrinter();
-    webviewIpc::IPCResult getPrinterModelList();
-    webviewIpc::IPCResult addPrinter(const nlohmann::json& printer);
-    webviewIpc::IPCResult addPhysicalPrinter(const nlohmann::json& printer);
-    webviewIpc::IPCResult cancelBindPrinter(const nlohmann::json& printer);
-    webviewIpc::IPCResult updatePrinterName(const std::string& printerId, const std::string& printerName);
-    webviewIpc::IPCResult updatePrinterHost(const std::string& printerId, const std::string& host);
-    webviewIpc::IPCResult updatePhysicalPrinter(const std::string& printerId, const nlohmann::json& printer);
-    webviewIpc::IPCResult deletePrinter(const std::string& printerId);
-    webviewIpc::IPCResult browseCAFile();
-    webviewIpc::IPCResult handleReady();
-    webviewIpc::IPCResult handleCheckLoginStatus();
+    IPCResult getPrinterList();
+    IPCResult discoverPrinter();
+    IPCResult getPrinterModelList();
+    IPCResult addPrinter(const nlohmann::json& printer);
+    IPCResult addPhysicalPrinter(const nlohmann::json& printer);
+    IPCResult cancelBindPrinter(const nlohmann::json& printer);
+    IPCResult updatePrinterName(const std::string& printerId, const std::string& printerName);
+    IPCResult updatePrinterHost(const std::string& printerId, const std::string& host);
+    IPCResult updatePhysicalPrinter(const std::string& printerId, const nlohmann::json& printer);
+    IPCResult deletePrinter(const std::string& printerId);
+    IPCResult browseCAFile();
+    IPCResult handleReady();
+    IPCResult handleCheckLoginStatus();
 
     // Tab persistence methods
     void saveTabState();

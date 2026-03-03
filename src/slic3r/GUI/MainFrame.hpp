@@ -33,6 +33,7 @@
 #include "calib_dlg.hpp"
 #include "MultiMachinePage.hpp"
 #include "Elegoo/HomeView.hpp"
+#include "libslic3r/PrinterNetworkInfo.hpp"
 
 #define ENABEL_PRINT_ALL 0
 

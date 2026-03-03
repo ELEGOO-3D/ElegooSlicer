@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <AppKit/NSScreen.h>
 #import <WebKit/WebKit.h>
+#import <QuartzCore/QuartzCore.h>
 
 #include <objc/runtime.h>
 
@@ -62,6 +63,53 @@ void set_miniaturizable(void * window)
     }
 }
 
+void set_borderless_window(void * window)
+{
+    NSView* nsView = (NSView*)window;
+    if (nsView && [nsView window]) {
+        NSWindow* nsWindow = [nsView window];
+        
+        // Remove title bar and all window decorations
+        // NSWindowStyleMaskBorderless creates a completely borderless window
+        NSUInteger styleMask = NSWindowStyleMaskBorderless;
+        [nsWindow setStyleMask:styleMask];
+        
+        // Disable window shadow for cleaner borderless appearance
+        [nsWindow setHasShadow:NO];
+    }
+}
+
+void set_window_rounded_corners(void * window, int radius)
+{
+    NSView* nsView = (NSView*)window;
+    if (nsView && [nsView window]) {
+        NSWindow* nsWindow = [nsView window];
+        NSView* contentView = [nsWindow contentView];
+        
+        if (contentView) {
+            CGFloat cgRadius = radius;
+            
+            // Set window background to transparent so rounded corners show properly
+            [nsWindow setOpaque:NO];
+            [nsWindow setBackgroundColor:[NSColor clearColor]];
+            
+            // Enable layer-backed view for contentView
+            if (!contentView.wantsLayer) {
+                contentView.wantsLayer = YES;
+            }
+            
+            // Set contentView background to transparent to avoid white layer
+            if (contentView.layer) {
+                contentView.layer.backgroundColor = [NSColor clearColor].CGColor;
+                // Set corner radius on contentView's layer
+                // This will clip all content including subviews to rounded corners
+                contentView.layer.cornerRadius = cgRadius;
+                contentView.layer.masksToBounds = YES;
+            }
+        }
+    }
+}
+
 void set_tag_when_enter_full_screen(bool isfullscreen)
 {
   is_in_full_screen_mode = isfullscreen;
@@ -96,10 +144,31 @@ void WKWebView_evaluateJavaScript(void * web, wxString const & script, void (*ca
 void WKWebView_setTransparentBackground(void * web)
 {
     WKWebView * webView = (WKWebView*)web;
+    if (!webView) {
+        return;
+    }
+    
     [webView layer].backgroundColor = [NSColor clearColor].CGColor;
     [webView registerForDraggedTypes: @[NSFilenamesPboardType]];
 }
 
+void WKWebView_fixContentInsets(void * web)
+{
+    WKWebView * webView = (WKWebView*)web;
+    if (!webView) {
+        return;
+    }
+    
+    @try {
+        NSScrollView *scrollView = [webView scrollView];
+        if (scrollView) {
+            [scrollView setContentInsets:NSEdgeInsetsMake(0, 0, 0, 0)];
+            [scrollView setAutomaticallyAdjustsContentInsets:NO];
+        }
+    } @catch (NSException *exception) {
+        // Silently ignore if scrollView is not available
+    }
+}
 void WKWebView_cleanup(void * web)
 {
     if (web == nullptr) return;

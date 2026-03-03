@@ -293,17 +293,49 @@ static StandardColor getStandardColor(const std::string& hex)
     return bestMatch != nullptr ? *bestMatch : StandardColor{"", ""};
 }
 
+// standardize filament name for matching: remove vendor/generic prefixes, replace dashes with spaces
+static std::string standardizeFilamentName(const std::string& name, const std::string& vendor)
+{
+    std::string standardized = boost::to_upper_copy(name);
+    boost::trim(standardized);
+    
+    // remove vendor prefix if exists
+    std::string vendorUpper = boost::to_upper_copy(vendor);
+    boost::trim(vendorUpper);
+    if(!vendorUpper.empty() && standardized.find(vendorUpper) != std::string::npos) {
+        boost::erase_all(standardized, vendorUpper);
+        boost::trim(standardized);
+    }
+    
+    // remove GENERIC prefix if exists
+    if(standardized.find("GENERIC") != std::string::npos) {
+        boost::erase_all(standardized, "GENERIC");
+        boost::trim(standardized);
+    }
+    
+    // remove @ suffix if exists
+    size_t atPos = standardized.find('@');
+    if(atPos != std::string::npos) {
+        standardized = standardized.substr(0, atPos);
+        boost::trim(standardized);
+    }
+    
+    // replace all dashes with spaces
+    std::replace(standardized.begin(), standardized.end(), '-', ' ');
+    boost::trim(standardized);
+    
+    return standardized;
+}
+
 PrinterMmsManager::PrinterMmsManager() {}
 
 PrinterMmsManager::~PrinterMmsManager() {}
 
 
-// find mms tray filament id in system preset by filament name and type and compatible printers, 
-// if not found, find filament id in orca generic preset by filament type
-// when checking the name, pay attention to whether it contains the vendor name, space, etc.
-// 1. find filament id in vendor preset, to upper case and add vendor name prefix if not contains
-// 2. find filament id in vendor generic preset, to upper case and remove vendor name prefix if contains and add "GENERIC " prefix if not contains
-// 3. find filament id in orca generic preset, to upper case and remove vendor name prefix if contains and add "GENERIC " prefix if not contains
+// find mms tray filament id by matching standardized filament name
+// builds a merged preset map containing vendor specific, vendor generic, and orca generic filaments
+// matches by standardized name (removes vendor/generic prefixes, replaces dashes with spaces)
+// if multiple candidates found, selects the one with highest priority (lowest priority number)
 
 void PrinterMmsManager::getMmsTrayFilamentId(const PrinterNetworkInfo& printerNetworkInfo, PrinterMmsGroup& mmsGroup)
 {
@@ -319,6 +351,39 @@ void PrinterMmsManager::getMmsTrayFilamentId(const PrinterNetworkInfo& printerNe
     } catch(...) {
     }
     
+    // build merged preset map with all filament types (vendor specific, vendor generic, orca generic)
+    auto mergedPresetMap = buildPresetFilamentMap(printerNetworkInfo, currentProjectNozzleDiameters);
+
+    // match filament id in system preset to mms tray by standardized name
+    // if multiple candidates found, select the one with highest priority (lowest priority number)
+    for(auto& mms : mmsGroup.mmsList) {
+        for(auto& tray : mms.trayList) {
+            if(!checkTrayIsReady(tray)) {
+                continue;
+            }
+            
+            PresetFilamentInfo matchedPreset = matchFilamentPreset(tray.filamentName, mergedPresetMap, printerNetworkInfo, tray.filamentType);
+            if(!matchedPreset.filamentName.empty()) {
+                tray.filamentId = matchedPreset.filamentId;
+                tray.settingId = matchedPreset.settingId;
+                tray.filamentPresetName = matchedPreset.filamentName;
+                continue;
+            }
+        }
+    }
+    
+    return;
+}
+
+// build preset filament map by standardized name
+// loads vendor bundle and orca filament library, processes all filament types and returns merged map
+std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>> PrinterMmsManager::buildPresetFilamentMap(
+    const PrinterNetworkInfo& printerNetworkInfo,
+    const std::vector<double>& currentProjectNozzleDiameters)
+{
+    std::map<std::string, std::vector<PresetFilamentInfo>> mergedPresetMap;
+    
+    // load vendor bundle
     PresetBundle vendorBundle;
     try {
         vendorBundle.load_vendor_configs_from_json((boost::filesystem::path(Slic3r::resources_dir()) / "profiles").string(),
@@ -326,9 +391,22 @@ void PrinterMmsManager::getMmsTrayFilamentId(const PrinterNetworkInfo& printerNe
                                                    ForwardCompatibilitySubstitutionRule::EnableSilent, nullptr);                                        
 
     } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(error) << "PrinterMmsManager::getMmsTrayFilamentId: get vendor configs failed: " << printerNetworkInfo.vendor << " " << e.what();
+        BOOST_LOG_TRIVIAL(error) << "PrinterMmsManager::buildPresetFilamentMap: get vendor configs failed: " << printerNetworkInfo.vendor << " " << e.what();
+        return mergedPresetMap;
     }
 
+    
+    // load orca filament library
+    PresetBundle orcaFilamentLibraryBundle;
+    try {
+        orcaFilamentLibraryBundle.load_vendor_configs_from_json((boost::filesystem::path(Slic3r::resources_dir()) / "profiles").string(),
+                                                   PresetBundle::ORCA_FILAMENT_LIBRARY, PresetBundle::LoadSystem,
+                                                   ForwardCompatibilitySubstitutionRule::EnableSilent, nullptr);                                        
+
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << "PrinterMmsManager::buildPresetFilamentMap: get orca filament library failed: " << e.what();
+    }
+    // build printer preset map from vendor bundle
     std::map<std::string, PrinterPresetInfo> printerPresetMap;
     for(const auto& printer : vendorBundle.printers) {
         if(!printer.is_system) continue;
@@ -347,96 +425,37 @@ void PrinterMmsManager::getMmsTrayFilamentId(const PrinterNetworkInfo& printerNe
         printerPresetMap[printer.name] = info;
     }
 
-    auto vendorPresetMap = buildPresetFilamentMap(vendorBundle, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, false, true);
-    auto genericPresetMap = buildPresetFilamentMap(vendorBundle, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, true, true);
+    // process vendor specific filaments (priority 1)
+    processFilamentsFromBundle(vendorBundle, mergedPresetMap, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, 1, false, true);
 
-    PresetBundle orcaFilamentLibraryBundle;
-    try {
-        orcaFilamentLibraryBundle.load_vendor_configs_from_json((boost::filesystem::path(Slic3r::resources_dir()) / "profiles").string(),
-                                                   PresetBundle::ORCA_FILAMENT_LIBRARY, PresetBundle::LoadSystem,
-                                                   ForwardCompatibilitySubstitutionRule::EnableSilent, nullptr);                                        
+    // process vendor generic filaments (priority 2)
+    processFilamentsFromBundle(vendorBundle, mergedPresetMap, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, 2, true, true);
 
-    } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(error) << "PrinterMmsManager::getMmsTrayFilamentId: get orca filament library failed" << e.what();
-    }
+    // process orca generic filaments (priority 3)
+    processFilamentsFromBundle(orcaFilamentLibraryBundle, mergedPresetMap, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, 3, true, false);
     
-    auto orcaGenericPresetMap = buildPresetFilamentMap(orcaFilamentLibraryBundle, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, true, false);
-
-    // match filament id in system preset to mms tray
-    for(auto& mms : mmsGroup.mmsList) {
-        for(auto& tray : mms.trayList) {
-            if(!checkTrayIsReady(tray)) {
-                continue;
-            }
-            if (tryMatchFilament(tray, vendorPresetMap, printerNetworkInfo, false))
-                continue;  
-                      
-            // try match vendor generic preset
-            if (tryMatchFilament(tray, genericPresetMap, printerNetworkInfo, true))
-                continue;
-       
-            // try match orca generic preset
-            if (tryMatchFilament(tray, orcaGenericPresetMap, printerNetworkInfo, true))
-                continue;
-
-            // try match filament by vendor filament type
-            if (tryMatchFilamentByFilamentType(tray, vendorPresetMap, printerNetworkInfo, false))
-                continue;
-
-            // try match filament by vendor generic filament type
-            if (tryMatchFilamentByFilamentType(tray, genericPresetMap, printerNetworkInfo, true))
-                continue;
-
-            // try match filament by orca generic filament type
-            if (tryMatchFilamentByFilamentType(tray, orcaGenericPresetMap, printerNetworkInfo, true))
-                continue;
-
-            // the worst case, if all above failed, try match the first filament in the type
-            if(boost::to_upper_copy(tray.vendor) != "GENERIC") {
-                if(vendorPresetMap.find(tray.filamentType) != vendorPresetMap.end()) {
-                    tray.filamentId = vendorPresetMap.at(tray.filamentType)[0].filamentId;
-                    tray.settingId = vendorPresetMap.at(tray.filamentType)[0].settingId;
-                    tray.filamentPresetName = vendorPresetMap.at(tray.filamentType)[0].filamentName;
-                    continue;
-                }
-            }         
-            if(genericPresetMap.find(tray.filamentType) != genericPresetMap.end()) {
-                tray.filamentId = genericPresetMap.at(tray.filamentType)[0].filamentId;
-                tray.settingId = genericPresetMap.at(tray.filamentType)[0].settingId;
-                tray.filamentPresetName = genericPresetMap.at(tray.filamentType)[0].filamentName;
-                continue;
-            }
-            if(orcaGenericPresetMap.find(tray.filamentType) != orcaGenericPresetMap.end()) {
-                tray.filamentId = orcaGenericPresetMap.at(tray.filamentType)[0].filamentId;
-                tray.settingId = orcaGenericPresetMap.at(tray.filamentType)[0].settingId;
-                tray.filamentPresetName = orcaGenericPresetMap.at(tray.filamentType)[0].filamentName;
-                continue;
-            }
-        }
-    }
-    
-    return;
+    return mergedPresetMap;
 }
 
-// build preset filament map
-std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>> PrinterMmsManager::buildPresetFilamentMap(
-    const PresetBundle& bundle, 
+// process filaments from bundle and add to merged preset map
+void PrinterMmsManager::processFilamentsFromBundle(
+    const PresetBundle& bundle,
+    std::map<std::string, std::vector<PresetFilamentInfo>>& mergedPresetMap,
     const PrinterNetworkInfo& printerNetworkInfo,
     const std::map<std::string, PrinterPresetInfo>& printerPresetMap,
     const std::vector<double>& currentProjectNozzleDiameters,
-    bool isGeneric, bool compatible)
+    int priority,
+    bool isGeneric,
+    bool checkCompatible)
 {
-    std::map<std::string, std::vector<PresetFilamentInfo>> presetMap;
-    
     for (const auto& filament : bundle.filaments) {
         if (!filament.is_system) continue;
         
         auto* filament_type_opt = dynamic_cast<const ConfigOptionStrings*>(filament.config.option("filament_type"));
         if(!filament_type_opt || filament_type_opt->values.empty()) continue;
 
-        if(compatible && !isFilamentCompatible(filament, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters)) continue;
+        if(checkCompatible && !isFilamentCompatible(filament, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters)) continue;
         
-        // check if is generic filament
         std::string name = boost::to_upper_copy(filament.name);
         bool isGenericFilament = (name.find("GENERIC") != std::string::npos);
         if(isGeneric != isGenericFilament) continue;
@@ -447,12 +466,11 @@ std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>> Printe
         info.filamentAlias = filament.alias;
         info.filamentName = filament.name;
         info.filamentType = filament_type_opt->values[0];
+        info.priority = priority;
         
-        std::string filamentType = boost::to_upper_copy(info.filamentType);
-        presetMap[filamentType].push_back(info);
+        std::string standardizedName = standardizeFilamentName(filament.alias, printerNetworkInfo.vendor);
+        mergedPresetMap[standardizedName].push_back(info);
     }
-    
-    return presetMap;
 }
 
 // check filament compatible
@@ -481,150 +499,7 @@ bool PrinterMmsManager::isFilamentCompatible(
     return false;
 }
 
-// try match filament
-bool PrinterMmsManager::tryMatchFilament(
-    PrinterMmsTray& tray,
-    const std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>>& presetMap,
-    const PrinterNetworkInfo& printerNetworkInfo,
-    bool isGeneric)
-{
-    std::string filamentType = boost::to_upper_copy(tray.filamentType);
-    auto it = presetMap.find(filamentType);
-    if(it == presetMap.end()) return false;
-    
-    for(const auto& filamentInfo : presetMap.at(filamentType)) {
-        if(isNamesMatch(tray, filamentInfo, printerNetworkInfo, isGeneric)) {
-            // match success, update tray info
-            tray.filamentId = filamentInfo.filamentId;
-            tray.settingId = filamentInfo.settingId;
-            tray.filamentPresetName = filamentInfo.filamentName;
-            return true;
-        }
-    }
-    
-    return false;
-}
 
-// check filament name match
-bool PrinterMmsManager::isNamesMatch(
-    const PrinterMmsTray& tray,
-    const PrinterMmsManager::PresetFilamentInfo& filamentInfo,
-    const PrinterNetworkInfo& printerNetworkInfo,
-    bool isGeneric)
-{
-    std::string presetFilamentAlias = boost::to_upper_copy(filamentInfo.filamentAlias);
-    boost::trim(presetFilamentAlias);
-    std::string mmsVendor = boost::to_upper_copy(tray.vendor);
-    boost::trim(mmsVendor);
-    std::string mmsFilamentName = boost::to_upper_copy(tray.filamentName);
-    boost::trim(mmsFilamentName);
-    std::string presetVendor = boost::to_upper_copy(printerNetworkInfo.vendor);
-    boost::trim(presetVendor);
-    
-    // standardize preset filament alias
-    if(isGeneric) {
-        // generic filament: remove vendor prefix, add GENERIC prefix
-        if(presetFilamentAlias.find(presetVendor) != std::string::npos) {
-            boost::erase_all(presetFilamentAlias, presetVendor);
-            boost::trim(presetFilamentAlias);
-        }
-        if(presetFilamentAlias.find("GENERIC") == std::string::npos) {
-            presetFilamentAlias = "GENERIC " + presetFilamentAlias;
-        }
-    } else {
-        // vendor filament: ensure contains vendor prefix
-        if(presetFilamentAlias.find(presetVendor) == std::string::npos) {
-            presetFilamentAlias = presetVendor + " " + presetFilamentAlias;
-        }
-    }
-    
-    // standardize mms filament name
-    if(isGeneric) {
-        // generic filament: remove vendor prefix, add GENERIC prefix
-        if(mmsFilamentName.find(mmsVendor) != std::string::npos) {
-            boost::erase_all(mmsFilamentName, mmsVendor);
-            boost::trim(mmsFilamentName);
-        }
-        if(mmsFilamentName.find("GENERIC") == std::string::npos) {
-            mmsFilamentName = "GENERIC " + mmsFilamentName;
-        }
-    } else {
-        // vendor filament: ensure contains vendor prefix
-        if(mmsFilamentName.find(mmsVendor) == std::string::npos) {
-            mmsFilamentName = mmsVendor + " " + mmsFilamentName;
-        }
-    }
-    
-    
-    // replace all dashes with spaces
-    std::replace(presetFilamentAlias.begin(), presetFilamentAlias.end(), '-', ' ');
-    std::replace(mmsFilamentName.begin(), mmsFilamentName.end(), '-', ' ');
-
-    // remove space and compare
-    boost::trim(presetFilamentAlias);
-    boost::trim(mmsFilamentName);
-    return presetFilamentAlias == mmsFilamentName;
-}
-
-// try match filament by filament type
-
-bool PrinterMmsManager::tryMatchFilamentByFilamentType(
-    PrinterMmsTray& tray,
-    const std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>>& presetMap,
-    const PrinterNetworkInfo& printerNetworkInfo,
-    bool isGeneric)
-{
-    std::string filamentType = boost::to_upper_copy(tray.filamentType);
-    if(presetMap.find(filamentType) == presetMap.end()) {    
-        // Orca's filament types are not standardized (e.g., PPA type may be configured as PPA-CF). Try using filament name as type for lookup as a fallback.
-        filamentType = boost::to_upper_copy(tray.filamentName);
-        if(presetMap.find(filamentType) == presetMap.end()) {
-            return false;
-        }
-        
-    }
-
-    for(const auto& filamentInfo : presetMap.at(filamentType)) {
-        if(isNamesMatch(tray, filamentInfo, printerNetworkInfo, isGeneric)) {
-            // match success, update tray info
-            tray.filamentId = filamentInfo.filamentId;
-            tray.settingId = filamentInfo.settingId;
-            tray.filamentPresetName = filamentInfo.filamentName;
-            return true;
-        }
-    }  
-
-
-    // try match filament by mms filament type and preset filament name
-    for(const auto& filamentInfo : presetMap.at(filamentType)) {
-        PrinterMmsTray trayCopy = tray;
-        trayCopy.filamentName = tray.filamentType;
-        if(isNamesMatch(trayCopy, filamentInfo, printerNetworkInfo, isGeneric)) {
-            // match success, update tray info
-            tray.filamentId = filamentInfo.filamentId;
-            tray.settingId = filamentInfo.settingId;
-            tray.filamentPresetName = filamentInfo.filamentName;
-            return true;
-        }
-    }
-
-    // try match filament by mms filament type and preset filament type
-    for(const auto& filamentInfo : presetMap.at(filamentType)) {
-        PrinterMmsTray trayCopy = tray;
-        trayCopy.filamentName = tray.filamentType;
-        PresetFilamentInfo filamentCopy = filamentInfo;
-        filamentCopy.filamentAlias = filamentInfo.filamentType;
-        if(isNamesMatch(trayCopy, filamentCopy, printerNetworkInfo, isGeneric)) {
-            tray.filamentId = filamentCopy.filamentId;
-            tray.settingId = filamentCopy.settingId;
-            tray.filamentPresetName = filamentCopy.filamentName;
-            return true;
-        }
-    }
-
-
-    return false;
-}
 
 PrinterNetworkResult<PrinterMmsGroup> PrinterMmsManager::getPrinterMmsInfo(const std::string& printerId)
 {
@@ -668,7 +543,73 @@ bool PrinterMmsManager::checkTrayIsReady(const PrinterMmsTray& tray) {
         return false;
     }
     return true;
-};
+}
+
+// find best match by standardized name, fallback to name equals type
+PrinterMmsManager::PresetFilamentInfo PrinterMmsManager::matchFilamentPreset(
+    const std::string& filamentName,
+    const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap,
+    const PrinterNetworkInfo& printerNetworkInfo,
+    const std::string& filamentType)
+{
+    if(filamentName.empty()) {
+        return PresetFilamentInfo();
+    }
+    
+    std::string standardizedName = standardizeFilamentName(filamentName, printerNetworkInfo.vendor);
+    std::string standardizedType = "";
+    if(!filamentType.empty()) {
+        standardizedType = boost::to_upper_copy(filamentType);
+        boost::trim(standardizedType);
+    }
+    
+    auto it = presetMap.find(standardizedName);
+    if(it != presetMap.end() && !it->second.empty()) {
+        // find the candidate with lowest priority number (highest priority)
+        PresetFilamentInfo matchedPreset = it->second[0];
+        for(const auto& candidate : it->second) {
+            if(candidate.priority < matchedPreset.priority) {
+                matchedPreset = candidate;
+            }
+        }
+        return matchedPreset;
+    }
+    
+    // fallback: match by name equals type if name matching failed
+    if(standardizedType.empty()) {
+        return PresetFilamentInfo();
+    }
+    
+    PresetFilamentInfo bestMatch;
+    bestMatch.priority = std::numeric_limits<int>::max();
+    PresetFilamentInfo fallbackMatch;
+    fallbackMatch.priority = std::numeric_limits<int>::max();
+    
+    for(const auto& entry : presetMap) {
+        for(const auto& preset : entry.second) {
+            std::string presetStandardizedName = standardizeFilamentName(preset.filamentAlias, printerNetworkInfo.vendor);
+            std::string presetType = boost::to_upper_copy(preset.filamentType);
+            boost::trim(presetType);
+            
+            // match by name equals type
+            if(standardizedType == presetStandardizedName || standardizedName == presetType) {
+                if(bestMatch.priority > preset.priority) {
+                    bestMatch = preset;
+                }
+                if(bestMatch.priority == 1) {
+                    return bestMatch;
+                }
+                continue;
+            }
+            
+            // fallback: match by same filament type
+            if(presetType == standardizedType && fallbackMatch.priority > preset.priority) {
+                fallbackMatch = preset;
+            }
+        }
+    }
+    return bestMatch.filamentName.empty() ? fallbackMatch : bestMatch;
+}
 
 void PrinterMmsManager::getFilamentMmsMapping(const PrinterNetworkInfo& printerNetworkInfo, std::vector<PrintFilamentMmsMapping>& printFilamentMmsMapping, const PrinterMmsGroup& mmsGroup)
 {
@@ -731,14 +672,18 @@ void PrinterMmsManager::getFilamentMmsMapping(const PrinterNetworkInfo& printerN
             continue;
         }
         // not mapped or mapped filament not exist
-        std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>> filamentPresetMap;
-        PrinterMmsManager::PresetFilamentInfo filamentInfo;
+        // build filament preset map from print filament
+        std::map<std::string, std::vector<PresetFilamentInfo>> filamentPresetMap;
+        PresetFilamentInfo filamentInfo;
         filamentInfo.filamentId = printFilament.filamentId;
         filamentInfo.settingId = printFilament.settingId;
         filamentInfo.filamentAlias = printFilament.filamentAlias;
         filamentInfo.filamentName = printFilament.filamentName;
         filamentInfo.filamentType = printFilament.filamentType;
-        filamentPresetMap[boost::to_upper_copy(printFilament.filamentType)].push_back(filamentInfo);
+        filamentInfo.priority = 1; // default priority for user filament
+        std::string standardizedName = standardizeFilamentName(printFilament.filamentAlias, printerNetworkInfo.vendor);
+        filamentPresetMap[standardizedName].push_back(filamentInfo);
+
         PrinterMmsTray mappedTray;
         for (auto& mms : mmsGroup.mmsList) {
             for (auto& tray : mms.trayList) {
@@ -750,31 +695,16 @@ void PrinterMmsManager::getFilamentMmsMapping(const PrinterNetworkInfo& printerN
                     continue;
                 }
                 mappedTray = tray;
-                // try match filament by filament name if not match, try match filament by generic preset
-                if(tryMatchFilament(mappedTray, filamentPresetMap, printerNetworkInfo, false) || tryMatchFilament(mappedTray, filamentPresetMap, printerNetworkInfo, true)) {
+                PresetFilamentInfo matchedPreset = matchFilamentPreset(mappedTray.filamentName, filamentPresetMap, printerNetworkInfo, mappedTray.filamentType);
+                if(!matchedPreset.filamentName.empty()) {
+                    mappedTray.filamentId = matchedPreset.filamentId;
+                    mappedTray.settingId = matchedPreset.settingId;
+                    mappedTray.filamentPresetName = matchedPreset.filamentName;
                     isMapped = true;
                     break;
                 }
             }
-        }
-        if(!isMapped) {
-            // if not match by filament name, try match filament by filament type
-            for (auto& mms : mmsGroup.mmsList) {
-                for (auto& tray : mms.trayList) {
-                    if(!checkTrayIsReady(tray)) {
-                        continue;
-                    }
-                    if(boost::to_upper_copy(getStandardColor(tray.filamentColor).colorHex) != boost::to_upper_copy(filamentStandardColor)){
-                        continue;
-                    }
-                    mappedTray = tray;
-                    // try match filament by filament type if not match, try match filament by generic preset
-                    if(tryMatchFilamentByFilamentType(mappedTray, filamentPresetMap, printerNetworkInfo, false) || tryMatchFilamentByFilamentType(mappedTray, filamentPresetMap, printerNetworkInfo, true)) {
-                        isMapped = true;
-                        break;
-                    }
-                }
-            }
+            if(isMapped) break;
         }
         if(isMapped) {
             printFilament.mappedMmsFilament.trayName         = mappedTray.trayName;

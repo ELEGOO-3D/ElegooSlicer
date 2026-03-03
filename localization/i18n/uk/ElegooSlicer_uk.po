@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 20:08+0800\n"
+"POT-Creation-Date: 2026-01-16 15:22+0800\n"
 "PO-Revision-Date: 2024-06-30 23:05+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -4706,6 +4706,9 @@ msgstr "Роздрукувати все"
 msgid "Send all"
 msgstr "Надіслати все"
 
+msgid "Beginner Guide"
+msgstr ""
+
 msgid "Keyboard Shortcuts"
 msgstr "Гарячі клавіші"
 
@@ -7058,6 +7061,12 @@ msgstr "Режим розробки"
 
 msgid "Skip AMS blacklist check"
 msgstr "Пропустити перевірку чорного списку AMS"
+
+msgid "ELEGOO Seed Lab"
+msgstr ""
+
+msgid "ELEGOO AI"
+msgstr ""
 
 msgid "Home page and daily tips"
 msgstr "Головна сторінка та щоденні поради"
@@ -18497,22 +18506,41 @@ msgid "Operation not implemented. Please try again later."
 msgstr ""
 
 msgid ""
-"Operation failed. Please check if multiple clients are open and continue on "
-"the main client."
-msgstr ""
-
-msgid ""
 "The file is too large to upload. Please try another way to start the "
 "transfer or print."
 msgstr ""
 
+msgid "Unable to connect to main process. Please try again."
+msgstr ""
+
+msgid "Failed to connect to main process. Please try again."
+msgstr ""
+
+msgid "Connection to main process lost. Please try again."
+msgstr ""
+
+msgid "Connection to main process closed. Please try again."
+msgstr ""
+
+msgid "Communication error with main process. Please try again."
+msgstr ""
+
+msgid "Failed to send request to main process. Please try again."
+msgstr ""
+
+msgid "Invalid data received from main process. Please try again."
+msgstr ""
+
+msgid "Communication protocol error with main process. Please try again."
+msgstr ""
+
+msgid "Too many requests to main process. Please try again later."
+msgstr ""
+
+msgid "Internal communication error. Please try again."
+msgstr ""
+
 msgid "Host/IP/URL"
-msgstr ""
-
-msgid "Send print task failed"
-msgstr ""
-
-msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

@@ -195,35 +195,35 @@ void PrintSendDialogEx::setupIPCHandlers()
         return;
 
     // Handle request_print_task (async due to time-consuming preparePrintTask operation)
-    mIpc->onRequestAsync("request_print_task", [this](const webviewIpc::IPCRequest&                     request,
-                                                      std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_print_task", [this](const IPCRequest&                     request,
+                                                      std::function<void(const IPCResult&)> sendResponse) {
         std::string printerId = request.params.value("printerId", "");
 
             try {
-                webviewIpc::IPCResult response = this->preparePrintTask(printerId);
+                IPCResult response = this->preparePrintTask(printerId);
                 sendResponse(response);
                     
             } catch (const std::exception& e) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in request_print_task: %s") % e.what();
-                sendResponse(webviewIpc::IPCResult::error(std::string("Print task preparation failed: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Print task preparation failed: ") + e.what()));
             } catch (...) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": unknown error in request_print_task";
-                sendResponse(webviewIpc::IPCResult::error("Print task preparation failed: Unknown error"));
+                sendResponse(IPCResult::error("Print task preparation failed: Unknown error"));
             }
     });
 
     // Handle request_printer_list
-    mIpc->onRequest("request_printer_list", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("request_printer_list", [this](const IPCRequest& request) {
         try {
             return getPrinterList();
         } catch (const std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in request_printer_list: %s") % e.what();
-            return webviewIpc::IPCResult::error("Failed to get printer list");
+            return IPCResult::error("Failed to get printer list");
         }
     });
 
     // Handle cancel_print
-    mIpc->onEvent("cancel_print", [this](const webviewIpc::IPCEvent& event) {
+    mIpc->onEvent("cancel_print", [this](const IPCEvent& event) {
         try {
             wxGetApp().CallAfter([this]() {
                 onCancel();
@@ -233,8 +233,8 @@ void PrintSendDialogEx::setupIPCHandlers()
         }
     });
 
-    mIpc->onRequestAsync("start_upload", [this](const webviewIpc::IPCRequest& request,
-                                                 std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("start_upload", [this](const IPCRequest& request,
+                                                 std::function<void(const IPCResult&)> sendResponse) {
         try {
             auto result = onPrint(request.params);
             if (result.code == 0) {
@@ -246,14 +246,14 @@ void PrintSendDialogEx::setupIPCHandlers()
             }
         } catch (const std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << "Error in start_upload: " << e.what();
-            sendResponse(webviewIpc::IPCResult::error(std::string("Upload failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Upload failed: ") + e.what()));
         } catch (...) {
             BOOST_LOG_TRIVIAL(error) << "Unknown error in start_upload";
-            sendResponse(webviewIpc::IPCResult::error("Upload failed: Unknown error"));
+            sendResponse(IPCResult::error("Upload failed: Unknown error"));
         }
     });
 
-    mIpc->onEvent("expand_window", [this](const webviewIpc::IPCEvent& event) {
+    mIpc->onEvent("expand_window", [this](const IPCEvent& event) {
         try {
             bool expand = event.data.value("expand", false);
             if (!expand) {
@@ -272,7 +272,7 @@ void PrintSendDialogEx::setupIPCHandlers()
         }
     });
 
-    mIpc->onRequest("get_current_bed_type", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("get_current_bed_type", [this](const IPCRequest& request) {
         try {
             int         bedType    = getCurrentBedType();
             std::string bedTypeStr = "";
@@ -286,30 +286,30 @@ void PrintSendDialogEx::setupIPCHandlers()
 
             nlohmann::json response = nlohmann::json::object();
             response["bedType"]     = bedTypeStr;
-            return webviewIpc::IPCResult::success(response);
+            return IPCResult::success(response);
         } catch (const std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in request_printer_list: %s") % e.what();
-            return webviewIpc::IPCResult::error("Failed to get printer list");
+            return IPCResult::error("Failed to get printer list");
         }
     });
 
     // Handle request_mms_info (async due to potentially time-consuming getPrinterMmsInfo operation)
-    mIpc->onRequestAsync("request_mms_info", [this](const webviewIpc::IPCRequest& request,
-                                                     std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_mms_info", [this](const IPCRequest& request,
+                                                     std::function<void(const IPCResult&)> sendResponse) {
         std::string printerId = request.params.value("printerId", "");
         try {
-            webviewIpc::IPCResult response = this->getPrinterMmsInfo(printerId);
+            IPCResult response = this->getPrinterMmsInfo(printerId);
             sendResponse(response);
         } catch (const std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in request_mms_info: %s") % e.what();
-            sendResponse(webviewIpc::IPCResult::error(std::string("MMS info request failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("MMS info request failed: ") + e.what()));
         } catch (...) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": unknown error in request_mms_info";
-            sendResponse(webviewIpc::IPCResult::error("MMS info request failed: Unknown error"));
+            sendResponse(IPCResult::error("MMS info request failed: Unknown error"));
         }
     });
 }
-webviewIpc::IPCResult PrintSendDialogEx::preparePrintTask(const std::string& printerId)
+IPCResult PrintSendDialogEx::preparePrintTask(const std::string& printerId)
 {
     nlohmann::json printTask     = json::object();
     auto           preset_bundle = wxGetApp().preset_bundle;
@@ -474,16 +474,16 @@ webviewIpc::IPCResult PrintSendDialogEx::preparePrintTask(const std::string& pri
 
     printInfo["filamentList"] = filamentList;
 
-    webviewIpc::IPCResult result;
+    IPCResult result;
     result.data    = printInfo;
     result.code    = 0;
     result.message = getErrorMessage(PrinterNetworkErrorCode::SUCCESS);
     return result;
 }
 
-webviewIpc::IPCResult PrintSendDialogEx::getPrinterMmsInfo(const std::string &printerId)
+IPCResult PrintSendDialogEx::getPrinterMmsInfo(const std::string &printerId)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     mMmsGroup = PrinterMmsGroup();
     PrinterNetworkInfo printerNetworkInfo = PrinterManager::getInstance()->getPrinterNetworkInfo(printerId);
     if(!printerNetworkInfo.systemCapabilities.supportsMultiFilament) {
@@ -521,9 +521,9 @@ webviewIpc::IPCResult PrintSendDialogEx::getPrinterMmsInfo(const std::string &pr
     result.message = getErrorMessage(PrinterNetworkErrorCode::SUCCESS);
     return result;
 }
-webviewIpc::IPCResult PrintSendDialogEx::getPrinterList()
+IPCResult PrintSendDialogEx::getPrinterList()
 {
-    webviewIpc::IPCResult           result;
+    IPCResult           result;
     nlohmann::json                  printers    = json::array();
     std::vector<PrinterNetworkInfo> printerList = PrinterManager::getInstance()->getPrinterList();
     for (auto& printer : printerList) {
@@ -555,9 +555,9 @@ webviewIpc::IPCResult PrintSendDialogEx::getPrinterList()
     return result;
 }
 
-webviewIpc::IPCResult PrintSendDialogEx::onPrint(const nlohmann::json& printInfo)
+IPCResult PrintSendDialogEx::onPrint(const nlohmann::json& printInfo)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     result.data                       = nlohmann::json::object();
     PrinterNetworkErrorCode errorCode = PrinterNetworkErrorCode::SUCCESS;
     try {

@@ -29,9 +29,14 @@ else()
     parse_dotenv("${CMAKE_SOURCE_DIR}/../.env")
 endif()
 
+# Allow override when GitHub is unreachable (e.g. use Gitee mirror or local path)
+if(NOT DEFINED ELEGOOLINK_GIT_REPOSITORY)
+    set(ELEGOOLINK_GIT_REPOSITORY "https://github.com/ELEGOO-3D/elegoo-link.git")
+endif()
+
 elegooslicer_add_cmake_project(elegoolink
 
-    GIT_REPOSITORY      git@gitee.com:fdm-slicing-software/elegoo-link.git
+    GIT_REPOSITORY      ${ELEGOOLINK_GIT_REPOSITORY}
     GIT_TAG             origin/main
     
     DEPENDS 
