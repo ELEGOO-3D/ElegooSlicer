@@ -1195,6 +1195,10 @@ void MainFrame::init_tabpanel() {
             show_option(false);
             break;
         }*/
+        
+        if (sel == tp3DEditor) {
+            wxGetApp().TryShowBeginnerGuideOnPreparePage();
+        }
     });
 
     if (wxGetApp().is_editor()) {
@@ -3746,6 +3750,11 @@ void MainFrame::request_select_tab(TabPosition pos, const std::string& printerId
         evt->SetString(wxString::FromUTF8(printerId));
     }
     wxQueueEvent(this, evt);
+}
+
+int MainFrame::current_tab() const
+{
+    return m_tabpanel ? m_tabpanel->GetSelection() : wxNOT_FOUND;
 }
 
 int MainFrame::get_calibration_curr_tab() {

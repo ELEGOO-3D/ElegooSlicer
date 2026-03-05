@@ -440,6 +440,7 @@ public:
     wxString transition_tridid(int trid_id);
     void            ShowUserGuide();
     void            ShowBeginnerGuide();
+    bool            TryShowBeginnerGuideOnPreparePage();
     void            ShowDownNetPluginDlg();
     void            ShowUserLogin(bool show = true);
     void            ShowOnlyFilament();

@@ -989,11 +989,9 @@ void GUI_App::post_init()
         CallAfter([this] {
             bool cw_showed = this->config_wizard_startup();
             
-            // Show BeginnerGuideView on first startup if it hasn't been shown before
-            // ShowModal() will block until the dialog is closed, so version check will wait
-            if (!app_config->get_beginner_guide_shown()) {
-                ShowBeginnerGuide();
-            }
+            // Show beginner guide only when user is on Prepare page.
+            // If current page is not Prepare, it will be shown when switching to Prepare for the first time.
+            TryShowBeginnerGuideOnPreparePage();
 
             std::string http_url = get_http_url(app_config->get_country_code());
             std::string language = GUI::into_u8(current_language_code());
@@ -2771,13 +2769,14 @@ bool GUI_App::on_init_inner()
 //#else
         if (!m_post_initialized && !m_adding_script_handler) {
 //#endif
-            m_post_initialized = true;
+           
 #ifdef WIN32
             this->mainframe->register_win32_callbacks();
 #endif
             this->post_init();
 
             update_publish_status();
+            m_post_initialized = true;
         }
 
         if (m_post_initialized && app_config->dirty())
@@ -3584,6 +3583,18 @@ void GUI_App::ShowBeginnerGuide(){
     // Mark that beginner guide has been shown
     app_config->set_beginner_guide_shown(true);
     app_config->save();
+}
+
+bool GUI_App::TryShowBeginnerGuideOnPreparePage()
+{
+    if (!m_post_initialized||!m_initialized || !app_config || app_config->get_beginner_guide_shown() || !mainframe)
+        return false;
+
+    if (mainframe->current_tab() != MainFrame::tp3DEditor)
+        return false;
+
+    ShowBeginnerGuide();
+    return true;
 }
 
 void GUI_App::ShowUserLogin(bool show)
