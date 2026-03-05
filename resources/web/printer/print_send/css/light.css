@@ -703,3 +703,8 @@
 .error-tips:last-of-type {
   margin-bottom: 0;
 }
+
+.el-select-group__title {
+  font-size: 16px;
+  font-weight: 500;
+}

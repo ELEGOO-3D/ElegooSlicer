@@ -99,6 +99,14 @@ const PrintSendApp = {
             return (this.mmsInfo && this.mmsInfo.mmsList) || [];
         },
 
+        networkPrinters() {
+            return this.printerList.filter(printer => printer.networkType === 1);
+        },
+
+        localPrinters() {
+            return this.printerList.filter(printer => printer.networkType === 0);
+        },
+
         // Check if selected printer model does not match the current project printer model
         printerModelNotMatch() {
             return this.curPrinter && this.printInfo.currentProjectPrinterModel && this.curPrinter.printerModel !== this.printInfo.currentProjectPrinterModel;

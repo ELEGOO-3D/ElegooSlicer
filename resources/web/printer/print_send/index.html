@@ -82,24 +82,49 @@
                                             </div>
                                         </div>
                                     </template>
-                                    <el-option v-for="item in printerList" :key="item.printerId" class="printer-option"
-                                        :value="item">
-                                        <div class="model-container">
-                                            <img :src="item.printerImg" class="model-image" alt="printer" />
-                                            <div class="model-details">
-                                                <span class="model-title">{{ item.printerName }}</span>
-                                                <div class="model-description-row">
-                                                    <span class="model-description">{{ item.networkType===0 ? item.host
-                                                        : "SN: " + item.serialNumber }}</span>
-                                                    <el-text class="printer-status-dropdown"
-                                                        :style="getPrinterStatusStyle(item.printerStatus, item.connectStatus)"
-                                                        truncated>
-                                                        {{ getPrinterStatus(item.printerStatus, item.connectStatus) }}
-                                                    </el-text>
+                                    <el-option-group v-if="networkPrinters.length > 0"
+                                        :label="$t('printerManager.networkPrinters')">
+                                        <el-option v-for="item in networkPrinters" :key="item.printerId"
+                                            class="printer-option" :value="item">
+                                            <div class="model-container">
+                                                <img :src="item.printerImg" class="model-image" alt="printer" />
+                                                <div class="model-details">
+                                                    <span class="model-title">{{ item.printerName }}</span>
+                                                    <div class="model-description-row">
+                                                        <span class="model-description">{{ item.networkType===0 ? item.host
+                                                            : "SN: " + item.serialNumber }}</span>
+                                                        <el-text class="printer-status-dropdown"
+                                                            :style="getPrinterStatusStyle(item.printerStatus, item.connectStatus)"
+                                                            truncated>
+                                                            {{ getPrinterStatus(item.printerStatus, item.connectStatus) }}
+                                                        </el-text>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </el-option>
+                                        </el-option>
+                                    </el-option-group>
+
+                                    <el-option-group v-if="localPrinters.length > 0"
+                                        :label="$t('printerManager.localPrinters')">
+                                        <el-option v-for="item in localPrinters" :key="item.printerId"
+                                            class="printer-option" :value="item">
+                                            <div class="model-container">
+                                                <img :src="item.printerImg" class="model-image" alt="printer" />
+                                                <div class="model-details">
+                                                    <span class="model-title">{{ item.printerName }}</span>
+                                                    <div class="model-description-row">
+                                                        <span class="model-description">{{ item.networkType===0 ? item.host
+                                                            : "SN: " + item.serialNumber }}</span>
+                                                        <el-text class="printer-status-dropdown"
+                                                            :style="getPrinterStatusStyle(item.printerStatus, item.connectStatus)"
+                                                            truncated>
+                                                            {{ getPrinterStatus(item.printerStatus, item.connectStatus) }}
+                                                        </el-text>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </el-option>
+                                    </el-option-group>
                                 </el-select>
 
                                 <el-select v-model="selectedBedType" class="bed-select" :show-arrow="false"

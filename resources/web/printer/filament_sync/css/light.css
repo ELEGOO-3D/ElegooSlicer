@@ -232,3 +232,8 @@
   color: var(--color-error);
   flex: 1;
 }
+
+.el-select-group__title {
+  font-size: 16px;
+  font-weight: 500;
+}
