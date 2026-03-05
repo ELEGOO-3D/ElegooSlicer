@@ -215,3 +215,5 @@ src/slic3r/GUI/Elegoo/UserLoginView.hpp
 src/slic3r/GUI/Elegoo/PrinterMmsSyncView.cpp
 src/slic3r/GUI/Elegoo/BeginnerGuideView.hpp
 src/slic3r/GUI/Elegoo/BeginnerGuideView.hpp
+src/slic3r/GUI/StepMeshDialog.cpp
+src/slic3r/GUI/Downloader.cpp

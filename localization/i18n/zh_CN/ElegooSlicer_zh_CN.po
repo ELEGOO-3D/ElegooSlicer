@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Slic3rPE\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-23 19:16+0800\n"
+"POT-Creation-Date: 2026-03-05 11:02+0800\n"
 "PO-Revision-Date: 2023-04-01 13:21+0800\n"
 "Last-Translator: ELEGOOTechSupport <softfeverever@gmail.com>\n"
 "Language-Team: \n"
@@ -692,6 +692,9 @@ msgstr "旋转文字"
 msgid "Text shape"
 msgstr "文本形状"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "旋转文字"
@@ -750,6 +753,11 @@ msgstr "无法使用所选字体书写文本。请尝试选择其他字体。"
 msgid "Embossed text cannot contain only white spaces."
 msgstr "浮雕文本不能只包含空格。"
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr "文本包含字体未知的字符字形（用“？”表示）。"
 
@@ -770,6 +778,12 @@ msgstr "文字输入里面的字体高度太小，放大了。"
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "文本不显示当前水平对齐方式"
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr "编辑文字"
 
 msgid "Revert font changes."
 msgstr "还原字体更改。"
@@ -3580,6 +3594,12 @@ msgid ""
 "Reset to 0.2."
 msgstr "层高过小。将重置为0.2"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr "层高过大。将重置为 %0.3f。"
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4303,6 +4323,12 @@ msgstr "避开挤出标定区域"
 msgid "Align to Y axis"
 msgstr "对齐到Y轴"
 
+msgid "Fit"
+msgstr "适应"
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr "聚焦选定模型，在未选择任何模型时聚焦选中的打印床"
+
 msgid "Add plate"
 msgstr "添加新盘"
 
@@ -4382,7 +4408,7 @@ msgstr "尺寸："
 msgid ""
 "Conflicts of G-code paths have been found at layer %d, z = %.2lf mm. Please "
 "separate the conflicted objects farther (%s <-> %s)."
-msgstr ""
+msgstr "在第%d层，z=%.2lf mm处发现G-code路径冲突。请将冲突的对象分开更多（%s <-> %s）。"
 
 msgid "An object is laid over the plate boundaries."
 msgstr "检测到有对象放在盘的边界上。"
@@ -4540,7 +4566,7 @@ msgid "Send all"
 msgstr "发送所有盘"
 
 msgid "Beginner Guide"
-msgstr ""
+msgstr "操作指南"
 
 msgid "Keyboard Shortcuts"
 msgstr "快捷键"
@@ -4565,6 +4591,12 @@ msgstr "检查预设更新"
 
 msgid "Open Network Test"
 msgstr "打开网络测试"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -5994,7 +6026,7 @@ msgstr "请在参数页更正它们"
 
 msgid ""
 "The 3mf has the following modified G-code in filament or printer presets:"
-msgstr ""
+msgstr "该3mf在耗材或打印机预设中有以下修改过的G-code："
 
 msgid ""
 "Please confirm that all modified G-code is safe to prevent any damage to the "
@@ -6005,7 +6037,7 @@ msgid "Modified G-code"
 msgstr "修改过的G-codes"
 
 msgid "The 3mf has the following customized filament or printer presets:"
-msgstr ""
+msgstr "该3mf在耗材或打印机预设中有以下自定义的预设："
 
 msgid ""
 "Please confirm that the G-code within these presets is safe to prevent any "
@@ -6197,7 +6229,7 @@ msgid "prepare 3mf file..."
 msgstr "正在准备3mf文件..."
 
 msgid "download failed, unknown file format."
-msgstr ""
+msgstr "下载失败，未知的文件格式。"
 
 msgid "downloading project..."
 msgstr "项目下载中..."
@@ -6744,12 +6776,6 @@ msgstr "开发者模式"
 
 msgid "Skip AMS blacklist check"
 msgstr "跳过AMS黑名单检查"
-
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
-msgstr ""
 
 msgid "Home page and daily tips"
 msgstr "首页和每日小贴士"
@@ -8110,6 +8136,8 @@ msgid ""
 "You can save or discard the preset values you have modified, or choose to "
 "transfer the values you have modified to the new preset."
 msgstr ""
+"\n"
+"您可以保存或丢弃已经修改的预设值，或者选择将修改后的值转移到新的预设中。"
 
 msgid "You have previously modified your settings."
 msgstr "您已经修改了预设参数。"
@@ -9284,6 +9312,9 @@ msgid ""
 "You can adjust the machine_max_junction_deviation value in your printer's "
 "configuration to get higher limits."
 msgstr ""
+"连接偏差设置超过了打印机的最大值（machine_max_junction_deviation）。\n"
+"ElegooSlicer将自动限制连接偏差，以确保不超过打印机的能力。\n"
+"您可以在打印机配置中调整machine_max_junction_deviation值，以获得更高的限制。"
 
 msgid ""
 "The acceleration setting exceeds the printer's maximum acceleration "
@@ -9319,7 +9350,7 @@ msgstr "当壁序列为外内或内外内时，精确墙壁选项将被忽略。
 msgid ""
 "Filament shrinkage will not be used because filament shrinkage for the used "
 "filaments differs significantly."
-msgstr ""
+msgstr "由于使用的耗材丝的收缩率差异较大，将不使用耗材丝收缩补偿。"
 
 msgid "Generating skirt & brim"
 msgstr "正在生成skirt和brim"
@@ -9357,7 +9388,7 @@ msgstr ""
 "XY平面上的不可打印区域。这个多边形区域由以下格式的点表示：“XxY，XxY，…”"
 
 msgid "Bed texture area"
-msgstr ""
+msgstr "热床纹理区域"
 
 msgid "Bed custom texture"
 msgstr "自定义热床纹理"
@@ -9382,6 +9413,8 @@ msgid ""
 "the next layers will be linearly shrunk less, up to the layer indicated by "
 "this value."
 msgstr ""
+"象脚补偿将生效的层数。第一层将被象脚补偿值收缩，接下来的层将线性地逐渐减少收"
+"缩，直到这个值所指示的层数。"
 
 msgid "layers"
 msgstr "层"
@@ -9401,7 +9434,7 @@ msgid "Preferred orientation"
 msgstr "零件朝向偏好"
 
 msgid "Automatically orient stls on the Z axis upon initial import."
-msgstr ""
+msgstr "在初次导入时自动沿Z轴定向STL文件。"
 
 msgid "Printer preset names"
 msgstr "打印机预设名"
@@ -9794,6 +9827,10 @@ msgid ""
 "The actual bridge flow used is calculated by multiplying this value with the "
 "filament flow ratio, and if set, the object's flow ratio."
 msgstr ""
+"稍微降低这个值（例如0.9）可以减少桥接的材料量，从而改善下垂现象。\n"
+"\n"
+"实际使用的桥接流量是通过将此值与耗材流量比例以及（如果设置）对象的流量比例相"
+"乘来计算的。"
 
 msgid "Internal bridge flow ratio"
 msgstr "内部搭桥流量比例"
@@ -9807,6 +9844,11 @@ msgid ""
 "with the bridge flow ratio, the filament flow ratio, and if set, the "
 "object's flow ratio."
 msgstr ""
+"这个值控制内部桥接层的厚度。这是稀疏填充上方的第一层。稍微降低这个值（例如"
+"0.9）可以改善稀疏填充上的表面质量。\n"
+"\n"
+"实际使用的内部桥接流量是通过将此值与桥接流量比例、耗材流量比例以及（如果设"
+"置）对象的流量比例相乘来计算的。"
 
 msgid "Top surface flow ratio"
 msgstr "顶部表面流量比例"
@@ -9818,6 +9860,10 @@ msgid ""
 "The actual top surface flow used is calculated by multiplying this value "
 "with the filament flow ratio, and if set, the object's flow ratio."
 msgstr ""
+"这个值影响顶部实心填充的材料量。稍微降低它可以获得更平滑的表面。\n"
+"\n"
+"实际使用的顶部表面流量是通过将此值与耗材流量比例以及（如果设置）对象的流量比"
+"例相乘来计算的。"
 
 msgid "Bottom surface flow ratio"
 msgstr "底部表面流量比例"
@@ -9828,6 +9874,10 @@ msgid ""
 "The actual bottom solid infill flow used is calculated by multiplying this "
 "value with the filament flow ratio, and if set, the object's flow ratio."
 msgstr ""
+"这个值影响底部实心填充的材料量。\n"
+"\n"
+"实际使用的底部实心填充流量是通过将此值与耗材流量比例以及（如果设置）对象的流"
+"量比例相乘来计算的。"
 
 msgid "Precise wall"
 msgstr "精准外墙尺寸"
@@ -15691,11 +15741,15 @@ msgid ""
 "Recommended: Set Damp to 0.\n"
 "This will use the printer's default or the last saved value."
 msgstr ""
+"推荐：将阻尼设置为0。\n"
+" 这将使用打印机的默认值或上次保存的值。"
 
 msgid ""
 "Please input valid values:\n"
 "(0 < FreqStart < FreqEnd < 500)"
 msgstr ""
+"请输入有效值：\n"
+"(0 < 起始频率 < 结束频率 < 500)"
 
 msgid "Please input a valid damping factor (0 < Damping/zeta factor <= 1)"
 msgstr "请输入有效的阻尼因子（0 < 阻尼/ζ因子 <= 1）"
@@ -15716,33 +15770,37 @@ msgid ""
 "Please input valid values:\n"
 "(0 < Freq < 500)"
 msgstr ""
+"请输入有效值：\n"
+"(0 < 频率 < 500)"
 
 msgid ""
 "Please input a valid damping factor (0 <= DampingStart < DampingEnd <= 1)"
-msgstr ""
+msgstr "请输入有效的阻尼因子（0 <= 阻尼起始 < 阻尼结束 <= 1）"
 
 msgid "Junction Deviation test"
-msgstr ""
+msgstr "连接偏差测试"
 
 msgid "Start junction deviation: "
-msgstr ""
+msgstr "起始连接偏差："
 
 msgid "End junction deviation: "
-msgstr ""
+msgstr "结束连接偏差："
 
 msgid "Junction Deviation settings"
-msgstr ""
+msgstr "连接偏差设置"
 
 msgid "Note: Lower values = sharper corners but slower speeds"
-msgstr ""
+msgstr "注意：较低的值 = 更尖锐的角，但速度较慢"
 
 msgid ""
 "Please input valid values:\n"
 "(0 <= Junction Deviation < 1)"
 msgstr ""
+"请输入有效值：\n"
+"(0 <= 连接偏差 < 1)"
 
 msgid "NOTE: High values may cause Layer shift"
-msgstr ""
+msgstr "注意：较高的值可能导致层移"
 
 msgid "Send G-code to printer host"
 msgstr "将G-Code发送到打印机"
@@ -15864,10 +15922,10 @@ msgid "DNS Server:"
 msgstr "DNS服务："
 
 msgid "Test ElegooSlicer (GitHub)"
-msgstr ""
+msgstr "测试 ElegooSlicer (GitHub)"
 
 msgid "Test ElegooSlicer (GitHub):"
-msgstr ""
+msgstr "测试 ElegooSlicer (GitHub)："
 
 msgid "Test bing.com"
 msgstr "测试 Bing.com"
@@ -16948,6 +17006,9 @@ msgid ""
 "printer, then try again."
 msgstr "网络错误，请检查电脑、打印机的网络情况后重试"
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr "账号授权失败，请检查账号的登录情况后重试"
@@ -17114,6 +17175,41 @@ msgstr ""
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
 msgstr "%1% 连接异常，请检查后重试"
+
+msgid "Step file import parameters"
+msgstr "Step文件导入参数"
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr "较小的线性和角度偏转会产生更高质量的变换，但会增加处理时间。"
+
+msgid "View Wiki for more information"
+msgstr "查看Wiki以获取更多信息"
+
+msgid "Linear Deflection"
+msgstr "线性偏转"
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr "请输入有效值 (0.001 < 线性偏转 < 0.1)"
+
+msgid "Angle Deflection"
+msgstr "角度偏转"
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr "请输入有效值 (0.01 < 角度偏转 < 1.0)"
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr "将复合体和组合体拆分成多个对象"
+
+msgid "Number of triangular facets"
+msgstr "三角面片数量"
+
+msgid "Calculating, please wait..."
+msgstr "计算中，请稍候..."
+
+msgid "The download has failed"
+msgstr "下载失败"
 
 #: resources/data/hints.ini: [hint:G-code window]
 msgid ""
@@ -21418,9 +21514,6 @@ msgstr ""
 #~ msgstr ""
 #~ "无效状态。\n"
 #~ "切割后没有选中要保留的部分"
-
-#~ msgid "Edit Text"
-#~ msgstr "编辑文字"
 
 #~ msgid "Error! Unable to create thread!"
 #~ msgstr "发生错误，无法创建线程。"

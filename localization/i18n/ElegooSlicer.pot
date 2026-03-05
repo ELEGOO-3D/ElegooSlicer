@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:22+0800\n"
+"POT-Creation-Date: 2026-03-05 11:02+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -689,6 +689,9 @@ msgstr ""
 msgid "Text shape"
 msgstr ""
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr ""
@@ -747,6 +750,11 @@ msgstr ""
 msgid "Embossed text cannot contain only white spaces."
 msgstr ""
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr ""
 
@@ -766,6 +774,12 @@ msgid "Too small, enlarged font height inside text input."
 msgstr ""
 
 msgid "Text doesn't show current horizontal alignment."
+msgstr ""
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
 msgstr ""
 
 msgid "Revert font changes."
@@ -3506,6 +3520,12 @@ msgid ""
 "Reset to 0.2."
 msgstr ""
 
+#, possible-c-format, possible-boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4183,6 +4203,12 @@ msgstr ""
 msgid "Align to Y axis"
 msgstr ""
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 msgid "Add plate"
 msgstr ""
 
@@ -4438,6 +4464,12 @@ msgid "Check for Presets Update"
 msgstr ""
 
 msgid "Open Network Test"
+msgstr ""
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
 msgstr ""
 
 #, possible-c-format, possible-boost-format
@@ -6569,12 +6601,6 @@ msgid "Develop mode"
 msgstr ""
 
 msgid "Skip AMS blacklist check"
-msgstr ""
-
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
 msgstr ""
 
 msgid "Home page and daily tips"
@@ -16010,6 +16036,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -16118,6 +16147,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -16170,6 +16202,41 @@ msgstr ""
 
 #, possible-boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]

@@ -34,7 +34,7 @@ body {
 .guide-sidebar {
     width: 310px;
     background: linear-gradient(180deg, #1e88e5 0%, #1565c0 100%);
-    background-image: url('../img/sider.svg');
+    background-image: url('../img/sider.light.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
