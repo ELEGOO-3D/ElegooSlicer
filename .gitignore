@@ -54,3 +54,4 @@ dev_log/
 src/png/
 src/tiff/
 src/zlib/
+scripts/__pycache__/
