@@ -228,7 +228,7 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
     std::string caCertDir = resources_dir();
     std::replace(caCertDir.begin(), caCertDir.end(), '\\', '/');
     cfg.cloud.caCertPath = caCertDir + "/cert/cacert.pem"; // Use system default CA certs
-
+    cfg.cloud.rtmLogPath = data_dir() + "/log/rtm.log";
     if (!elink::ElegooLink::getInstance().initialize(cfg)) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": error initializing ElegooLink";
     }
