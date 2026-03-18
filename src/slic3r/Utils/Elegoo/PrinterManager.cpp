@@ -873,11 +873,18 @@ PrinterNetworkResult<bool> PrinterManager::sendRtmMessage(const std::string& pri
 
 PrinterNetworkResult<std::vector<LicenseExpiredDevice>> PrinterManager::getLicenseExpiredDevices()
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getLicenseExpiredDevices();
+    }
     return ElegooLink::getInstance()->getLicenseExpiredDevices();
 }
 
 PrinterNetworkResult<bool> PrinterManager::renewLicense(const std::string& serialNumber)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->renewLicense(serialNumber);
+    }
+
     if (serialNumber.empty()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": serialNumber is empty";
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::INVALID_PARAMETER, false);
@@ -887,6 +894,10 @@ PrinterNetworkResult<bool> PrinterManager::renewLicense(const std::string& seria
 
 PrinterNetworkResult<bool> PrinterManager::refreshPrinterStatus(const std::string& printerId)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->refreshPrinterStatus(printerId);
+    }
+
     if (printerId.empty()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": printerId is empty";
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::INVALID_PARAMETER, false);
@@ -896,6 +907,10 @@ PrinterNetworkResult<bool> PrinterManager::refreshPrinterStatus(const std::strin
 
 PrinterNetworkResult<std::string> PrinterManager::getPrinterStatusRaw(const std::string& printerId)
 {
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getPrinterStatusRaw(printerId);
+    }
+    
     CHECK_INITIALIZED(std::string());
     
     auto printer = PrinterCache::getInstance()->getPrinter(printerId);
@@ -903,6 +918,7 @@ PrinterNetworkResult<std::string> PrinterManager::getPrinterStatusRaw(const std:
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
         return PrinterNetworkResult<std::string>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, std::string());
     }
+    
     
     if (printer.value().connectStatus != PRINTER_CONNECT_STATUS_CONNECTED) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not connected, printerId: %s") % printerId;

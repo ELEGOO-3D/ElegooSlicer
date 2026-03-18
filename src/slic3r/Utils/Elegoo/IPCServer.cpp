@@ -530,6 +530,41 @@ IPCResponse IPCServer::handleRequest(const IPCRequest& request)
                 response.message = result.message;
                 if (result.hasData())
                     response.data = convertPrinterPrintFileResponseToJson(*result.data);
+            } else if (actualMethod == "getLicenseExpiredDevices") {
+                auto result      = PrinterManager::getInstance()->getLicenseExpiredDevices();
+                response.code    = static_cast<int>(result.code);
+                response.message = result.message;
+                if (result.hasData()) {
+                    nlohmann::json devicesJson = nlohmann::json::array();
+                    for (const auto& dev : *result.data) {
+                        nlohmann::json item;
+                        item["serialNumber"] = dev.serialNumber;
+                        item["status"]       = dev.status;
+                        devicesJson.push_back(item);
+                    }
+                    response.data = devicesJson;
+                }
+            } else if (actualMethod == "renewLicense") {
+                std::string serialNumber = request.params.value("serialNumber", "");
+                auto        result       = PrinterManager::getInstance()->renewLicense(serialNumber);
+                response.code            = static_cast<int>(result.code);
+                response.message         = result.message;
+                if (result.hasData())
+                    response.data = *result.data;
+            } else if (actualMethod == "refreshPrinterStatus") {
+                std::string printerId = request.params.value("printerId", "");
+                auto        result    = PrinterManager::getInstance()->refreshPrinterStatus(printerId);
+                response.code         = static_cast<int>(result.code);
+                response.message      = result.message;
+                if (result.hasData())
+                    response.data = *result.data;
+            } else if (actualMethod == "getPrinterStatusRaw") {
+                std::string printerId = request.params.value("printerId", "");
+                auto        result    = PrinterManager::getInstance()->getPrinterStatusRaw(printerId);
+                response.code         = static_cast<int>(result.code);
+                response.message      = result.message;
+                if (result.hasData())
+                    response.data = *result.data;
             } else if (actualMethod == "getPrinterMmsInfo") {
                 auto result      = PrinterManager::getInstance()->getPrinterMmsInfo(request.params["printerId"]);
                 response.code    = static_cast<int>(result.code);

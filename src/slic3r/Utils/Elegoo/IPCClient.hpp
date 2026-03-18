@@ -49,6 +49,11 @@ public:
     PrinterNetworkResult<bool>                     deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds);
     PrinterNetworkResult<bool>                     sendRtmMessage(const std::string& printerId, const std::string& message);
 
+    PrinterNetworkResult<std::vector<LicenseExpiredDevice>> getLicenseExpiredDevices();
+    PrinterNetworkResult<bool>                              renewLicense(const std::string& serialNumber);
+    PrinterNetworkResult<bool>                              refreshPrinterStatus(const std::string& printerId);
+    PrinterNetworkResult<std::string>                       getPrinterStatusRaw(const std::string& printerId);
+
     PrinterNetworkResult<std::string>    upload(const PrinterNetworkParams& params);
     PrinterNetworkResult<UploadTaskInfo> getUploadTask(const std::string& taskId);
     PrinterNetworkResult<bool>           cancelUploadTask(const std::string& taskId);

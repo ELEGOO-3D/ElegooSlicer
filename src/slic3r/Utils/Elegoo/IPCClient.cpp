@@ -677,6 +677,67 @@ PrinterNetworkResult<PrinterPrintFileResponse> IPCClient::getFileDetail(const st
                                                           response.message);
 }
 
+PrinterNetworkResult<std::vector<LicenseExpiredDevice>> IPCClient::getLicenseExpiredDevices()
+{
+    IPCResponse response = sendRequest("printer.getLicenseExpiredDevices", nlohmann::json::object());
+
+    std::vector<LicenseExpiredDevice> devices;
+    if (response.code == 0 && response.data.is_array()) {
+        for (const auto& item : response.data) {
+            LicenseExpiredDevice dev;
+            if (item.is_object()) {
+                dev.serialNumber = item.value("serialNumber", "");
+                dev.status       = item.value("status", 0);
+            }
+            devices.push_back(dev);
+        }
+    }
+
+    return PrinterNetworkResult<std::vector<LicenseExpiredDevice>>(
+        static_cast<PrinterNetworkErrorCode>(response.code), devices, response.message);
+}
+
+PrinterNetworkResult<bool> IPCClient::renewLicense(const std::string& serialNumber)
+{
+    nlohmann::json params;
+    params["serialNumber"] = serialNumber;
+    IPCResponse response   = sendRequest("printer.renewLicense", params);
+    return PrinterNetworkResult<bool>(
+        static_cast<PrinterNetworkErrorCode>(response.code),
+        response.data.is_boolean() ? response.data.get<bool>() : false,
+        response.message);
+}
+
+PrinterNetworkResult<bool> IPCClient::refreshPrinterStatus(const std::string& printerId)
+{
+    nlohmann::json params;
+    params["printerId"] = printerId;
+    IPCResponse response =
+        sendRequest("printer.refreshPrinterStatus", params);
+    return PrinterNetworkResult<bool>(
+        static_cast<PrinterNetworkErrorCode>(response.code),
+        response.data.is_boolean() ? response.data.get<bool>() : false,
+        response.message);
+}
+
+PrinterNetworkResult<std::string> IPCClient::getPrinterStatusRaw(const std::string& printerId)
+{
+    nlohmann::json params;
+    params["printerId"] = printerId;
+    IPCResponse response =
+        sendRequest("printer.getPrinterStatusRaw", params);
+
+    std::string status;
+    if (response.code == 0 && response.data.is_string()) {
+        status = response.data.get<std::string>();
+    }
+
+    return PrinterNetworkResult<std::string>(
+        static_cast<PrinterNetworkErrorCode>(response.code),
+        status,
+        response.message);
+}
+
 PrinterNetworkResult<std::string> IPCClient::upload(const PrinterNetworkParams& params)
 {
     nlohmann::json jsonParams = convertPrinterNetworkParamsToJson(params);
