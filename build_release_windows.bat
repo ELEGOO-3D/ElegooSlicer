@@ -64,7 +64,7 @@ if "%1"=="pack" (
     if !ERRORLEVEL! neq 0 (
         echo.
         echo [ERROR] Failed to pack dependencies
-        exit /b !ERRORLEVEL!
+        exit /b 1
     )
     
     echo.
@@ -181,11 +181,11 @@ if "%dlweb%"=="ON" (
     echo.
 
     call scripts/download_web_dep.bat !TEST_PARAM!
-    if !ERRORLEVEL! neq 0 (
+    set "DLWEB_ERR=!ERRORLEVEL!"
+    if not "!DLWEB_ERR!"=="0" (
         echo.
         echo [ERROR] Download web dependencies failed. Exiting.
-        endlocal
-        exit /b !ERRORLEVEL!
+        endlocal & exit /b 1
     )
     echo.
     echo [OK] Web dependencies downloaded successfully
@@ -242,7 +242,7 @@ cmake --build . --config %build_type% --target deps -- -m
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] Dependencies build failed!
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 
 echo.
@@ -276,7 +276,7 @@ cmake --build . --config %build_type% --target ALL_BUILD -- -m
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] ElegooSlicer build failed!
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 
 echo.
@@ -297,7 +297,7 @@ cmake --build . --target install --config %build_type%
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] ElegooSlicer installation failed!
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 
 echo.
@@ -393,7 +393,7 @@ if "%sign%"=="ON" (
     %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i .\ElegooSlicer\elegoo-slicer.exe -m 3 -r elegoo
     if !ERRORLEVEL! neq 0 (
         echo [ERROR] Failed to sign elegoo-slicer.exe. Exiting.
-        exit /b !ERRORLEVEL!
+        exit /b 1
     )
     echo [OK] elegoo-slicer.exe signed successfully
     echo.
@@ -402,7 +402,7 @@ if "%sign%"=="ON" (
     %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i .\ElegooSlicer\ElegooSlicer.dll -m 3 -r elegoo
     if !ERRORLEVEL! neq 0 (
         echo [ERROR] Failed to sign ElegooSlicer.dll. Exiting.
-        exit /b !ERRORLEVEL!
+        exit /b 1
     )
     echo [OK] ElegooSlicer.dll signed successfully
     echo.
@@ -427,7 +427,7 @@ echo.
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] NSIS packaging failed! Please check if package.nsi is correct.
-    exit /b %ERRORLEVEL%
+    exit /b 1
 )
 echo.
 echo [OK] Installer created successfully
@@ -448,7 +448,7 @@ if "%sign%"=="ON" (
     if !ERRORLEVEL! neq 0 (
         echo.
         echo [ERROR] Failed to sign installer. Exiting.
-        exit /b !ERRORLEVEL!
+        exit /b 1
     )
     
     echo.
