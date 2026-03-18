@@ -1354,6 +1354,10 @@ void PrinterManager::checkUserAuthStatus(const PrinterNetworkInfo&      printerN
     UserNetworkManager::getInstance()->checkUserAuthStatus(requestUserInfo, result.code);
 }
 
+template void PrinterManager::checkUserAuthStatus<bool>(const PrinterNetworkInfo&      printerNetworkInfo,
+                                                         const PrinterNetworkResult<bool>& result,
+                                                         const UserNetworkInfo&         requestUserInfo);
+
 // Static member definitions for PrinterLock
 std::map<std::string, std::recursive_mutex> PrinterManager::PrinterLock::sPrinterMutexes;
 std::mutex                                  PrinterManager::PrinterLock::sMutex;

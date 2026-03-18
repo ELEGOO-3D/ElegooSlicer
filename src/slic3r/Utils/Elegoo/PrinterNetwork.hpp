@@ -8,6 +8,7 @@
 #include <vector>
 #include <map>
 #include <mutex>
+#include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
 
 namespace Slic3r {

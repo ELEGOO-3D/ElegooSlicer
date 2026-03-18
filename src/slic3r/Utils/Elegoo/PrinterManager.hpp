@@ -1,10 +1,14 @@
 #pragma once
+#include <atomic>
+#include <chrono>
 #include <map>
+#include <thread>
 #include "slic3r/Utils/Elegoo/PrinterNetwork.hpp"
 #include "slic3r/Utils/Singleton.hpp"
-#include "slic3r/Utils/Elegoo/PrinterNetwork.hpp"
 
 namespace Slic3r {
+
+class DynamicPrintConfig;
 
 class PrinterUploadManager;
 

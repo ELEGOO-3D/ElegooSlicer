@@ -2,6 +2,7 @@
 #define HOMEVIEW_HPP
 
 #include <wx/wx.h>
+#include <wx/statline.h>
 #include <wx/webview.h>
 #include <memory>
 #include <map>

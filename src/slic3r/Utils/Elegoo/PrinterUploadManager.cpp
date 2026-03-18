@@ -8,6 +8,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/log/trivial.hpp>
 #include <chrono>

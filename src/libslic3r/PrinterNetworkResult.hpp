@@ -4,6 +4,9 @@
 #include <string>
 #include <optional>
 #include <string_view>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace Slic3r {
 

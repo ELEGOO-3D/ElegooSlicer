@@ -12,7 +12,7 @@ std::vector<LayerPrintSequence> get_other_layers_print_sequence(int sequence_num
     assert(sequence.size() % sequence_nums == 0);
 
     res.reserve(sequence_nums);
-    size_t item_nums = sequence.size() / sequence_nums;
+    std::size_t item_nums = sequence.size() / sequence_nums;
 
     for (int i = 0; i < sequence_nums; ++i) {
         std::vector<int> item;
