@@ -41,7 +41,7 @@ if "%1" == "help" (
     echo.
     echo ============================================================================
     echo.
-    exit /b 0
+    goto end
 )
 
 @REM Pack deps
@@ -64,14 +64,14 @@ if "%1"=="pack" (
     if !ERRORLEVEL! neq 0 (
         echo.
         echo [ERROR] Failed to pack dependencies
-        exit /b 1
+        goto error_end
     )
     
     echo.
     echo [OK] Dependencies packed successfully: !PACK_NAME!
     echo ============================================================================
     echo.
-    exit /b 0
+    goto end
 )
 
 set debug=OFF
@@ -86,7 +86,7 @@ set ELEGOO_INTERNAL_TESTING=0
 
 set count=1
 :loop
-if "%1"=="" goto end
+if "%1"=="" goto args_end
 if /I "%1"=="vs2019" (
     set "VS_GENERATOR=Visual Studio 16 2019"
     set "PACK_SUFFIX=vs2019"
@@ -111,7 +111,7 @@ if "%1"=="test" set ELEGOO_INTERNAL_TESTING=1
 set /a count+=1
 shift
 goto loop
-:end
+:args_end
 
 
 echo.
@@ -181,11 +181,11 @@ if "%dlweb%"=="ON" (
     echo.
 
     call scripts/download_web_dep.bat !TEST_PARAM!
-    set "DLWEB_ERR=!ERRORLEVEL!"
-    if not "!DLWEB_ERR!"=="0" (
+    if !ERRORLEVEL! neq 0 (
         echo.
         echo [ERROR] Download web dependencies failed. Exiting.
-        endlocal & exit /b 1
+        endlocal
+        goto error_end
     )
     echo.
     echo [OK] Web dependencies downloaded successfully
@@ -242,7 +242,7 @@ cmake --build . --config %build_type% --target deps -- -m
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] Dependencies build failed!
-    exit /b 1
+    goto error_end
 )
 
 echo.
@@ -253,7 +253,7 @@ if "%only_deps%"=="ON" (
     echo.
     echo [INFO] Only Deps mode - Build complete, exiting
     echo.
-    exit /b 0
+    goto end
 )
 
 :slicer
@@ -276,7 +276,7 @@ cmake --build . --config %build_type% --target ALL_BUILD -- -m
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] ElegooSlicer build failed!
-    exit /b 1
+    goto error_end
 )
 
 echo.
@@ -297,7 +297,7 @@ cmake --build . --target install --config %build_type%
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] ElegooSlicer installation failed!
-    exit /b 1
+    goto error_end
 )
 
 echo.
@@ -306,7 +306,7 @@ echo.
 
 if "%only_slicer%"=="ON" (
     echo [INFO] Only Slicer mode - Build complete, exiting
-    exit /b 0
+    goto end
 )
 
 @REM Check if packaging is needed
@@ -314,7 +314,7 @@ if "%pack_install%"=="OFF"  (
     echo.
     echo [INFO] Packaging disabled, build complete
     echo.
-    exit /b 0
+    goto end
 )
 
 :pack_install
@@ -337,7 +337,7 @@ for /f "tokens=1,* delims==" %%a in ('findstr "^ELEGOOSLICER_VERSION" "%PACK_INS
 if "!ELEGOOSLICER_VERSION!"=="" (
     echo.
     echo [ERROR] ELEGOOSLICER_VERSION is empty in install.ini. Exiting.
-    exit /b 1
+    goto error_end
 )
 
 echo [INFO] Version detected: !ELEGOOSLICER_VERSION!
@@ -374,12 +374,12 @@ if "%sign%"=="ON" (
     
     if "%SIGNTOOL_PATH%"=="" (
         echo [ERROR] SIGNTOOL_PATH must be set in .env file. Exiting.
-        exit /b 1
+        goto error_end
     )
 
     if "%SIGN_CONFIG_PATH%"=="" (
         echo [ERROR] SIGN_CONFIG_PATH must be set in .env file. Exiting.
-        exit /b 1
+        goto error_end
     )
 
     echo [INFO] Signing tool: %SIGNTOOL_PATH%
@@ -393,7 +393,7 @@ if "%sign%"=="ON" (
     %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i .\ElegooSlicer\elegoo-slicer.exe -m 3 -r elegoo
     if !ERRORLEVEL! neq 0 (
         echo [ERROR] Failed to sign elegoo-slicer.exe. Exiting.
-        exit /b 1
+        goto error_end
     )
     echo [OK] elegoo-slicer.exe signed successfully
     echo.
@@ -402,7 +402,7 @@ if "%sign%"=="ON" (
     %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i .\ElegooSlicer\ElegooSlicer.dll -m 3 -r elegoo
     if !ERRORLEVEL! neq 0 (
         echo [ERROR] Failed to sign ElegooSlicer.dll. Exiting.
-        exit /b 1
+        goto error_end
     )
     echo [OK] ElegooSlicer.dll signed successfully
     echo.
@@ -427,7 +427,7 @@ echo.
 if %ERRORLEVEL% neq 0 (
     echo.
     echo [ERROR] NSIS packaging failed! Please check if package.nsi is correct.
-    exit /b 1
+    goto error_end
 )
 echo.
 echo [OK] Installer created successfully
@@ -448,7 +448,7 @@ if "%sign%"=="ON" (
     if !ERRORLEVEL! neq 0 (
         echo.
         echo [ERROR] Failed to sign installer. Exiting.
-        exit /b 1
+        goto error_end
     )
     
     echo.
@@ -466,4 +466,9 @@ echo [OK] Full path: %WP%\%build_dir%\%INSTALL_NAME%
 echo ============================================================================
 echo.
 
+:end
 exit /b 0
+
+:error_end
+if not errorlevel 1 exit /b 1
+exit /b %ERRORLEVEL%
