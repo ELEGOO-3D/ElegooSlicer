@@ -8,10 +8,11 @@
 #include "slic3r/Utils/IPCMessage.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/asio.hpp>
+#include <boost/nowide/cstdio.hpp>
+#include <boost/nowide/fstream.hpp>
 #include <nlohmann/json.hpp>
 #include <deque>
 #include <memory>
-#include <fstream>
 
 #ifdef _WIN32
 #include <process.h>
@@ -287,7 +288,7 @@ void IPCServer::start()
         
         // Port file allows clients to discover the server's listening port
         std::string portFile = getIPCPortFilePath();
-        std::ofstream file(portFile);
+        boost::nowide::ofstream file(portFile);
         if (!file.is_open()) {
             BOOST_LOG_TRIVIAL(error) << "IPCServer: failed to write port file: " << portFile;
             cleanupResources();
@@ -327,10 +328,8 @@ void IPCServer::stop()
     UserNetworkEvent::getInstance()->userInfoChanged.disconnectAll();
 
     std::string portFile = getIPCPortFilePath();
-    boost::system::error_code ec;
-    boost::filesystem::remove(portFile, ec);
-    if (ec) {
-        BOOST_LOG_TRIVIAL(debug) << "IPCServer: failed to remove port file: " << ec.message();
+    if (boost::nowide::remove(portFile.c_str()) != 0) {
+        BOOST_LOG_TRIVIAL(debug) << "IPCServer: failed to remove port file: " << portFile;
     }
 
     cleanupResources();

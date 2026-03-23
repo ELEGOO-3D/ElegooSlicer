@@ -9,9 +9,9 @@
 #include "slic3r/GUI/MainFrame.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/asio.hpp>
+#include <boost/nowide/fstream.hpp>
 #include <nlohmann/json.hpp>
 #include <chrono>
-#include <fstream>
 
 
 #ifdef _WIN32
@@ -53,7 +53,7 @@ bool IPCClient::connectToMaster()
 
     unsigned short port = 0;
     std::string portFile = getIPCPortFilePath();
-    std::ifstream file(portFile);
+    boost::nowide::ifstream file(portFile);
     if (file.is_open()) {
         file >> port;
         file.close();
