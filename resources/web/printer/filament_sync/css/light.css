@@ -96,6 +96,10 @@
   font-weight: 500;
   line-height: 24px;
   color: var(--text-contrast);
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .el-select-dropdown__item.is-selected {
    font-weight: normal;

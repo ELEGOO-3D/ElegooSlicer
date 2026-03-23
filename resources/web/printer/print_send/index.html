@@ -69,7 +69,7 @@
                                             </span>
                                             <img :src="value.printerImg" class="model-image" alt="printer" />
                                             <div class="model-details">
-                                                <span class="model-title">{{ value.printerName }}</span>
+                                                <span class="model-title" :title="value.printerName">{{ value.printerName }}</span>
                                                 <div class="model-description-row">
                                                     <span class="model-description">{{ value.networkType===0 ?
                                                         value.host : "SN: " + value.serialNumber }}</span>
