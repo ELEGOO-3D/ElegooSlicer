@@ -2,7 +2,21 @@
 var m_ProfileItem;
 
 var FilamentPriority=new Array( "pla","abs","pet","tpu","pc");
-var VendorPriority=new Array("elegoo", "generic");
+// UI order (Elegoo first). When models is empty, only vendors in this list are shown; edit this array to add/remove brands
+var VendorPriority=new Array("elegoo", "generic", "polymaker", "esun", "sunlu");
+
+function isVendorInPriorityList(vendor)
+{
+	if(!vendor)
+		return false;
+	var v=vendor.toLowerCase().trim();
+	for(var i=0;i<VendorPriority.length;i++)
+	{
+		if(v===VendorPriority[i].toLowerCase())
+			return true;
+	}
+	return false;
+}
   
 function OnInit()
 {
@@ -97,12 +111,7 @@ function SortUI()
 		//let bCheck=$("#MachineList input:first").prop("checked");
 		if( fModel=='')
 		{
-			// Orca: hide
-			if(fVendor.toLowerCase() === 'generic' || fVendor.toLowerCase() === 'elegoo') {
-				bFind = true;
-			} else {
-				bFind = false;  
-			}
+			bFind = isVendorInPriorityList(fVendor);
 		}
 		else
 		{
