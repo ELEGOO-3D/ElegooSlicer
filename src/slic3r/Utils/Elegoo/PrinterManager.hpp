@@ -111,11 +111,9 @@ private:
     std::chrono::steady_clock::time_point mLastWanSyncScheduleTime;
     void monitorPrinterConnections();
     void runWanSyncScheduler();
-    void runWanSyncWorkerLoop();
-    std::mutex mWanPrintersMutex;
-    void syncWanPrintersFromCloud();
+    void runWanSyncWorker();
 
-    // Coalesce refresh requests so syncWanPrintersFromCloud() is only executed in runWanSyncWorkerLoop().
+    // Coalesce refresh requests so WAN sync logic is only executed in runWanSyncWorker().
     std::atomic<bool> mWanSyncRequestPending{false};
     std::mutex mWanSyncRequestMutex;
     std::condition_variable mWanSyncRequestCv;
