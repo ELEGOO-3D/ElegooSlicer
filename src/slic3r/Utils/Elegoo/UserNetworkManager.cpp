@@ -313,14 +313,21 @@ bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
     // if the user id is the same, update the user info
     if (mUserInfo.userId == userInfo.userId) {
         bool needNotify = false;
+        bool needRefreshWanPrinters = false;
         if (mUserInfo.loginStatus != userInfo.loginStatus) {
             needNotify = true;
+            if (userInfo.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
+                needRefreshWanPrinters = true;
+            }
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                     << boost::format(": user login status updated, user id: %s, login status: %d")
                                            % userInfo.userId % userInfo.loginStatus;
         }
         if (mUserInfo.token != userInfo.token) {
             needNotify = true;
+            if (userInfo.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
+                needRefreshWanPrinters = true;
+            }
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                     << boost::format(": user token updated, user id: %s, token: %s...")
                                            % userInfo.userId % userInfo.token.substr(0, 10);
@@ -341,6 +348,10 @@ bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
         mUserInfo.loginErrorMessage = getLoginErrorMessage(userInfo);
         if (needNotify) {
             notifyUserInfoUpdated();
+            if (needRefreshWanPrinters) {
+                // User is online or token refreshed; request WAN printer list sync immediately.
+                PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
+            }
         }
         saveUserInfo(mUserInfo);
         return true;
@@ -381,6 +392,10 @@ bool UserNetworkManager::updateUserInfoLoginStatus(const UserNetworkInfo& userIn
         mUserInfo.loginStatus = loginStatus;
         mUserInfo.loginErrorMessage = getLoginErrorMessage(mUserInfo);
         notifyUserInfoUpdated();
+        if (loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
+            // Login state changed to success; trigger WAN printer sync.
+            PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
+        }
         saveUserInfo(mUserInfo);       
     }
     return true;

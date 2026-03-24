@@ -738,6 +738,11 @@ PrinterNetworkResult<std::string> IPCClient::getPrinterStatusRaw(const std::stri
         response.message);
 }
 
+void IPCClient::enqueueWanSyncRequest()
+{
+    sendRequest("printer.enqueueWanSyncRequest", nlohmann::json::object());
+}
+
 PrinterNetworkResult<std::string> IPCClient::upload(const PrinterNetworkParams& params)
 {
     nlohmann::json jsonParams = convertPrinterNetworkParamsToJson(params);

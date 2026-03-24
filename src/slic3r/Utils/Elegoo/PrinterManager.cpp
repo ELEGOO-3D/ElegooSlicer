@@ -86,6 +86,11 @@ void PrinterManager::init()
         PrinterCache::getInstance()->updatePrinterAttributesByNotify(event.printerId, event.printerInfo);
     });
 
+    // WAN printer list changed event (async refresh request -> monitor thread)
+    PrinterNetworkEvent::getInstance()->printerOnlineListChanged.connect([](const PrinterOnlineListChangedEvent&) {
+        PrinterManager::getInstance()->enqueueWanSyncRequest();
+    });
+
     // Get log level from AppConfig
     std::string logLevel = "info";
     try {
@@ -115,8 +120,9 @@ void PrinterManager::init()
     syncOldPresetPrinters();
     mMonitoring = true;
 
-    mConnectionThread           = std::thread([this]() { monitorPrinterConnections(); });
-    mWanPrinterConnectionThread = std::thread([this]() { monitorWanPrinterConnections(); });
+    mConnectionThread        = std::thread([this]() { monitorPrinterConnections(); });
+    mWanSyncWorkerThread     = std::thread([this]() { runWanSyncWorkerLoop(); });
+    mWanSyncSchedulerThread  = std::thread([this]() { runWanSyncScheduler(); });
 
     
     mIsInitialized = true;
@@ -134,18 +140,29 @@ void PrinterManager::close()
     mIsInitialized = false;
     mMonitoring = false;
 
+    {
+        std::lock_guard<std::mutex> lock(mWanSyncRequestMutex);
+        // Ensure worker wakes up and exits promptly during shutdown.
+        mWanSyncRequestPending.store(true);
+    }
+    mWanSyncRequestCv.notify_all();
+
     // Disconnect all PrinterNetworkEvent signals
     PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnectAll();
     PrinterNetworkEvent::getInstance()->statusChanged.disconnectAll();
     PrinterNetworkEvent::getInstance()->printTaskChanged.disconnectAll();
     PrinterNetworkEvent::getInstance()->attributesChanged.disconnectAll();
+    PrinterNetworkEvent::getInstance()->printerOnlineListChanged.disconnectAll();
 
     // Wait for connection monitor thread to finish
     if (mConnectionThread.joinable()) {
         mConnectionThread.join();
     }
-    if (mWanPrinterConnectionThread.joinable()) {
-        mWanPrinterConnectionThread.join();
+    if (mWanSyncSchedulerThread.joinable()) {
+        mWanSyncSchedulerThread.join();
+    }
+    if (mWanSyncWorkerThread.joinable()) {
+        mWanSyncWorkerThread.join();
     }
 
     // Disconnect all printer networks
@@ -595,7 +612,7 @@ PrinterNetworkResult<PrinterMmsGroup> PrinterManager::getPrinterMmsInfo(const st
     return PrinterNetworkResult<PrinterMmsGroup>(result.isSuccess() ? PrinterNetworkErrorCode::PRINTER_INVALID_RESPONSE : result.code,
                                                  PrinterMmsGroup());
 }
-void PrinterManager::refreshWanPrinters()
+void PrinterManager::syncWanPrintersFromCloud()
 {
     std::lock_guard<std::mutex> lock(mWanPrintersMutex);
 
@@ -685,7 +702,9 @@ void PrinterManager::refreshWanPrinters()
 
     std::vector<std::future<void>> addWanPrinterFutures;
     for (auto& wanPrinter : wanPrintersToAdd) {
-        auto future = std::async(std::launch::async, [this, &wanPrinter]() {
+        const auto wanPrinterSnapshot = wanPrinter;
+        auto future = std::async(std::launch::async, [this, wanPrinterSnapshot]() {
+            PrinterNetworkInfo wanPrinter = wanPrinterSnapshot;
             connectToPrinter(wanPrinter);
             PrinterCache::getInstance()->addPrinter(wanPrinter);
         });
@@ -694,6 +713,17 @@ void PrinterManager::refreshWanPrinters()
     for (auto& future : addWanPrinterFutures) {
         future.wait();
     }
+}
+
+void PrinterManager::enqueueWanSyncRequest()
+{
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        IPCClient::getInstance()->enqueueWanSyncRequest();
+        return;
+    }
+
+    mWanSyncRequestPending.store(true);
+    mWanSyncRequestCv.notify_one();
 }
 // first get selected printer by modelName and printerId
 // if not found, get selected printer by modelName
@@ -989,7 +1019,9 @@ void PrinterManager::monitorPrinterConnections()
             if (printer.printerStatus == PRINTER_STATUS_ID_NOT_MATCH || printer.printerStatus == PRINTER_STATUS_AUTH_ERROR) {
                 continue;
             }
-            auto future = std::async(std::launch::async, [this, &printer]() {
+            const auto printerSnapshot = printer;
+            auto future = std::async(std::launch::async, [this, printerSnapshot]() {
+                PrinterNetworkInfo printer = printerSnapshot;
                 PrinterNetworkResult<bool> result = connectToPrinter(printer);
                 if (result.isSuccess()) {
                     PrinterCache::getInstance()->updatePrinterField(printer.printerId, [&printer](PrinterNetworkInfo& cachedPrinter) {
@@ -1020,32 +1052,55 @@ void PrinterManager::monitorPrinterConnections()
     }
 }
 
-void PrinterManager::monitorWanPrinterConnections()
+void PrinterManager::runWanSyncScheduler()
 {
-    int loopIntervalSeconds    = 10;
-    mLastWanConnectionLoopTime = std::chrono::steady_clock::now() - std::chrono::seconds(loopIntervalSeconds);
+    // 3 minutes
+    int loopIntervalSeconds    = 60 * 3;
+    mLastWanSyncScheduleTime = std::chrono::steady_clock::now() - std::chrono::seconds(loopIntervalSeconds);
 
     while (mMonitoring.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         auto now     = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - mLastWanConnectionLoopTime).count();
-
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - mLastWanSyncScheduleTime).count();
         if (elapsed < loopIntervalSeconds) {
             continue;
         }
 
-        refreshWanPrinters();
+        enqueueWanSyncRequest();
+        mLastWanSyncScheduleTime = now;
+    }
+}
+
+void PrinterManager::runWanSyncWorkerLoop()
+{
+    while (mMonitoring.load()) {
+        std::unique_lock<std::mutex> lock(mWanSyncRequestMutex);
+        mWanSyncRequestCv.wait(lock, [this]() {
+            return !mMonitoring.load() || mWanSyncRequestPending.load();
+        });
+        if (!mMonitoring.load()) {
+            break;
+        }
+
+        // Dedup queued refresh signals while preserving "at least one execution".
+        // Consume the current pending flag; new requests during execution will set it back to true.
+        bool requested = mWanSyncRequestPending.exchange(false);
+        lock.unlock();
+        if (!requested) {
+            continue;
+        }
+
+        syncWanPrintersFromCloud();
 
         auto printerList = PrinterCache::getInstance()->getPrinters();
-
         std::vector<std::future<void>> connectionFutures;
         for (auto& printer : printerList) {
             if (printer.networkType != NETWORK_TYPE_WAN) {
                 continue;
             }
             if (printer.connectStatus == PRINTER_CONNECT_STATUS_CONNECTED) {
-                if(getPrinterNetwork(printer.printerId)) {      
+                if(getPrinterNetwork(printer.printerId)) {
                     continue;
                 }
                 PrinterCache::getInstance()->updatePrinterConnectStatus(printer.printerId, PRINTER_CONNECT_STATUS_DISCONNECTED);
@@ -1053,7 +1108,9 @@ void PrinterManager::monitorWanPrinterConnections()
             if (printer.printerStatus == PRINTER_STATUS_ID_NOT_MATCH || printer.printerStatus == PRINTER_STATUS_AUTH_ERROR) {
                 continue;
             }
-            auto future = std::async(std::launch::async, [this, &printer]() {
+            const auto printerSnapshot = printer;
+            auto future = std::async(std::launch::async, [this, printerSnapshot]() {
+                PrinterNetworkInfo printer = printerSnapshot;
                 PrinterNetworkResult<bool> result = connectToPrinter(printer);
                 if (result.isSuccess()) {
                     PrinterCache::getInstance()->updatePrinterField(printer.printerId, [&printer](PrinterNetworkInfo& cachedPrinter) {
@@ -1079,7 +1136,6 @@ void PrinterManager::monitorWanPrinterConnections()
         for (auto& future : connectionFutures) {
             future.wait();
         }
-        mLastWanConnectionLoopTime = now;
     }
 }
 PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& printer, bool updatePrinterName)

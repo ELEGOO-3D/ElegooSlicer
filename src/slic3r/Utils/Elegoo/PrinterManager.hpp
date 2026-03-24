@@ -1,7 +1,9 @@
 #pragma once
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <map>
+#include <mutex>
 #include <thread>
 #include "slic3r/Utils/Elegoo/PrinterNetwork.hpp"
 #include "slic3r/Utils/Singleton.hpp"
@@ -62,6 +64,10 @@ public:
     PrinterNetworkResult<bool> renewLicense(const std::string& serialNumber);
     PrinterNetworkResult<bool> refreshPrinterStatus(const std::string& printerId);
     PrinterNetworkResult<std::string> getPrinterStatusRaw(const std::string& printerId);
+    
+    // Enqueue a WAN sync request.
+    // This is asynchronous and coalesced into the dedicated WAN sync worker thread.
+    void enqueueWanSyncRequest();
 
     static std::map<std::string, std::map<std::string, DynamicPrintConfig>> getVendorPrinterModelConfig();
     static std::string imageFileToBase64DataURI(const std::string& image_path);
@@ -99,13 +105,20 @@ private:
     // Monitor printer connections
     std::atomic<bool> mMonitoring;
     std::thread mConnectionThread;
-    std::thread mWanPrinterConnectionThread;
+    std::thread mWanSyncSchedulerThread;
+    std::thread mWanSyncWorkerThread;
     std::chrono::steady_clock::time_point mLastConnectionLoopTime;
-    std::chrono::steady_clock::time_point mLastWanConnectionLoopTime;
+    std::chrono::steady_clock::time_point mLastWanSyncScheduleTime;
     void monitorPrinterConnections();
-    void monitorWanPrinterConnections();
+    void runWanSyncScheduler();
+    void runWanSyncWorkerLoop();
     std::mutex mWanPrintersMutex;
-    void refreshWanPrinters();
+    void syncWanPrintersFromCloud();
+
+    // Coalesce refresh requests so syncWanPrintersFromCloud() is only executed in runWanSyncWorkerLoop().
+    std::atomic<bool> mWanSyncRequestPending{false};
+    std::mutex mWanSyncRequestMutex;
+    std::condition_variable mWanSyncRequestCv;
     
     // WAN network authentication
     template<typename T>

@@ -53,6 +53,7 @@ public:
     PrinterNetworkResult<bool>                              renewLicense(const std::string& serialNumber);
     PrinterNetworkResult<bool>                              refreshPrinterStatus(const std::string& printerId);
     PrinterNetworkResult<std::string>                       getPrinterStatusRaw(const std::string& printerId);
+    void                                                    enqueueWanSyncRequest();
 
     PrinterNetworkResult<std::string>    upload(const PrinterNetworkParams& params);
     PrinterNetworkResult<UploadTaskInfo> getUploadTask(const std::string& taskId);

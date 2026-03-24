@@ -807,6 +807,11 @@ void PrinterManagerView::setupIPCHandlers()
         return IPCResult::success();
     });
 
+    // Handle request_refresh_wan_printers
+    mIpc->onRequest("request_refresh_wan_printers", [this](const IPCRequest& request){
+        PrinterManager::getInstance()->enqueueWanSyncRequest();
+        return IPCResult::success();
+    });
     // Handle request_logout_print_host
     mIpc->onRequest("request_logout_print_host", [this](const IPCRequest& request){
         // Implementation for logout print host

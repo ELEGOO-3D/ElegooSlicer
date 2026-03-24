@@ -302,6 +302,11 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
             UserNetworkEvent::getInstance()->onlineStatusChanged.emit(UserOnlineStatusChangedEvent(event->isOnline));
         });
 
+
+    elink::ElegooLink::getInstance().subscribeEvent<elink::PrinterListChangedEvent>(
+        [&](const std::shared_ptr<elink::PrinterListChangedEvent>& event) {
+            PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
+        });
     mIsInitialized = true;
 }
 

@@ -177,6 +177,14 @@ const usePrinterStore = defineStore('printer', {
       }
     },
 
+    async requestRefreshWanPrinters() {
+      try {
+        await this.ipcRequest('request_refresh_wan_printers', {});
+      } catch (error) {
+        console.error('Failed to request refresh wan printers:', error);
+      }
+    },
+
     startStatusUpdates() {
       // Clear any existing interval
       if (this.statusUpdateInterval) {

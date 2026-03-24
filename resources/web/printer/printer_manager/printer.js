@@ -170,6 +170,7 @@ const PrinterManager = {
             });
             try {
                 await new Promise(resolve => setTimeout(resolve, 500));
+                await this.printerStore.requestRefreshWanPrinters();
                 await this.printerStore.requestPrinterList();
                 // Refresh all printer status
                 try {

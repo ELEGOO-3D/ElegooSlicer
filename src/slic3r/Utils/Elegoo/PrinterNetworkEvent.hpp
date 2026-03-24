@@ -59,6 +59,14 @@ struct PrinterEventRawEvent {
         : printerId(id), event(e), timestamp(std::chrono::system_clock::now()) {}
 };
 
+
+struct PrinterOnlineListChangedEvent {
+    std::chrono::system_clock::time_point timestamp;
+    PrinterOnlineListChangedEvent()
+        : timestamp(std::chrono::system_clock::now()) {}
+};
+
+
 // User network event(iot)
 struct UserRtcTokenEvent {
     UserNetworkInfo userInfo;
@@ -96,7 +104,8 @@ struct UserInfoChangedEvent {
         : timestamp(std::chrono::system_clock::now()) {}
 };
 
-using PrinterEvent = std::variant<PrinterConnectStatusEvent, PrinterStatusEvent, PrinterPrintTaskEvent, PrinterAttributesEvent, PrinterEventRawEvent>;
+
+using PrinterEvent = std::variant<PrinterConnectStatusEvent, PrinterStatusEvent, PrinterPrintTaskEvent, PrinterAttributesEvent, PrinterEventRawEvent, PrinterOnlineListChangedEvent>;
 using UserEvent = std::variant<UserRtcTokenEvent, UserRtmMessageEvent, UserLoggedInElsewhereEvent, UserOnlineStatusChangedEvent, UserInfoChangedEvent>;
 
 template<typename EventType>
@@ -150,6 +159,7 @@ public:
     EventSignal<PrinterPrintTaskEvent> printTaskChanged;
     EventSignal<PrinterAttributesEvent> attributesChanged;
     EventSignal<PrinterEventRawEvent> eventRawChanged;
+    EventSignal<PrinterOnlineListChangedEvent> printerOnlineListChanged;
 
 private:
     PrinterNetworkEvent() = default;

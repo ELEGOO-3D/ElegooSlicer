@@ -564,6 +564,10 @@ IPCResponse IPCServer::handleRequest(const IPCRequest& request)
                 response.message      = result.message;
                 if (result.hasData())
                     response.data = *result.data;
+            } else if (actualMethod == "enqueueWanSyncRequest") {
+                PrinterManager::getInstance()->enqueueWanSyncRequest();
+                response.code = static_cast<int>(PrinterNetworkErrorCode::SUCCESS);
+                response.data = true;
             } else if (actualMethod == "getPrinterMmsInfo") {
                 auto result      = PrinterManager::getInstance()->getPrinterMmsInfo(request.params["printerId"]);
                 response.code    = static_cast<int>(result.code);
