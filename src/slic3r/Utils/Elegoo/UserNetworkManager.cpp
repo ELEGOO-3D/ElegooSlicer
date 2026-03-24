@@ -388,6 +388,13 @@ bool UserNetworkManager::updateUserInfoLoginStatus(const UserNetworkInfo& userIn
         return false;
     }
 
+    if(mUserInfo.userId.empty()) {
+        BOOST_LOG_TRIVIAL(info)
+            << __FUNCTION__
+            << boost::format(": user id is empty, skip update login status, login status: %d") % loginStatus;
+        return false;
+    }
+
     if(mUserInfo.loginStatus != loginStatus) {
         mUserInfo.loginStatus = loginStatus;
         mUserInfo.loginErrorMessage = getLoginErrorMessage(mUserInfo);
