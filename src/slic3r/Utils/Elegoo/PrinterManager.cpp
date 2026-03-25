@@ -331,11 +331,9 @@ PrinterNetworkResult<bool> PrinterManager::updatePhysicalPrinter(const std::stri
     if (!v.has_value()) {
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, false);
     }
-    bool               isUpdatePrinterName = false;
+
     PrinterNetworkInfo printer             = v.value();
-    if (printer.printerName != printerInfo.printerName) {
-        isUpdatePrinterName = true;
-    }
+
 
     printer.host         = printerInfo.host;
     printer.webUrl       = printerInfo.webUrl;
@@ -353,8 +351,15 @@ PrinterNetworkResult<bool> PrinterManager::updatePhysicalPrinter(const std::stri
         oldNetwork->disconnectFromPrinter();
         deletePrinterNetwork(printerId);
     }
-    PrinterNetworkResult<bool> result = connectToPrinter(printer, isUpdatePrinterName);
+    PrinterNetworkResult<bool> result = connectToPrinter(printer);
     if (result.isSuccess()) {
+
+        if(printer.printerName != printerInfo.printerName && !printerInfo.printerName.empty()) {
+            updatePrinterName(printerId, printerInfo.printerName);
+            //When connectToPrinter, the name will be overwritten by the old name of the printer
+            printer.printerName = printerInfo.printerName;
+        }
+
         PrinterCache::getInstance()->updatePrinterField(printerId, [&printer](PrinterNetworkInfo& cachedPrinter) {
             cachedPrinter.printerName        = printer.printerName;
             cachedPrinter.hostType           = printer.hostType;
@@ -396,9 +401,6 @@ PrinterNetworkResult<bool> PrinterManager::addPrinter(PrinterNetworkInfo& printe
     
     CHECK_INITIALIZED(false);
     
-    // Use a static mutex to serialize printer addition to prevent race conditions
-    std::lock_guard<std::mutex> lock(mAddPrinterMutex);
-
     // only generate a unique id for the printer when adding a printer
     // the printer info is from the UI, the UI info is from the discover device or manual add
     std::vector<PrinterNetworkInfo> printers = PrinterCache::getInstance()->getPrinters();
@@ -450,30 +452,32 @@ PrinterNetworkResult<bool> PrinterManager::addPrinter(PrinterNetworkInfo& printe
                                               printerNetworkInfo.printerName % printerNetworkInfo.printerModel % bindResult.message;
             return PrinterNetworkResult<bool>(bindResult.code, false, bindResult.message);
         }
-        PrinterNetworkInfo boundPrinterNetworkInfo = bindResult.data.value();
-        // update the printer network info with the bound printer network info
-        printerNetworkInfo.printerId = boundPrinterNetworkInfo.printerId;
-        printerNetworkInfo.serialNumber = boundPrinterNetworkInfo.serialNumber;
+        if (!bindResult.hasData()) {
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": bind WAN printer succeeded but returned no printer data";
+            return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::NETWORK_ERROR, false);
+        }
+        const PrinterNetworkInfo& boundPrinterNetworkInfo = bindResult.data.value();
+        printerNetworkInfo.printerId                      = boundPrinterNetworkInfo.printerId;
+        printerNetworkInfo.serialNumber                   = boundPrinterNetworkInfo.serialNumber;
     }
-    PrinterNetworkResult<bool> addResult = connectToPrinter(printerNetworkInfo, printerNetworkInfo.isPhysicalPrinter ? true : false);
+
+    std::string inputPrinterName = printerNetworkInfo.printerName;
+
+    PrinterNetworkResult<bool> addResult = connectToPrinter(printerNetworkInfo);
     if (addResult.isSuccess()) {
+
+        if(printerNetworkInfo.isPhysicalPrinter && inputPrinterName != printerNetworkInfo.printerName && !inputPrinterName.empty()) {
+            updatePrinterName(printerNetworkInfo.printerId, inputPrinterName);
+            printerNetworkInfo.printerName = inputPrinterName;
+        }
+
         PrinterCache::getInstance()->addPrinter(printerNetworkInfo);
         PrinterCache::getInstance()->savePrinterList();
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                 << boost::format(": added printer %s %s %s") % printerNetworkInfo.host % printerNetworkInfo.printerName %
                                        printerNetworkInfo.printerModel;
         return addResult;
-    } else {
-        if (printerNetworkInfo.networkType == NETWORK_TYPE_WAN) {
-            // if bind WAN printer success, but connect to printer failed, also return success
-            PrinterCache::getInstance()->addPrinter(printerNetworkInfo);
-            BOOST_LOG_TRIVIAL(warning)
-                << __FUNCTION__
-                << boost::format(": add printer failed to connect to WAN printer %s %s %s, but bind WAN printer success, return success") %
-                       printerNetworkInfo.host % printerNetworkInfo.printerName % printerNetworkInfo.printerModel;
-            return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::SUCCESS, true);
-        }
-    }
+    } 
     BOOST_LOG_TRIVIAL(warning) << __FUNCTION__
                                << boost::format(": failed to add printer %s %s %s: %s") % printerNetworkInfo.host %
                                       printerNetworkInfo.printerName % printerNetworkInfo.printerModel % addResult.message;
@@ -1013,10 +1017,6 @@ void PrinterManager::syncWanPrintersFromCloud()
             return;
         }
     }
-    // After binding succeeds in the add printer interface, online printers will be queried from IoT.
-    // Both places executing cache addition will cause issues, so mutex lock is needed.
-    std::lock_guard<std::mutex> addPrinterLock(mAddPrinterMutex);
-
     std::vector<PrinterNetworkInfo> wanPrinters;
     if (printersResult.isSuccess() && printersResult.hasData()) {
         for (const auto& printer : printersResult.data.value()) {
@@ -1084,7 +1084,7 @@ void PrinterManager::syncWanPrintersFromCloud()
         PrinterCache::getInstance()->addPrinter(wanPrinter);
     }
 }
-PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& printer, bool updatePrinterName)
+PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& printer)
 {
     if (printer.printerId.empty()) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__
@@ -1128,17 +1128,6 @@ PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& 
                                         printer.printerName % printer.printerModel % connectResult.message;
         printer.connectStatus = PRINTER_CONNECT_STATUS_DISCONNECTED;
         return PrinterNetworkResult<bool>(connectResult.code, false, connectResult.message);
-    }
-    if (updatePrinterName) {
-        auto updateNameResult = network->updatePrinterName(printer.printerName);
-        if (!updateNameResult.isSuccess()) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__
-                                     << boost::format(": failed to update printer name: %s %s %s, error: %s") % printer.host %
-                                            printer.printerName % printer.printerModel % updateNameResult.message;
-            network->disconnectFromPrinter();
-            printer.connectStatus = PRINTER_CONNECT_STATUS_DISCONNECTED;
-            return PrinterNetworkResult<bool>(updateNameResult.code, false, updateNameResult.message);
-        }
     }
     // get the printer attributes
     PrinterNetworkResult<PrinterNetworkInfo> attributes;
@@ -1192,6 +1181,7 @@ PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& 
     printer.mainboardId        = printerAttributes.mainboardId;
     printer.serialNumber       = printerAttributes.serialNumber;
     printer.webUrl             = printerAttributes.webUrl;
+    // Get printer name from the device side; if custom naming is needed, handle this carefully.
     printer.printerName        = printerAttributes.printerName;
     printer.connectStatus      = PRINTER_CONNECT_STATUS_CONNECTED;
 

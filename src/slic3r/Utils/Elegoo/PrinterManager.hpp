@@ -91,10 +91,9 @@ private:
     };
     
     // Printer network management
-    std::mutex mAddPrinterMutex;
     std::mutex mPrinterNetworkMutex;
     std::map<std::string, std::shared_ptr<IPrinterNetwork>> mPrinterNetworkConnections;
-    PrinterNetworkResult<bool> connectToPrinter(PrinterNetworkInfo& printer, bool updatePrinterName = false);
+    PrinterNetworkResult<bool> connectToPrinter(PrinterNetworkInfo& printer);
     bool deletePrinterNetwork(const std::string& printerId);
     std::shared_ptr<IPrinterNetwork> getPrinterNetwork(const std::string& printerId);
     void syncOldPresetPrinters();
