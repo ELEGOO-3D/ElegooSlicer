@@ -452,13 +452,7 @@ PrinterNetworkResult<bool> PrinterManager::addPrinter(PrinterNetworkInfo& printe
                                               printerNetworkInfo.printerName % printerNetworkInfo.printerModel % bindResult.message;
             return PrinterNetworkResult<bool>(bindResult.code, false, bindResult.message);
         }
-        if (!bindResult.hasData()) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": bind WAN printer succeeded but returned no printer data";
-            return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::NETWORK_ERROR, false);
-        }
-        const PrinterNetworkInfo& boundPrinterNetworkInfo = bindResult.data.value();
-        printerNetworkInfo.printerId                      = boundPrinterNetworkInfo.printerId;
-        printerNetworkInfo.serialNumber                   = boundPrinterNetworkInfo.serialNumber;
+        return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::SUCCESS, true);
     }
 
     std::string inputPrinterName = printerNetworkInfo.printerName;
