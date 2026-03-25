@@ -301,7 +301,7 @@ void IPCServer::start()
         mRunning.store(true);
         acceptNext();
 
-        UserNetworkEvent::getInstance()->userInfoChanged.connect([this](const UserInfoChangedEvent&) {
+        mUserInfoChangedHandlerId = UserNetworkEvent::getInstance()->userInfoChanged.connect([this](const UserInfoChangedEvent&) {
             broadcastEvent(IPCEvent("user.userInfoChanged", nlohmann::json::object(), ""));
         });
         
@@ -325,7 +325,10 @@ void IPCServer::stop()
 
     mRunning.store(false);
 
-    UserNetworkEvent::getInstance()->userInfoChanged.disconnectAll();
+    if (mUserInfoChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->userInfoChanged.disconnect(mUserInfoChangedHandlerId);
+        mUserInfoChangedHandlerId = 0;
+    }
 
     std::string portFile = getIPCPortFilePath();
     if (boost::nowide::remove(portFile.c_str()) != 0) {

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <map>
 #include <functional>
 #include <atomic>
@@ -78,5 +79,10 @@ private:
     UserNetworkInfo mRefreshUserInfo; // User info
     std::atomic<bool> mIsReady{false};
     std::atomic<bool> mWebViewInitialized{false};
+
+    uint64_t mConnectStatusChangedHandlerId{0};
+    uint64_t mEventRawChangedHandlerId{0};
+    uint64_t mRtcTokenChangedHandlerId{0};
+    uint64_t mRtmMessageChangedHandlerId{0};
 };
 }} // namespace Slic3r::GUI 

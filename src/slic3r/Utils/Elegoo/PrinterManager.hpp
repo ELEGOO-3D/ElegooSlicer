@@ -1,7 +1,7 @@
 #pragma once
 #include <atomic>
-#include <chrono>
 #include <condition_variable>
+#include <cstdint>
 #include <map>
 #include <mutex>
 #include <thread>
@@ -65,8 +65,7 @@ public:
     PrinterNetworkResult<bool> refreshPrinterStatus(const std::string& printerId);
     PrinterNetworkResult<std::string> getPrinterStatusRaw(const std::string& printerId);
     
-    // Enqueue a WAN sync request.
-    // This is asynchronous and coalesced into the dedicated WAN sync worker thread.
+    // Enqueue an immediate full monitor cycle (WAN sync + connection processing).
     void enqueueWanSyncRequest();
 
     static std::map<std::string, std::map<std::string, DynamicPrintConfig>> getVendorPrinterModelConfig();
@@ -105,18 +104,19 @@ private:
     // Monitor printer connections
     std::atomic<bool> mMonitoring;
     std::thread mConnectionThread;
-    std::thread mWanSyncSchedulerThread;
-    std::thread mWanSyncWorkerThread;
-    std::chrono::steady_clock::time_point mLastConnectionLoopTime;
-    std::chrono::steady_clock::time_point mLastWanSyncScheduleTime;
     void monitorPrinterConnections();
-    void runWanSyncScheduler();
-    void runWanSyncWorker();
+    void syncWanPrintersFromCloud();
 
-    // Coalesce refresh requests so WAN sync logic is only executed in runWanSyncWorker().
+    // Coalesce external refresh requests and wake monitor thread promptly.
     std::atomic<bool> mWanSyncRequestPending{false};
     std::mutex mWanSyncRequestMutex;
     std::condition_variable mWanSyncRequestCv;
+
+    uint64_t mConnectStatusHandlerId{0};
+    uint64_t mStatusChangedHandlerId{0};
+    uint64_t mPrintTaskChangedHandlerId{0};
+    uint64_t mAttributesChangedHandlerId{0};
+    uint64_t mPrinterOnlineListChangedHandlerId{0};
     
     // WAN network authentication
     template<typename T>

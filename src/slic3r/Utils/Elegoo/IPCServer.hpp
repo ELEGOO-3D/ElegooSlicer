@@ -5,6 +5,7 @@
 #include <boost/asio.hpp>
 #include <thread>
 #include <atomic>
+#include <cstdint>
 #include <vector>
 #include <memory>
 #include <set>
@@ -47,6 +48,7 @@ private:
     std::unique_ptr<boost::asio::ip::tcp::acceptor>     mAcceptor;
     std::vector<std::thread>                            mIoThreads;
     std::atomic<bool>                                   mRunning{false};
+    uint64_t                                            mUserInfoChangedHandlerId{0};
     std::mutex                                          mServerMutex;
     std::mutex                                          mSessionsMutex;
     std::set<std::weak_ptr<Session>, std::owner_less<>> mSessions;

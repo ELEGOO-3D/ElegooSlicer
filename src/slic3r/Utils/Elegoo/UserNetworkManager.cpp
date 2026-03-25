@@ -48,9 +48,9 @@ void UserNetworkManager::init()
     }
     loadUserInfo();
     
-    UserNetworkEvent::getInstance()->loggedInElsewhereChanged.connect([this](const UserLoggedInElsewhereEvent& event) {
-    });
-    UserNetworkEvent::getInstance()->onlineStatusChanged.connect([this](const UserOnlineStatusChangedEvent& event) {
+    mLoggedInElsewhereHandlerId = UserNetworkEvent::getInstance()->loggedInElsewhereChanged.connect(
+        [](const UserLoggedInElsewhereEvent&) {});
+    mOnlineStatusChangedHandlerId = UserNetworkEvent::getInstance()->onlineStatusChanged.connect([this](const UserOnlineStatusChangedEvent& event) {
         if(!event.isOnline) {
             updateUserInfoLoginStatus(getUserInfo(), LOGIN_STATUS_OFFLINE);
         }
@@ -69,8 +69,14 @@ void UserNetworkManager::uninit()
         }
     }
     
-    UserNetworkEvent::getInstance()->loggedInElsewhereChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->onlineStatusChanged.disconnectAll();
+    if (mLoggedInElsewhereHandlerId != 0) {
+        UserNetworkEvent::getInstance()->loggedInElsewhereChanged.disconnect(mLoggedInElsewhereHandlerId);
+        mLoggedInElsewhereHandlerId = 0;
+    }
+    if (mOnlineStatusChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->onlineStatusChanged.disconnect(mOnlineStatusChangedHandlerId);
+        mOnlineStatusChangedHandlerId = 0;
+    }
 
     mRunning.store(false);
     if (mMonitorThread.joinable()) {
@@ -192,6 +198,51 @@ PrinterNetworkResult<std::vector<PrinterNetworkInfo>> UserNetworkManager::getUse
     return printersResult;
 }
 
+PrinterNetworkResult<std::vector<LicenseExpiredDevice>> UserNetworkManager::getLicenseExpiredDevices()
+{
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getLicenseExpiredDevices();
+    }
+
+    CHECK_INITIALIZED(std::vector<LicenseExpiredDevice>());
+    std::shared_ptr<IUserNetwork> network = getNetwork();
+    if (!network) {
+        if (getUserInfo().userId.empty()) {
+            return PrinterNetworkResult<std::vector<LicenseExpiredDevice>>(PrinterNetworkErrorCode::INVALID_USERNAME_OR_PASSWORD,
+                                                                            std::vector<LicenseExpiredDevice>());
+        }
+        return PrinterNetworkResult<std::vector<LicenseExpiredDevice>>(PrinterNetworkErrorCode::NETWORK_ERROR, std::vector<LicenseExpiredDevice>());
+    }
+    UserNetworkInfo                         requestUserInfo = network->getUserNetworkInfo();
+    PrinterNetworkResult<std::vector<LicenseExpiredDevice>> result = network->getLicenseExpiredDevices();
+    if (!result.isSuccess()) {
+        checkUserAuthStatus(requestUserInfo, result.code);
+    }
+    return result;
+}
+
+PrinterNetworkResult<bool> UserNetworkManager::renewLicense(const std::string& serialNumber)
+{
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->renewLicense(serialNumber);
+    }
+
+    CHECK_INITIALIZED(false);
+    std::shared_ptr<IUserNetwork> network = getNetwork();
+    if (!network) {
+        if (getUserInfo().userId.empty()) {
+            return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::INVALID_USERNAME_OR_PASSWORD, false);
+        }
+        return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::NETWORK_ERROR, false);
+    }
+    UserNetworkInfo              requestUserInfo = network->getUserNetworkInfo();
+    PrinterNetworkResult<bool>   result          = network->renewLicense(serialNumber);
+    if (!result.isSuccess()) {
+        checkUserAuthStatus(requestUserInfo, result.code);
+    }
+    return result;
+}
+
 void UserNetworkManager::checkUserAuthStatus(const UserNetworkInfo& requestUserInfo, const PrinterNetworkErrorCode& errorCode)
 {
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
@@ -258,7 +309,7 @@ void UserNetworkManager::logout()
         IPCClient::getInstance()->logout();
         return;
     }
-    
+
     std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     mUserInfo = UserNetworkInfo();
     saveUserInfo(mUserInfo);
@@ -267,6 +318,9 @@ void UserNetworkManager::logout()
         mUserNetwork->logout();
         mUserNetwork = nullptr;
     }
+
+    // request WAN printer list sync immediately
+    PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
 }
 void UserNetworkManager::login(const UserNetworkInfo& userInfo)
 {
@@ -313,21 +367,14 @@ bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
     // if the user id is the same, update the user info
     if (mUserInfo.userId == userInfo.userId) {
         bool needNotify = false;
-        bool needRefreshWanPrinters = false;
         if (mUserInfo.loginStatus != userInfo.loginStatus) {
             needNotify = true;
-            if (userInfo.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
-                needRefreshWanPrinters = true;
-            }
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                     << boost::format(": user login status updated, user id: %s, login status: %d")
                                            % userInfo.userId % userInfo.loginStatus;
         }
         if (mUserInfo.token != userInfo.token) {
             needNotify = true;
-            if (userInfo.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
-                needRefreshWanPrinters = true;
-            }
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__
                                     << boost::format(": user token updated, user id: %s, token: %s...")
                                            % userInfo.userId % userInfo.token.substr(0, 10);
@@ -348,10 +395,6 @@ bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
         mUserInfo.loginErrorMessage = getLoginErrorMessage(userInfo);
         if (needNotify) {
             notifyUserInfoUpdated();
-            if (needRefreshWanPrinters) {
-                // User is online or token refreshed; request WAN printer list sync immediately.
-                PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
-            }
         }
         saveUserInfo(mUserInfo);
         return true;
@@ -399,10 +442,6 @@ bool UserNetworkManager::updateUserInfoLoginStatus(const UserNetworkInfo& userIn
         mUserInfo.loginStatus = loginStatus;
         mUserInfo.loginErrorMessage = getLoginErrorMessage(mUserInfo);
         notifyUserInfoUpdated();
-        if (loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
-            // Login state changed to success; trigger WAN printer sync.
-            PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
-        }
         saveUserInfo(mUserInfo);       
     }
     return true;
@@ -424,6 +463,7 @@ void UserNetworkManager::notifyUserInfoUpdated()
                                 << boost::format(": mainframe is not loaded, skip sending event, user id: %s, login status: %d")
                                        % mUserInfo.userId % mUserInfo.loginStatus;
     }
+
 }
 
 PrinterNetworkResult<bool> UserNetworkManager::checkUserNeedReLogin()
@@ -812,6 +852,8 @@ void UserNetworkManager::monitorUserNetwork()
                 if (updateUserInfo(userInfo)) {
                     setNetwork(newNetwork);
                 }
+                // request WAN printer list sync immediately
+                PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
             } else {
                 if(lastLoginStatus != LOGIN_STATUS_OFFLINE_INVALID_USER) {
                     updateUserInfoLoginStatus(userInfo, LOGIN_STATUS_OFFLINE_INVALID_USER);

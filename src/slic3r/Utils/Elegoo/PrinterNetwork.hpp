@@ -31,6 +31,7 @@ public:
     virtual PrinterNetworkResult<PrinterMmsGroup>                 getPrinterMmsInfo()                                       = 0;
     virtual PrinterNetworkResult<PrinterNetworkInfo>              getPrinterAttributes()                                    = 0;
     virtual PrinterNetworkResult<PrinterNetworkInfo>              getPrinterStatus()                                        = 0;
+    virtual PrinterNetworkResult<bool>                            refreshPrinterStatus()                                    = 0;
     virtual PrinterNetworkResult<std::string>                     getPrinterStatusRaw()                                     = 0;
     virtual PrinterNetworkResult<PrinterPrintFileResponse>        getFileList(int pageNumber, int pageSize)                 = 0;
     virtual PrinterNetworkResult<PrinterPrintTaskResponse>        getPrintTaskList(int pageNumber, int pageSize)            = 0;
@@ -67,6 +68,9 @@ public:
     // WAN
     virtual PrinterNetworkResult<PrinterNetworkInfo> bindWANPrinter(const PrinterNetworkInfo& printerNetworkInfo) = 0;
     virtual PrinterNetworkResult<bool>               unbindWANPrinter(const std::string& serialNumber)            = 0;
+
+    virtual PrinterNetworkResult<std::vector<LicenseExpiredDevice>> getLicenseExpiredDevices()                       = 0;
+    virtual PrinterNetworkResult<bool>                              renewLicense(const std::string& serialNumber)   = 0;
 
     UserNetworkInfo getUserNetworkInfo() const
     {

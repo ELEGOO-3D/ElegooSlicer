@@ -449,10 +449,22 @@ PrinterManagerView::~PrinterManagerView() {
     // Save tab state before destruction
     saveTabState();
 
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnectAll();
-    PrinterNetworkEvent::getInstance()->eventRawChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->rtcTokenChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->rtmMessageChanged.disconnectAll();
+    if (mConnectStatusChangedHandlerId != 0) {
+        PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnect(mConnectStatusChangedHandlerId);
+        mConnectStatusChangedHandlerId = 0;
+    }
+    if (mEventRawChangedHandlerId != 0) {
+        PrinterNetworkEvent::getInstance()->eventRawChanged.disconnect(mEventRawChangedHandlerId);
+        mEventRawChangedHandlerId = 0;
+    }
+    if (mRtcTokenChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->rtcTokenChanged.disconnect(mRtcTokenChangedHandlerId);
+        mRtcTokenChangedHandlerId = 0;
+    }
+    if (mRtmMessageChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->rtmMessageChanged.disconnect(mRtmMessageChangedHandlerId);
+        mRtmMessageChangedHandlerId = 0;
+    }
 
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     mPrinterViews.clear();
@@ -906,54 +918,60 @@ void PrinterManagerView::setupIPCHandlers()
         return result;
     });
     
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        nlohmann::json data;
-        data["status"] = event.status;
-        data["printerId"] = event.printerId;
-        if (targetView) {
-            targetView->onConnectionStatus(data);
-        }
-        if(MultiInstanceCoordinator::getInstance()->isMaster()){
-            IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.connectStatusChanged", data, ""));
-        }
+    mConnectStatusChangedHandlerId = PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["status"] = event.status;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onConnectionStatus(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.connectStatusChanged", data, ""));
+            }
+        });
     });
-    PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        nlohmann::json data;
-        data["event"] = event.event;
-        data["printerId"] = event.printerId;
-        if (targetView) {
-            targetView->onPrinterEventRaw(data);
-        }
-        if(MultiInstanceCoordinator::getInstance()->isMaster()){
-            IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.eventRawChanged", data, ""));
-        }
+    mEventRawChangedHandlerId = PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["event"] = event.event;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onPrinterEventRaw(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.eventRawChanged", data, ""));
+            }
+        });
     });
 
-    UserNetworkEvent::getInstance()->rtcTokenChanged.connect([this](const UserRtcTokenEvent& event) {
-        nlohmann::json data;
-        data["rtcToken"] = event.userInfo.rtcToken;
-        data["userId"] = event.userInfo.userId;
-        data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
-        forEachPrinterView([&data](const std::string&, PrinterWebView* view) {
-            view->onRtcTokenChanged(data);
+    mRtcTokenChangedHandlerId = UserNetworkEvent::getInstance()->rtcTokenChanged.connect([this](const UserRtcTokenEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            nlohmann::json data;
+            data["rtcToken"] = event.userInfo.rtcToken;
+            data["userId"] = event.userInfo.userId;
+            data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
+            forEachPrinterView([&data](const std::string&, PrinterWebView* view) { view->onRtcTokenChanged(data); });
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtcTokenChanged", data, ""));
+            }
         });
-        if(MultiInstanceCoordinator::getInstance()->isMaster()){
-            IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtcTokenChanged", data, ""));
-        }
     });
-    UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);  
-        nlohmann::json data;
-        data["message"] = event.message;
-        data["printerId"] = event.printerId;
-        if (targetView) {
-            targetView->onRtmMessage(data);
-        }
-        if(MultiInstanceCoordinator::getInstance()->isMaster()){
-            IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtmMessageChanged", data, ""));
-        }
+    mRtmMessageChangedHandlerId = UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["message"] = event.message;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onRtmMessage(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtmMessageChanged", data, ""));
+            }
+        });
     });
 
 }
