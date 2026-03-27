@@ -514,8 +514,7 @@ void desktop_open_datadir_folder()
 		const wchar_t *argv[] = { L"explorer", widepath.GetData(), nullptr };
 		::wxExecute(const_cast<wchar_t**>(argv), wxEXEC_ASYNC, nullptr);
 #elif __APPLE__
-		const char *argv[] = { "open", path.data(), nullptr };
-		::wxExecute(const_cast<char**>(argv), wxEXEC_ASYNC, nullptr);
+		openFolderForFile(from_u8(path));
 #else
 		const char *argv[] = { "xdg-open", path.data(), nullptr };
 
