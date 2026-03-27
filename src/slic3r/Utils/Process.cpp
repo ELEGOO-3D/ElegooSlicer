@@ -10,6 +10,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <cerrno>
+#include <cstring>
 
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
@@ -17,11 +19,14 @@
 // For starting another ElegooSlicer instance on OSX.
 // Fails to compile on Windows on the build server.
 #ifdef __APPLE__
-    #include <boost/process/spawn.hpp>
-    #include <boost/process/args.hpp>
+	#include <spawn.h>
 #endif
 
 #include <wx/stdpaths.h>
+
+#ifdef __APPLE__
+extern char **environ;
+#endif
 
 namespace Slic3r {
 namespace GUI {
@@ -63,8 +68,10 @@ static void start_new_slicer_or_gcodeviewer(const NewSlicerInstanceType instance
         auto bundle_path = bin_path.parent_path().parent_path().parent_path();
 		//bin_path = bin_path.parent_path() / "ElegooSlicer";
         bin_path = "/usr/bin/open";
-		// On Apple the wxExecute fails, thus we use boost::process instead.
-		BOOST_LOG_TRIVIAL(info) << "Trying to spawn a new slicer \"" << bin_path.string() << "\"";
+		const std::string bin_path_str = bin_path.string();
+		// On Apple the wxExecute fails. Use posix_spawn to avoid fork-related crashes
+		// after IPC/network threads are already running in the GUI process.
+		BOOST_LOG_TRIVIAL(info) << "Trying to spawn a new slicer \"" << bin_path_str << "\"";
 		try {
             std::vector<std::string> args = { "-n", "-a", bundle_path.string()};
             if (!paths_to_open.empty()) {
@@ -76,10 +83,21 @@ static void start_new_slicer_or_gcodeviewer(const NewSlicerInstanceType instance
 				args.emplace_back("--gcodeviewer");
 			if (instance_type == NewSlicerInstanceType::Slicer && single_instance)
 				args.emplace_back("--single-instance");
-			boost::process::spawn(bin_path, args);
+
+			std::vector<char*> argv;
+			argv.reserve(args.size() + 2);
+			argv.emplace_back(const_cast<char*>(bin_path_str.c_str()));
+			for (auto& arg : args)
+				argv.emplace_back(const_cast<char*>(arg.c_str()));
+			argv.emplace_back(nullptr);
+
+			pid_t pid = -1;
+			int rc = ::posix_spawn(&pid, bin_path_str.c_str(), nullptr, nullptr, argv.data(), environ);
+			if (rc != 0)
+				throw std::runtime_error(std::string("posix_spawn failed: ") + std::strerror(rc));
 		}
 		catch (const std::exception& ex) {
-			BOOST_LOG_TRIVIAL(error) << "Failed to spawn a new slicer \"" << bin_path.string() << "\": " << ex.what();
+			BOOST_LOG_TRIVIAL(error) << "Failed to spawn a new slicer \"" << bin_path_str << "\": " << ex.what();
 		}
 	}
 #else // Linux or Unix
