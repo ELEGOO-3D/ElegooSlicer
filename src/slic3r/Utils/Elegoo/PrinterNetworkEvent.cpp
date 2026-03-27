@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <condition_variable>
 #include <future>
+#include <memory>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -31,9 +32,10 @@ public:
         if (std::this_thread::get_id() == mDispatchThreadId)
             return;
 
-        std::promise<void> done;
-        std::future<void>  fut = done.get_future();
-        post([p = std::move(done)]() mutable { p.set_value(); });
+        // std::function requires a copyable functor; std::promise is not copyable (MSVC enforces this).
+        auto done = std::make_shared<std::promise<void>>();
+        std::future<void> fut = done->get_future();
+        post([done]() { done->set_value(); });
         fut.wait();
     }
 
