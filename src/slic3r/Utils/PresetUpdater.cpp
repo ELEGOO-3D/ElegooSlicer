@@ -1702,6 +1702,10 @@ void PresetUpdater::sync(std::string http_url, std::string language, std::string
 	// into the closure (but perhaps the compiler can elide this).
     VendorMap vendors = preset_bundle ? preset_bundle->vendors : VendorMap{};
 
+    if(p->thread.joinable()) {
+        BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]:Updater is already running, skip this sync request.";
+        return;
+    }
 	p->thread = std::thread([this, vendors, http_url, language, plugin_version]() {
 		this->p->prune_tmps();
 		if (p->cancel)
