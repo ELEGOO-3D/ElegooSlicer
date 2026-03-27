@@ -756,7 +756,7 @@ msgstr "浮雕文本不能只包含空格。"
 msgid ""
 "Some characters are displayed using backup fonts because they are not "
 "supported by the selected font."
-msgstr ""
+msgstr "部分字符因当前所选字体不支持，已使用备用字体显示。"
 
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr "文本包含字体未知的字符字形（用“？”表示）。"
@@ -17140,7 +17140,7 @@ msgid ""
 msgstr "当前文件过大，无法正常上传，请尝试其他方式启动传输或打印"
 
 msgid "Unable to connect to main process. Please try again."
-msgstr ""
+msgstr "无法连接到主进程，请检查是否存在程序未正常退出。"
 
 msgid "Failed to connect to main process. Please try again."
 msgstr ""
