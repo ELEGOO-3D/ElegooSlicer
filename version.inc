@@ -12,7 +12,7 @@ set(BBL_INTERNAL_TESTING "0")
 endif()
 
 if(NOT DEFINED BUILD_NUMBER)
-    set(BUILD_NUMBER "2")
+    set(BUILD_NUMBER "4")
 endif()
 
 set(ELEGOOSLICER_SHORT_VERSION "1.5.0")
