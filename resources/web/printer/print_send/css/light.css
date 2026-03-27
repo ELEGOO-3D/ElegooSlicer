@@ -235,7 +235,7 @@
   font-weight: 500;
   line-height: 24px;
   color: var(--text-contrast);
-  max-width: 300px;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
