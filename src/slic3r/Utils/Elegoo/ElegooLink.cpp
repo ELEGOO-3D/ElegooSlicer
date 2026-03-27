@@ -9,10 +9,10 @@
 
 #define ELEGOO_NETWORK_LIBRARY "ElegooNetwork"
 
+// Do not lock mMutex: uninit() may block in SDK cleanup while other threads still hit this check.
 #define CHECK_INITIALIZED(returnValue) \
     do { \
-        std::lock_guard<std::mutex> lock(mMutex); \
-        if (!mIsInitialized) { \
+        if (!mIsInitialized.load(std::memory_order_acquire)) { \
             return PrinterNetworkResult<std::decay_t<decltype(returnValue)>>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, \
                                                                              returnValue); \
         } \
@@ -308,14 +308,14 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
         [&](const std::shared_ptr<elink::PrinterListChangedEvent>& event) {
             PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
         });
-    mIsInitialized = true;
+    mIsInitialized.store(true, std::memory_order_release);
     BOOST_LOG_TRIVIAL(info) << "ElegooLink::init: complete (region=" << region << ")";
 }
 
 void ElegooLink::uninit()
 {
     std::lock_guard<std::mutex> lock(mMutex);
-    if (!mIsInitialized) {
+    if (!mIsInitialized.load(std::memory_order_acquire)) {
         BOOST_LOG_TRIVIAL(info) << "ElegooLink::uninit: not initialized, skip";
         return;
     }
@@ -325,7 +325,7 @@ void ElegooLink::uninit()
     // Cleanup LAN link
     elink::ElegooLink::getInstance().cleanup();
 
-    mIsInitialized = false;
+    mIsInitialized.store(false, std::memory_order_release);
     BOOST_LOG_TRIVIAL(info) << "ElegooLink::uninit: complete";
 }
 

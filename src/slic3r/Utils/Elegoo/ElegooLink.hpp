@@ -2,6 +2,7 @@
 #define slic3r_ElegooLink_hpp_
 
 #include "Singleton.hpp"
+#include <atomic>
 #include <string>
 #include <vector>
 #include <mutex>
@@ -67,7 +68,7 @@ private:
     void doUninstallPlugin();
 
     std::mutex mMutex;
-    bool mIsInitialized{false};
+    std::atomic<bool> mIsInitialized{false};
 };
 
 } // namespace Slic3r

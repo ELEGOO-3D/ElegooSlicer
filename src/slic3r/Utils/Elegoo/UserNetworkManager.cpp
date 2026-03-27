@@ -19,14 +19,14 @@
 #include "slic3r/Utils/Elegoo/PrinterNetworkEvent.hpp"
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
 
+// Do not lock mInitMutex: uninit() joins mMonitorThread while APIs may still call this macro.
 #define CHECK_INITIALIZED(returnVal) \
-    { \
-        std::lock_guard<std::recursive_mutex> __initLock(mInitMutex); \
-        if (!mIsInitialized.load()) { \
+    do { \
+        if (!mIsInitialized.load(std::memory_order_acquire)) { \
             using ValueType = std::decay_t<decltype(returnVal)>; \
             return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, returnVal); \
         } \
-    }
+    } while (0)
 namespace Slic3r {
 
 namespace fs = boost::filesystem;
@@ -45,7 +45,7 @@ void UserNetworkManager::init()
     }
     
     std::lock_guard<std::recursive_mutex> lock(mInitMutex);
-    if (mIsInitialized.load()) {
+    if (mIsInitialized.load(std::memory_order_acquire)) {
         BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::init: already initialized";
         return;
     }
@@ -60,7 +60,7 @@ void UserNetworkManager::init()
     });
     mRunning.store(true);
     mMonitorThread = std::thread([this]() { monitorUserNetwork(); });
-    mIsInitialized.store(true);
+    mIsInitialized.store(true, std::memory_order_release);
     BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::init: complete";
 }
 
@@ -69,7 +69,7 @@ void UserNetworkManager::uninit()
     BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit";
     {
         std::lock_guard<std::recursive_mutex> lock(mInitMutex);
-        if (!mIsInitialized.load()) {
+        if (!mIsInitialized.load(std::memory_order_acquire)) {
             BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit: not initialized, skip";
             return;
         }
@@ -93,7 +93,7 @@ void UserNetworkManager::uninit()
         std::lock_guard<std::recursive_mutex> lock(mInitMutex);
         mUserInfo = UserNetworkInfo();
         setNetwork(nullptr);
-        mIsInitialized.store(false);
+        mIsInitialized.store(false, std::memory_order_release);
     }
     BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit: complete";
 }
@@ -619,11 +619,8 @@ UserNetworkInfo UserNetworkManager::refreshToken(const UserNetworkInfo& userInfo
         return IPCClient::getInstance()->refreshToken(userInfo);
     }
     
-    {
-        std::lock_guard<std::recursive_mutex> lock(mInitMutex);
-        if(!mIsInitialized.load()) {
-            return UserNetworkInfo();
-        }
+    if (!mIsInitialized.load(std::memory_order_acquire)) {
+        return UserNetworkInfo();
     }
     std::lock_guard<std::timed_mutex> monitorLock(mMonitorMutex);
 
