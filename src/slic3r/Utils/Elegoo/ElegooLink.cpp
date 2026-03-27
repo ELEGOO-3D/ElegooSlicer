@@ -209,6 +209,7 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
 {
     std::lock_guard<std::mutex> lock(mMutex);
     if (mIsInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "ElegooLink::init: already initialized";
         return;
     }
 
@@ -308,12 +309,14 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
             PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
         });
     mIsInitialized = true;
+    BOOST_LOG_TRIVIAL(info) << "ElegooLink::init: complete (region=" << region << ")";
 }
 
 void ElegooLink::uninit()
 {
     std::lock_guard<std::mutex> lock(mMutex);
     if (!mIsInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "ElegooLink::uninit: not initialized, skip";
         return;
     }
     // Unsubscribe LAN events
@@ -323,6 +326,7 @@ void ElegooLink::uninit()
     elink::ElegooLink::getInstance().cleanup();
 
     mIsInitialized = false;
+    BOOST_LOG_TRIVIAL(info) << "ElegooLink::uninit: complete";
 }
 
 std::string parseUnknownErrorMsg(PrinterNetworkErrorCode resultCode, const std::string& msg)

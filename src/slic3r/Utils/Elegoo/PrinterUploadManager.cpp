@@ -29,10 +29,12 @@ PrinterUploadManager::~PrinterUploadManager()
 void PrinterUploadManager::init()
 {
     mIsInitialized = true;
+    BOOST_LOG_TRIVIAL(info) << "PrinterUploadManager::init";
 }
 
 void PrinterUploadManager::close()
 {
+    BOOST_LOG_TRIVIAL(info) << "PrinterUploadManager::close";
     mIsInitialized = false;
     stopAllUploadTasks();
 }

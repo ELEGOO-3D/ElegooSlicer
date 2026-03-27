@@ -272,6 +272,7 @@ void IPCServer::start()
     std::lock_guard<std::mutex> lock(mServerMutex);
     
     if (mRunning.load()) {
+        BOOST_LOG_TRIVIAL(info) << "IPCServer::start: already running";
         return;
     }
 
@@ -309,6 +310,7 @@ void IPCServer::start()
         for (int i = 0; i < numThreads; ++i) {
             mIoThreads.emplace_back([this]() { mIoContext->run(); });
         }
+        BOOST_LOG_TRIVIAL(info) << "IPCServer::start: complete (io threads=" << numThreads << ")";
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << "IPCServer: start failed: " << e.what();
         cleanupResources();
@@ -323,6 +325,7 @@ void IPCServer::stop()
     if (!mRunning.load())
         return;
 
+    BOOST_LOG_TRIVIAL(info) << "IPCServer::stop";
     mRunning.store(false);
 
     if (mUserInfoChangedHandlerId != 0) {
@@ -336,6 +339,7 @@ void IPCServer::stop()
     }
 
     cleanupResources();
+    BOOST_LOG_TRIVIAL(info) << "IPCServer::stop: cleanup finished";
 }
 
 void IPCServer::cleanupResources()

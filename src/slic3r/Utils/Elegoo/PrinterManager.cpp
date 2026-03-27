@@ -32,14 +32,14 @@
 #include "libslic3r/format.hpp"
 #include "libslic3r/Utils.hpp"
 
+// Do not lock mInitializedMutex: close() may join() while std::async workers still call APIs that use this macro.
 #define CHECK_INITIALIZED(returnValue) \
-    { \
-        std::lock_guard<std::mutex> __initLock(mInitializedMutex); \
-        if (!mIsInitialized.load()) { \
+    do { \
+        if (!mIsInitialized.load(std::memory_order_acquire)) { \
             using ValueType = std::decay_t<decltype(returnValue)>; \
             return PrinterNetworkResult<ValueType>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, returnValue); \
         } \
-    }
+    } while (0)
 
 namespace Slic3r {
 
@@ -53,13 +53,16 @@ PrinterManager::~PrinterManager() {}
 
 void PrinterManager::init()
 {
+    BOOST_LOG_TRIVIAL(info) << "PrinterManager::init";
     std::lock_guard<std::mutex> lock(mInitializedMutex);
     if (mIsInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "PrinterManager::init: already initialized";
         return;
     }
     PrinterUploadManager::getInstance()->init();
 
     if(!MultiInstanceCoordinator::getInstance()->isMaster()){
+        BOOST_LOG_TRIVIAL(info) << "PrinterManager::init: non-master, skip network stack";
         return;
     }    
      // connect status changed event
@@ -122,14 +125,17 @@ void PrinterManager::init()
 
     
     mIsInitialized = true;
+    BOOST_LOG_TRIVIAL(info) << "PrinterManager::init: complete (master)";
 }
 
 void PrinterManager::close()
 {
+    BOOST_LOG_TRIVIAL(info) << "PrinterManager::close";
     std::lock_guard<std::mutex> lock(mInitializedMutex);
     PrinterUploadManager::getInstance()->close();
 
     if (!mIsInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "PrinterManager::close: master stack not initialized, done";
         return;
     }
     
@@ -183,6 +189,7 @@ void PrinterManager::close()
     PrinterPluginManager::getInstance()->uninit();
 
     NetworkInitializer::uninit();
+    BOOST_LOG_TRIVIAL(info) << "PrinterManager::close: complete";
 }
 PrinterNetworkResult<bool> PrinterManager::deletePrinter(const std::string& printerId)
 {

@@ -2,6 +2,7 @@
 #include "ElegooLink.hpp"
 #include "libslic3r/PrinterNetworkResult.hpp"
 #include <wx/log.h>
+#include <boost/log/trivial.hpp>
 
 namespace Slic3r {
 
@@ -13,11 +14,13 @@ ElegooPrinterNetwork::~ElegooPrinterNetwork(){
 }
 void ElegooPrinterNetwork::init(const std::string& region, std::string& iotUrl, const std::string& logLevel)
 {
+    BOOST_LOG_TRIVIAL(info) << "ElegooPrinterNetwork::init";
     ElegooLink::getInstance()->init(region, iotUrl, logLevel);
 }
 
 void ElegooPrinterNetwork::uninit()
 {
+    BOOST_LOG_TRIVIAL(info) << "ElegooPrinterNetwork::uninit";
     ElegooLink::getInstance()->uninit();
 }
 

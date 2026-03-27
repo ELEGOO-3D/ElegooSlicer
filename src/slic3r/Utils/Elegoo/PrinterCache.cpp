@@ -42,6 +42,7 @@ bool PrinterCache::loadPrinterList() {
             PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printerJson);
             mPrinters[printerId] = printerInfo;
         }
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": loaded %1% printers") % mPrinters.size();
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": failed to load printer list from JSON: %s") % e.what();
     }
@@ -67,6 +68,7 @@ bool PrinterCache::savePrinterList() {
     }
     boost::nowide::ofstream ofs(printerListPath.string());
     ofs << jsonData.dump(4);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": saved %1% printers") % jsonData.size();
     return true;
 }
 

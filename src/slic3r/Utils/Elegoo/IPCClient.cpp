@@ -28,14 +28,17 @@ IPCClient::~IPCClient() { stop(); }
 
 void IPCClient::start()
 {
+    BOOST_LOG_TRIVIAL(info) << "IPCClient::start";
     connectToMaster();
     if (!mReconnectThreadRunning.exchange(true)) {
         mReconnectThread = std::thread([this]() { reconnectLoop(); });
+        BOOST_LOG_TRIVIAL(info) << "IPCClient: reconnect thread started";
     }
 }
 
 void IPCClient::stop()
 {
+    BOOST_LOG_TRIVIAL(info) << "IPCClient::stop";
     if (mReconnectThreadRunning.exchange(false)) {
         if (mReconnectThread.joinable()) {
             mReconnectThread.join();
@@ -48,6 +51,7 @@ bool IPCClient::connectToMaster()
 {
     std::lock_guard<std::mutex> lock(mConnectionMutex);
     if (mConnected.load()) {
+        BOOST_LOG_TRIVIAL(info) << "IPCClient::connectToMaster: already connected";
         return true;
     }
 
@@ -117,6 +121,7 @@ void IPCClient::disconnect(PrinterNetworkErrorCode errorCode)
         return;
     }
 
+    BOOST_LOG_TRIVIAL(info) << "IPCClient::disconnect (code=" << static_cast<int>(errorCode) << ")";
     mConnected.store(false);
 
     {

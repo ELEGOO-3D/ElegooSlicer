@@ -1058,17 +1058,11 @@ void MainFrame::shutdown()
 //             m_plater->print = undef;
 //         Slic3r::GUI::deregister_on_request_update_callback();
 
-    // set to null tabs and a plater
-    // to avoid any manipulations with them from App->wxEVT_IDLE after of the mainframe closing
-    wxGetApp().tabs_list.clear();
-    wxGetApp().model_tabs_list.clear();
-    wxGetApp().shutdown();
-    // BBS: why clear ?
-    //wxGetApp().plater_ = nullptr;
-
-    // disconnect all printer network events
+    // Elegoo / printer stack: disconnect signals and drain async handlers, then tear down printer UI,
+    // stop IPC and PrinterManager (joins monitor / async connects) before GUI_App::shutdown()'s
+    // WebView::CleanupAll, so background connect work does not overlap global WebView teardown.
     Slic3r::disconnectAllPrinterNetworkEvents();
-    
+
     if (m_printer_manager_view) {
         // Remove from tabpanel before deletion to prevent Layout() crash
         int idx = m_tabpanel->FindPage(m_printer_manager_view);
@@ -1078,9 +1072,20 @@ void MainFrame::shutdown()
         delete m_printer_manager_view;
         m_printer_manager_view = nullptr;
     }
-    IPCServer::getInstance()->stop(); 
-    IPCClient::getInstance()->stop();  
-    PrinterManager::getInstance()->close();   
+
+    // set to null tabs and a plater
+    // to avoid any manipulations with them from App->wxEVT_IDLE after of the mainframe closing
+    wxGetApp().tabs_list.clear();
+    wxGetApp().model_tabs_list.clear();
+
+    IPCServer::getInstance()->stop();
+    IPCClient::getInstance()->stop();
+    PrinterManager::getInstance()->close();
+
+    wxGetApp().shutdown();
+    // BBS: why clear ?
+    //wxGetApp().plater_ = nullptr;
+
     MultiInstanceCoordinator::getInstance()->uninit();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "MainFrame::shutdown exit";
 }

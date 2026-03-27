@@ -377,6 +377,7 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     mTabBar->Bind(wxEVT_AUINOTEBOOK_DRAG_MOTION, &PrinterManagerView::onTabDragMotion, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_END_DRAG, &PrinterManagerView::onTabEndDrag, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &PrinterManagerView::onTabChanged, this);
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: constructed (WebView deferred)";
 }
 
 void PrinterManagerView::initializeWebView()
@@ -443,9 +444,11 @@ void PrinterManagerView::initializeWebView()
     loadTabState();
     
     Layout();
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView::initializeWebView: complete";
 }
 
 PrinterManagerView::~PrinterManagerView() {
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: destructor";
     // Save tab state before destruction
     saveTabState();
 

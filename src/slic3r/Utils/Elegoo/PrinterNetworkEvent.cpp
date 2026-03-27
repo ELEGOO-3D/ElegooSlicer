@@ -212,6 +212,7 @@ template class EventSignal<UserInfoChangedEvent>;
 
 void disconnectAllPrinterNetworkEvents()
 {
+    BOOST_LOG_TRIVIAL(info) << "disconnectAllPrinterNetworkEvents: disconnecting all signals";
     PrinterNetworkEvent* pne = PrinterNetworkEvent::getInstance();
     pne->connectStatusChanged.disconnectAll();
     pne->statusChanged.disconnectAll();
@@ -228,6 +229,7 @@ void disconnectAllPrinterNetworkEvents()
     une->userInfoChanged.disconnectAll();
 
     async_dispatch().waitUntilIdle();
+    BOOST_LOG_TRIVIAL(info) << "disconnectAllPrinterNetworkEvents: dispatch queue idle";
 }
 
 } // namespace Slic3r

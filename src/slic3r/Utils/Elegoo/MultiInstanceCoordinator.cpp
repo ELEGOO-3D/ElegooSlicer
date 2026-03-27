@@ -76,6 +76,7 @@ void MultiInstanceCoordinator::uninit() {
     if (mMonitorThread.joinable()) {
         mMonitorThread.join();
     }
+    BOOST_LOG_TRIVIAL(info) << "MultiInstanceCoordinator::uninit: complete";
 }
 
 std::string MultiInstanceCoordinator::getMasterLockPath() {

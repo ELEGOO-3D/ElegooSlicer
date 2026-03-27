@@ -37,13 +37,16 @@ UserNetworkManager::~UserNetworkManager() { uninit(); }
 
 void UserNetworkManager::init()
 {
+    BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::init";
     // Only master instance initializes network components
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::init: non-master, skip";
         return;
     }
     
     std::lock_guard<std::recursive_mutex> lock(mInitMutex);
     if (mIsInitialized.load()) {
+        BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::init: already initialized";
         return;
     }
     loadUserInfo();
@@ -58,13 +61,16 @@ void UserNetworkManager::init()
     mRunning.store(true);
     mMonitorThread = std::thread([this]() { monitorUserNetwork(); });
     mIsInitialized.store(true);
+    BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::init: complete";
 }
 
 void UserNetworkManager::uninit()
 {
+    BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit";
     {
         std::lock_guard<std::recursive_mutex> lock(mInitMutex);
         if (!mIsInitialized.load()) {
+            BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit: not initialized, skip";
             return;
         }
     }
@@ -88,7 +94,8 @@ void UserNetworkManager::uninit()
         mUserInfo = UserNetworkInfo();
         setNetwork(nullptr);
         mIsInitialized.store(false);
-    } 
+    }
+    BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit: complete";
 }
 
 PrinterNetworkResult<UserNetworkInfo> UserNetworkManager::getRtcToken()
@@ -305,8 +312,10 @@ UserNetworkInfo UserNetworkManager::getUserInfo()
 
 void UserNetworkManager::logout()
 {
+    BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::logout";
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
         IPCClient::getInstance()->logout();
+        BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::logout: delegated to IPCClient (slave)";
         return;
     }
 
@@ -321,10 +330,13 @@ void UserNetworkManager::logout()
 
     // request WAN printer list sync immediately
     PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
+    BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::logout: complete (master)";
 }
 void UserNetworkManager::login(const UserNetworkInfo& userInfo)
 {
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::login: delegate to IPCClient (slave), userId="
+                                << userInfo.userId;
         IPCClient::getInstance()->login(userInfo);
         return;
     }
