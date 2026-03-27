@@ -16973,7 +16973,7 @@ msgid "An unknown error occurred. Please try again later."
 msgstr "发生未知错误，请稍后重试"
 
 msgid "Not initialized. Please try again later."
-msgstr ""
+msgstr "未初始化，请稍后重试"
 
 msgid "Invalid parameter. Please try again."
 msgstr "参数无效，请重试"
@@ -16985,7 +16985,7 @@ msgid "Operation cancelled"
 msgstr "操作已取消"
 
 msgid "Operation is in progress. Please wait."
-msgstr ""
+msgstr "操作正在进行中，请稍候"
 
 msgid "Access denied. Please try again later."
 msgstr "拒绝访问，请稍后重试"
@@ -17007,7 +17007,7 @@ msgid ""
 msgstr "网络错误，请检查电脑、打印机的网络情况后重试"
 
 msgid "Not connected to subservice. Please try again later."
-msgstr ""
+msgstr "未连接到子服务，请稍后重试"
 
 msgid ""
 "Unauthorized access, please check your account login status and try again."
@@ -17036,10 +17036,10 @@ msgid "File not found. Please troubleshoot."
 msgstr "文件未找到，请检查"
 
 msgid "File already exists. Please check and try again."
-msgstr ""
+msgstr "文件已存在，请检查后重试"
 
 msgid "File access denied. Please check permissions and try again."
-msgstr ""
+msgstr "文件访问被拒绝，请检查权限后重试"
 
 msgid "Printer is busy. Please try again later."
 msgstr "打印机正忙，请稍后重试"
@@ -17054,7 +17054,7 @@ msgid "Printer error. Please try again later."
 msgstr "打印机异常，请稍后重试"
 
 msgid "Invalid printer parameter. Please check and try again."
-msgstr ""
+msgstr "打印机参数无效，请检查后重试"
 
 msgid "Printer network error. Please try again later or restart the printer."
 msgstr "打印机网络异常，请稍后重试或者重启打印机"
@@ -17093,46 +17093,46 @@ msgid ""
 msgstr "IP地址与打印机信息不匹配，请删除后重新添加"
 
 msgid "Printer is offline. Please try again later."
-msgstr ""
+msgstr "打印机离线，请稍后重试"
 
 msgid "No filament detected. Please load filament before printing."
 msgstr "检测到设备没有耗材，请进料后再发起打印"
 
 msgid "Printer network not initialized. Please try again later."
-msgstr ""
+msgstr "打印机网络未初始化，请稍后重试"
 
 msgid "Printer plugin not installed. Please install the plugin and try again."
-msgstr ""
+msgstr "打印机插件未安装，请安装插件后重试"
 
 msgid "Server error. Please try again later."
 msgstr "服务异常，请稍后重试"
 
 msgid "Server response invalid data. Please try again later."
-msgstr ""
+msgstr "服务器响应无效数据，请稍后重试"
 
 msgid "Too many requests. Please try again later."
-msgstr ""
+msgstr "请求过多，请稍后重试"
 
 msgid "RTM client not connected or not logged in. Please try again later."
-msgstr ""
+msgstr "RTM客户端未连接或未登录，请稍后重试"
 
 msgid "Forbidden access. Please try again later."
-msgstr ""
+msgstr "禁止访问，请稍后重试"
 
 msgid "Pairing failed. Please select the correct printer model."
 msgstr "绑定失败，请选择正确的打印机型号后重试"
 
 msgid "Insufficient memory. Please try again later."
-msgstr ""
+msgstr "内存不足，请稍后重试"
 
 msgid "Printer serial number is empty. Please enter the serial number."
 msgstr "请输入打印机的序列号"
 
 msgid "Printer not connected to unbind."
-msgstr ""
+msgstr "打印机未连接，无法解绑"
 
 msgid "Operation not implemented. Please try again later."
-msgstr ""
+msgstr "操作未实现，请稍后重试"
 
 msgid ""
 "The file is too large to upload. Please try another way to start the "
@@ -17143,31 +17143,31 @@ msgid "Unable to connect to main process. Please try again."
 msgstr "无法连接到主进程，请检查是否存在程序未正常退出。"
 
 msgid "Failed to connect to main process. Please try again."
-msgstr ""
+msgstr "连接主进程失败，请稍后重试。"
 
 msgid "Connection to main process lost. Please try again."
-msgstr ""
+msgstr "与主进程的连接丢失，请稍后重试。"
 
 msgid "Connection to main process closed. Please try again."
-msgstr ""
+msgstr "与主进程的连接已关闭，请稍后重试。"
 
 msgid "Communication error with main process. Please try again."
-msgstr ""
+msgstr "与主进程的通信错误，请稍后重试。"
 
 msgid "Failed to send request to main process. Please try again."
-msgstr ""
+msgstr "向主进程发送请求失败，请稍后重试。"
 
 msgid "Invalid data received from main process. Please try again."
-msgstr ""
+msgstr "从主进程接收到无效数据，请稍后重试。"
 
 msgid "Communication protocol error with main process. Please try again."
-msgstr ""
+msgstr "与主进程的通信协议错误，请稍后重试。"
 
 msgid "Too many requests to main process. Please try again later."
-msgstr ""
+msgstr "向主进程的请求过多，请稍后重试。"
 
 msgid "Internal communication error. Please try again."
-msgstr ""
+msgstr "内部通信错误，请稍后重试。"
 
 msgid "Host/IP/URL"
 msgstr ""
