@@ -97,6 +97,7 @@ public:
 
     HandlerId connect(Handler handler);
     bool      disconnect(HandlerId handlerId);
+    void      disconnectAll();
     void      emit(const EventType& event);
     size_t    handlerCount() const;
 
@@ -142,6 +143,11 @@ private:
     UserNetworkEvent()  = default;
     ~UserNetworkEvent() = default;
 };
+
+// Clears all handlers on every PrinterNetworkEvent and UserNetworkEvent signal, then blocks until the
+// shared emit worker has finished all tasks already queued (including snapshots from before the clear).
+// Does not wait for wx CallAfter / GUI work scheduled by handlers.
+void disconnectAllPrinterNetworkEvents();
 
 } // namespace Slic3r
 

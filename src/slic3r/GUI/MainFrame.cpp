@@ -70,6 +70,7 @@
 #include "PrinterWebView.hpp"
 #include "Elegoo/PrinterManagerView.hpp"
 
+
 #ifdef _WIN32
 #include <dbt.h>
 #include <shlobj.h>
@@ -80,7 +81,7 @@
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
 #include "slic3r/Utils/Elegoo/IPCServer.hpp"
 #include "slic3r/Utils/Elegoo/IPCClient.hpp"
-
+#include "slic3r/Utils/Elegoo/PrinterNetworkEvent.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -1064,6 +1065,10 @@ void MainFrame::shutdown()
     wxGetApp().shutdown();
     // BBS: why clear ?
     //wxGetApp().plater_ = nullptr;
+
+    // disconnect all printer network events
+    Slic3r::disconnectAllPrinterNetworkEvents();
+    
     if (m_printer_manager_view) {
         // Remove from tabpanel before deletion to prevent Layout() crash
         int idx = m_tabpanel->FindPage(m_printer_manager_view);

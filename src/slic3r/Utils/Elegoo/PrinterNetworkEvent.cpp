@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <condition_variable>
+#include <future>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -25,6 +26,17 @@ public:
         mCv.notify_one();
     }
 
+    void waitUntilIdle()
+    {
+        if (std::this_thread::get_id() == mDispatchThreadId)
+            return;
+
+        std::promise<void> done;
+        std::future<void>  fut = done.get_future();
+        post([p = std::move(done)]() mutable { p.set_value(); });
+        fut.wait();
+    }
+
     ~AsyncEventDispatch()
     {
         {
@@ -40,6 +52,7 @@ public:
 private:
     void run()
     {
+        mDispatchThreadId = std::this_thread::get_id();
         for (;;) {
             std::function<void()> task;
             {
@@ -64,6 +77,7 @@ private:
     std::condition_variable           mCv;
     std::queue<std::function<void()>> mQueue;
     bool                              mStop{false};
+    std::thread::id                   mDispatchThreadId{};
     std::thread                       mThread{[this] { run(); }};
 };
 
@@ -144,6 +158,14 @@ bool EventSignal<EventType>::disconnect(HandlerId handlerId)
 }
 
 template<typename EventType>
+void EventSignal<EventType>::disconnectAll()
+{
+    std::lock_guard<std::mutex> lock(mHandlersMutex);
+    mHandlers.clear();
+    mNextHandlerId = 1;
+}
+
+template<typename EventType>
 void EventSignal<EventType>::emit(const EventType& event)
 {
     EventType            eventCopy = event;
@@ -185,5 +207,25 @@ template class EventSignal<UserRtmMessageEvent>;
 template class EventSignal<UserLoggedInElsewhereEvent>;
 template class EventSignal<UserOnlineStatusChangedEvent>;
 template class EventSignal<UserInfoChangedEvent>;
+
+void disconnectAllPrinterNetworkEvents()
+{
+    PrinterNetworkEvent* pne = PrinterNetworkEvent::getInstance();
+    pne->connectStatusChanged.disconnectAll();
+    pne->statusChanged.disconnectAll();
+    pne->printTaskChanged.disconnectAll();
+    pne->attributesChanged.disconnectAll();
+    pne->eventRawChanged.disconnectAll();
+    pne->printerOnlineListChanged.disconnectAll();
+
+    UserNetworkEvent* une = UserNetworkEvent::getInstance();
+    une->rtcTokenChanged.disconnectAll();
+    une->rtmMessageChanged.disconnectAll();
+    une->loggedInElsewhereChanged.disconnectAll();
+    une->onlineStatusChanged.disconnectAll();
+    une->userInfoChanged.disconnectAll();
+
+    async_dispatch().waitUntilIdle();
+}
 
 } // namespace Slic3r
