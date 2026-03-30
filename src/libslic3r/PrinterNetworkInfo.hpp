@@ -110,6 +110,7 @@ struct PrintFilamentMmsMapping
     int index;
     std::string filamentId;
     std::string settingId;
+    std::string vendor;
     std::string filamentName;
     std::string filamentAlias;
     std::string filamentColor;

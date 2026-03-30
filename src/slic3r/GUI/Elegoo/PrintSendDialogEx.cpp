@@ -391,6 +391,8 @@ IPCResult PrintSendDialogEx::preparePrintTask(const std::string& printerId)
             filament.filamentType = filamentType;
             filament.filamentId   = preset->filament_id;
             filament.settingId    = preset->setting_id;
+            const ConfigOptionStrings* filament_vendors = preset->config.option<ConfigOptionStrings>("filament_vendor");
+            filament.vendor = (filament_vendors != nullptr && !filament_vendors->values.empty()) ? filament_vendors->values[0] : "";
             filament.filamentName = filamentName;
             // alias and filamentType is used to match filament in mms
             filament.filamentAlias   = filamentAlias;
@@ -508,7 +510,7 @@ IPCResult PrintSendDialogEx::getPrinterMmsInfo(const std::string &printerId)
         mHasMms = true;
     }
     
-    PrinterMmsManager::getInstance()->getFilamentMmsMapping(printerNetworkInfo, mPrintFilamentList, mMmsGroup);
+    PrinterMmsManager::getInstance()->getFilamentMmsMapping(mPrintFilamentList, mMmsGroup);
     nlohmann::json filamentList = json::array();
 
     result.data = json::object();

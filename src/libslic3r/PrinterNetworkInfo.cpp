@@ -274,6 +274,7 @@ nlohmann::json convertPrintFilamentMmsMappingToJson(const PrintFilamentMmsMappin
 {
     nlohmann::json json       = nlohmann::json::object();
     json["filamentId"]        = printFilamentMmsMapping.filamentId;
+    json["vendor"]            = printFilamentMmsMapping.vendor;
     json["filamentName"]      = printFilamentMmsMapping.filamentName;
     json["filamentAlias"]     = printFilamentMmsMapping.filamentAlias;
     json["filamentColor"]     = printFilamentMmsMapping.filamentColor;
@@ -290,6 +291,7 @@ PrintFilamentMmsMapping convertJsonToPrintFilamentMmsMapping(const nlohmann::jso
     PrintFilamentMmsMapping printFilamentMmsMapping;
     try {
         printFilamentMmsMapping.filamentId = JsonUtils::safeGetString(json, "filamentId", "");
+        printFilamentMmsMapping.vendor = JsonUtils::safeGetString(json, "vendor", "");
         printFilamentMmsMapping.filamentName = JsonUtils::safeGetString(json, "filamentName", "");
         printFilamentMmsMapping.filamentAlias = JsonUtils::safeGetString(json, "filamentAlias", "");
         printFilamentMmsMapping.filamentColor = JsonUtils::safeGetString(json, "filamentColor", "");

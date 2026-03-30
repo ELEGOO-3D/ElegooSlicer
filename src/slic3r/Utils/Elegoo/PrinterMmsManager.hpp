@@ -19,7 +19,7 @@ public:
 
     PrinterNetworkResult<PrinterMmsGroup> getPrinterMmsInfo(const std::string& printerId);
   
-    void getFilamentMmsMapping(const PrinterNetworkInfo& printerNetworkInfo, std::vector<PrintFilamentMmsMapping>& printFilamentMmsMapping, const PrinterMmsGroup& mmsGroup);
+    void getFilamentMmsMapping(std::vector<PrintFilamentMmsMapping>& printFilamentMmsMapping, const PrinterMmsGroup& mmsGroup);
     void saveFilamentMmsMapping(std::vector<PrintFilamentMmsMapping>& printFilamentMmsMapping);
     void removeFilamentMmsMapping(const std::string& filamentType, const std::string& filamentAlias, const std::string& filamentColor);
 
@@ -36,6 +36,7 @@ private:
     {
         std::string filamentId;
         std::string settingId;
+        std::string vendor;
         std::string filamentAlias;
         std::string filamentName;
         std::string filamentType;
@@ -63,6 +64,7 @@ private:
         const PresetBundle& bundle,
         std::map<std::string, std::vector<PresetFilamentInfo>>& mergedPresetMap,
         const PrinterNetworkInfo& printerNetworkInfo,
+        const std::string& sourceVendor,
         const std::map<std::string, PrinterPresetInfo>& printerPresetMap,
         const std::vector<double>& currentProjectNozzleDiameters,
         int priority,
@@ -70,10 +72,8 @@ private:
         bool checkCompatible);
 
     PresetFilamentInfo matchFilamentPreset(
-        const std::string& filamentName,
-        const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap,
-        const PrinterNetworkInfo& printerNetworkInfo,
-        const std::string& filamentType);
+        const PrinterMmsTray& tray,
+        const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap);
 
 
     std::mutex mFilamentMmsMappingMutex;

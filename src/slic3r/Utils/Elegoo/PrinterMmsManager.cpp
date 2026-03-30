@@ -362,7 +362,7 @@ void PrinterMmsManager::getMmsTrayFilamentId(const PrinterNetworkInfo& printerNe
                 continue;
             }
             
-            PresetFilamentInfo matchedPreset = matchFilamentPreset(tray.filamentName, mergedPresetMap, printerNetworkInfo, tray.filamentType);
+            PresetFilamentInfo matchedPreset = matchFilamentPreset(tray, mergedPresetMap);
             if(!matchedPreset.filamentName.empty()) {
                 tray.filamentId = matchedPreset.filamentId;
                 tray.settingId = matchedPreset.settingId;
@@ -426,13 +426,13 @@ std::map<std::string, std::vector<PrinterMmsManager::PresetFilamentInfo>> Printe
     }
 
     // process vendor specific filaments (priority 1)
-    processFilamentsFromBundle(vendorBundle, mergedPresetMap, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, 1, false, true);
+    processFilamentsFromBundle(vendorBundle, mergedPresetMap, printerNetworkInfo, printerNetworkInfo.vendor, printerPresetMap, currentProjectNozzleDiameters, 1, false, true);
 
     // process vendor generic filaments (priority 2)
-    processFilamentsFromBundle(vendorBundle, mergedPresetMap, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, 2, true, true);
+    processFilamentsFromBundle(vendorBundle, mergedPresetMap, printerNetworkInfo, "GENERIC", printerPresetMap, currentProjectNozzleDiameters, 2, true, true);
 
     // process orca generic filaments (priority 3)
-    processFilamentsFromBundle(orcaFilamentLibraryBundle, mergedPresetMap, printerNetworkInfo, printerPresetMap, currentProjectNozzleDiameters, 3, true, false);
+    processFilamentsFromBundle(orcaFilamentLibraryBundle, mergedPresetMap, printerNetworkInfo, "GENERIC", printerPresetMap, currentProjectNozzleDiameters, 3, true, false);
     
     return mergedPresetMap;
 }
@@ -442,6 +442,7 @@ void PrinterMmsManager::processFilamentsFromBundle(
     const PresetBundle& bundle,
     std::map<std::string, std::vector<PresetFilamentInfo>>& mergedPresetMap,
     const PrinterNetworkInfo& printerNetworkInfo,
+    const std::string& sourceVendor,
     const std::map<std::string, PrinterPresetInfo>& printerPresetMap,
     const std::vector<double>& currentProjectNozzleDiameters,
     int priority,
@@ -463,12 +464,13 @@ void PrinterMmsManager::processFilamentsFromBundle(
         PresetFilamentInfo info;
         info.filamentId = filament.filament_id;
         info.settingId = filament.setting_id;
+        info.vendor = sourceVendor;
         info.filamentAlias = filament.alias;
         info.filamentName = filament.name;
         info.filamentType = filament_type_opt->values[0];
         info.priority = priority;
         
-        std::string standardizedName = standardizeFilamentName(filament.alias, printerNetworkInfo.vendor);
+        std::string standardizedName = standardizeFilamentName(filament.alias, sourceVendor);
         mergedPresetMap[standardizedName].push_back(info);
     }
 }
@@ -547,26 +549,59 @@ bool PrinterMmsManager::checkTrayIsReady(const PrinterMmsTray& tray) {
 
 // find best match by standardized name, fallback to name equals type
 PrinterMmsManager::PresetFilamentInfo PrinterMmsManager::matchFilamentPreset(
-    const std::string& filamentName,
-    const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap,
-    const PrinterNetworkInfo& printerNetworkInfo,
-    const std::string& filamentType)
+    const PrinterMmsTray& tray,
+    const std::map<std::string, std::vector<PresetFilamentInfo>>& presetMap)
 {
+    const std::string& filamentName = tray.filamentName;
+    const std::string& filamentType = tray.filamentType;
+    const std::string& trayVendor   = tray.vendor;
+
     if(filamentName.empty()) {
         return PresetFilamentInfo();
     }
     
-    std::string standardizedName = standardizeFilamentName(filamentName, printerNetworkInfo.vendor);
+    std::string standardizedName = standardizeFilamentName(filamentName, trayVendor);
     std::string standardizedType = "";
     if(!filamentType.empty()) {
         standardizedType = boost::to_upper_copy(filamentType);
         boost::trim(standardizedType);
     }
+    std::string vendorUpper = boost::to_upper_copy(trayVendor);
+    boost::trim(vendorUpper);
+    auto isVendorMatchedPreset = [&vendorUpper](const PresetFilamentInfo& preset) -> bool {
+        if(vendorUpper.empty()) {
+            return false;
+        }
+        std::string presetVendor = boost::to_upper_copy(preset.vendor);
+        boost::trim(presetVendor);
+        return presetVendor == vendorUpper;
+    };
+    auto isBetterWithVendorPriority = [&isVendorMatchedPreset](const PresetFilamentInfo& candidate, const PresetFilamentInfo& current) -> bool {
+        bool candidateVendorMatched = isVendorMatchedPreset(candidate);
+        bool currentVendorMatched = isVendorMatchedPreset(current);
+        if(candidateVendorMatched != currentVendorMatched) {
+            return candidateVendorMatched;
+        }
+        return candidate.priority < current.priority;
+    };
     
     auto it = presetMap.find(standardizedName);
     if(it != presetMap.end() && !it->second.empty()) {
-        // find the candidate with lowest priority number (highest priority)
-        PresetFilamentInfo matchedPreset = it->second[0];
+        // first pass: choose best candidate whose vendor matches tray vendor
+        PresetFilamentInfo matchedPreset;
+        matchedPreset.priority = std::numeric_limits<int>::max();
+        bool foundVendorMatched = false;
+        for(const auto& candidate : it->second) {
+            if(isVendorMatchedPreset(candidate) && candidate.priority < matchedPreset.priority) {
+                matchedPreset = candidate;
+                foundVendorMatched = true;
+            }
+        }
+        if(foundVendorMatched) {
+            return matchedPreset;
+        }
+
+        // second pass: fallback to lowest priority among all candidates
         for(const auto& candidate : it->second) {
             if(candidate.priority < matchedPreset.priority) {
                 matchedPreset = candidate;
@@ -587,23 +622,20 @@ PrinterMmsManager::PresetFilamentInfo PrinterMmsManager::matchFilamentPreset(
     
     for(const auto& entry : presetMap) {
         for(const auto& preset : entry.second) {
-            std::string presetStandardizedName = standardizeFilamentName(preset.filamentAlias, printerNetworkInfo.vendor);
+            std::string presetStandardizedName = standardizeFilamentName(preset.filamentAlias, trayVendor);
             std::string presetType = boost::to_upper_copy(preset.filamentType);
             boost::trim(presetType);
             
             // match by name equals type
             if(standardizedType == presetStandardizedName || standardizedName == presetType) {
-                if(bestMatch.priority > preset.priority) {
+                if(isBetterWithVendorPriority(preset, bestMatch)) {
                     bestMatch = preset;
-                }
-                if(bestMatch.priority == 1) {
-                    return bestMatch;
                 }
                 continue;
             }
             
             // fallback: match by same filament type
-            if(presetType == standardizedType && fallbackMatch.priority > preset.priority) {
+            if(presetType == standardizedType && isBetterWithVendorPriority(preset, fallbackMatch)) {
                 fallbackMatch = preset;
             }
         }
@@ -611,7 +643,7 @@ PrinterMmsManager::PresetFilamentInfo PrinterMmsManager::matchFilamentPreset(
     return bestMatch.filamentName.empty() ? fallbackMatch : bestMatch;
 }
 
-void PrinterMmsManager::getFilamentMmsMapping(const PrinterNetworkInfo& printerNetworkInfo, std::vector<PrintFilamentMmsMapping>& printFilamentMmsMapping, const PrinterMmsGroup& mmsGroup)
+void PrinterMmsManager::getFilamentMmsMapping(std::vector<PrintFilamentMmsMapping>& printFilamentMmsMapping, const PrinterMmsGroup& mmsGroup)
 {
     // Load mapping from JSON file
     nlohmann::json mappingJson = loadFilamentMmsMappingFromFile();
@@ -677,11 +709,12 @@ void PrinterMmsManager::getFilamentMmsMapping(const PrinterNetworkInfo& printerN
         PresetFilamentInfo filamentInfo;
         filamentInfo.filamentId = printFilament.filamentId;
         filamentInfo.settingId = printFilament.settingId;
+        filamentInfo.vendor = printFilament.vendor;
         filamentInfo.filamentAlias = printFilament.filamentAlias;
         filamentInfo.filamentName = printFilament.filamentName;
         filamentInfo.filamentType = printFilament.filamentType;
         filamentInfo.priority = 1; // default priority for user filament
-        std::string standardizedName = standardizeFilamentName(printFilament.filamentAlias, printerNetworkInfo.vendor);
+        std::string standardizedName = standardizeFilamentName(printFilament.filamentAlias, printFilament.vendor);
         filamentPresetMap[standardizedName].push_back(filamentInfo);
 
         PrinterMmsTray mappedTray;
@@ -695,7 +728,7 @@ void PrinterMmsManager::getFilamentMmsMapping(const PrinterNetworkInfo& printerN
                     continue;
                 }
                 mappedTray = tray;
-                PresetFilamentInfo matchedPreset = matchFilamentPreset(mappedTray.filamentName, filamentPresetMap, printerNetworkInfo, mappedTray.filamentType);
+                PresetFilamentInfo matchedPreset = matchFilamentPreset(mappedTray, filamentPresetMap);
                 if(!matchedPreset.filamentName.empty()) {
                     mappedTray.filamentId = matchedPreset.filamentId;
                     mappedTray.settingId = matchedPreset.settingId;

@@ -240,7 +240,7 @@ IPCResult PrinterMmsSyncView::getPrinterFilamentInfo(const nlohmann::json& param
     }
     PrinterNetworkInfo printerNetworkInfo = PrinterManager::getInstance()->getPrinterNetworkInfo(printerId);
     if(!printerNetworkInfo.printerId.empty()) {
-        PrinterMmsManager::getInstance()->getFilamentMmsMapping(printerNetworkInfo, printFilamentList, mmsGroup);
+        PrinterMmsManager::getInstance()->getFilamentMmsMapping(printFilamentList, mmsGroup);
         for (auto& printFilament : printFilamentList) {
             printFilamentArray.push_back(convertPrintFilamentMmsMappingToJson(printFilament));
         }
