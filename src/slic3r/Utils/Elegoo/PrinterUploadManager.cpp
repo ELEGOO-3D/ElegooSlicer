@@ -36,7 +36,21 @@ void PrinterUploadManager::close()
 {
     BOOST_LOG_TRIVIAL(info) << "PrinterUploadManager::close";
     mIsInitialized = false;
-    stopAllUploadTasks();
+    std::vector<std::shared_ptr<UploadTaskData>> tasks = getAllUploadTasks();
+
+    for (auto& taskData : tasks) {
+        const std::string& taskId = taskData->info.taskId;
+        updateUploadTaskStatus(taskId, UploadTaskStatus::CANCELLED, PrinterNetworkErrorCode::OPERATION_CANCELLED);
+    }
+
+    for (auto& taskData : tasks) {
+        const std::string& taskId = taskData->info.taskId;
+        if (taskData->thread.joinable()) {
+            taskData->thread.join();
+        }
+        deleteUploadTask(taskId, taskData);
+    }
+    BOOST_LOG_TRIVIAL(info) << "PrinterUploadManager::close: tasks cancelled and deleted, count: " << tasks.size();
 }
 
 PrinterNetworkResult<bool> PrinterUploadManager::upload(const PrinterNetworkParams& params)
@@ -50,6 +64,10 @@ PrinterNetworkResult<bool> PrinterUploadManager::upload(const PrinterNetworkPara
 
 PrinterNetworkResult<std::string> PrinterUploadManager::startAsyncUpload(const PrinterNetworkParams& params)
 {
+    if (!mIsInitialized.load()) {
+        return PrinterNetworkResult<std::string>(PrinterNetworkErrorCode::PRINTER_NETWORK_NOT_INITIALIZED, std::string());
+    }
+
     std::string taskId = boost::uuids::to_string(boost::uuids::random_generator()());
     
     auto now = std::chrono::system_clock::now();
@@ -71,10 +89,7 @@ PrinterNetworkResult<std::string> PrinterUploadManager::startAsyncUpload(const P
     auto taskData = std::make_shared<UploadTaskData>();
     taskData->info = task;
     
-    {
-        std::lock_guard<std::mutex> lock(mUploadTasksMutex);
-        mUploadTasks[taskId] = taskData;
-    }
+    addUploadTask(taskId, taskData);
     
     auto paramsCopy = std::make_shared<PrinterNetworkParams>(params);
     taskData->thread = std::thread([this, taskId, taskData, paramsCopy]() {
@@ -83,15 +98,8 @@ PrinterNetworkResult<std::string> PrinterUploadManager::startAsyncUpload(const P
                 cancel = true;
                 return;
             }
-            
-            std::lock_guard<std::mutex> lock(mUploadTasksMutex);
-            auto it = mUploadTasks.find(taskId);
-            if (it != mUploadTasks.end()) {
-                it->second->info.uploadedBytes = uploaded;
-                it->second->info.totalBytes = total;
-                it->second->info.progress = total > 0 ? static_cast<int>((uploaded * 100) / total) : 0;
-                cancel = (it->second->info.status == UploadTaskStatus::CANCELLED) || !mIsInitialized.load();
-            }
+
+            updateUploadTaskProgress(taskId, uploaded, total, cancel);
         };
         
         std::string errorMessage;
@@ -104,23 +112,19 @@ PrinterNetworkResult<std::string> PrinterUploadManager::startAsyncUpload(const P
         paramsCopy->errorFn = errorFn;
         
         auto result = executeUpload(*paramsCopy);
-        
-        {
-            std::lock_guard<std::mutex> lock(mUploadTasksMutex);
-            auto it = mUploadTasks.find(taskId);
-            if (it != mUploadTasks.end()) {
-                auto now = std::chrono::system_clock::now();
-                it->second->info.endTime = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();              
-                if (result.isSuccess()) {
-                    it->second->info.status = UploadTaskStatus::SUCCESS;
-                    it->second->info.progress = 100;
-                }  else {
-                    it->second->info.status = UploadTaskStatus::FAILED;
-                    it->second->info.code = result.code;
-                    it->second->info.message = !errorMessage.empty() ? errorMessage : result.message;
-                }
-            }
+        std::shared_ptr<UploadTaskData> currentTask = getUploadTaskData(taskId);
+        if (!currentTask) {
+            return;
         }
+        if (result.isSuccess()) {
+            updateUploadTaskStatus(taskId, UploadTaskStatus::SUCCESS, PrinterNetworkErrorCode::SUCCESS, result.message);
+            return;
+        }
+
+        const bool cancelled = (currentTask->info.status == UploadTaskStatus::CANCELLED ||
+                                result.code == PrinterNetworkErrorCode::OPERATION_CANCELLED);
+        const UploadTaskStatus finalStatus = cancelled ? UploadTaskStatus::CANCELLED : UploadTaskStatus::FAILED;
+        updateUploadTaskStatus(taskId, finalStatus, result.code, !errorMessage.empty() ? errorMessage : result.message);
     });
     
     return PrinterNetworkResult<std::string>(PrinterNetworkErrorCode::SUCCESS, taskId);
@@ -128,24 +132,17 @@ PrinterNetworkResult<std::string> PrinterUploadManager::startAsyncUpload(const P
 
 PrinterNetworkResult<UploadTaskInfo> PrinterUploadManager::getUploadTask(const std::string& taskId)
 {
-    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
-    auto it = mUploadTasks.find(taskId);
-    if (it != mUploadTasks.end()) {
-        UploadTaskInfo info = it->second->info;
-        
-        // Only remove tasks that are truly finished (SUCCESS or FAILED)
-        // CANCELLED tasks should be kept, as they may still be in progress
-        if (it->second->info.status == UploadTaskStatus::SUCCESS || 
-            it->second->info.status == UploadTaskStatus::FAILED) {
-            if (it->second->thread.joinable()) {
-                it->second->thread.join();
-            }
-            mUploadTasks.erase(it);
+    std::shared_ptr<UploadTaskData> taskData = getUploadTaskData(taskId);
+    if (taskData) {
+        UploadTaskInfo info = taskData->info;
+        bool shouldCleanup = (info.status == UploadTaskStatus::SUCCESS || info.status == UploadTaskStatus::FAILED);
+        if (shouldCleanup && taskData->thread.joinable()) {
+            taskData->thread.join();
+            deleteUploadTask(taskId, taskData);
         }
-        
         return PrinterNetworkResult<UploadTaskInfo>(PrinterNetworkErrorCode::SUCCESS, info);
     }
-    
+
     UploadTaskInfo emptyTask;
     emptyTask.taskId = taskId;
     return PrinterNetworkResult<UploadTaskInfo>(PrinterNetworkErrorCode::UNKNOWN_ERROR, emptyTask, "task not found");
@@ -153,31 +150,10 @@ PrinterNetworkResult<UploadTaskInfo> PrinterUploadManager::getUploadTask(const s
 
 PrinterNetworkResult<bool> PrinterUploadManager::cancelUploadTask(const std::string& taskId)
 {
-    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
-    auto it = mUploadTasks.find(taskId);
-    if (it != mUploadTasks.end()) {
-        it->second->info.status = UploadTaskStatus::CANCELLED;
+    if (updateUploadTaskStatus(taskId, UploadTaskStatus::CANCELLED, PrinterNetworkErrorCode::OPERATION_CANCELLED)) {
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::SUCCESS, true);
     }
     return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::UNKNOWN_ERROR, false, "task not found");
-}
-
-void PrinterUploadManager::stopAllUploadTasks()
-{
-    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
-    for (auto& [taskId, taskData] : mUploadTasks) {
-        if (taskData->info.status == UploadTaskStatus::UPLOADING) {
-            taskData->info.status = UploadTaskStatus::CANCELLED;
-        }
-    }
-    
-    for (auto& [taskId, taskData] : mUploadTasks) {
-        if (taskData->thread.joinable()) {
-            taskData->thread.join();
-        }
-    }
-    
-    mUploadTasks.clear();
 }
 
 PrinterNetworkResult<bool> PrinterUploadManager::slaveUpload(const PrinterNetworkParams& params)
@@ -305,6 +281,79 @@ PrinterNetworkResult<bool> PrinterUploadManager::executeUpload(const PrinterNetw
     }
     
     return result;
+}
+
+void PrinterUploadManager::addUploadTask(const std::string& taskId, const std::shared_ptr<UploadTaskData>& taskData)
+{
+    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
+    mUploadTasks[taskId] = taskData;
+}
+
+std::shared_ptr<PrinterUploadManager::UploadTaskData> PrinterUploadManager::getUploadTaskData(const std::string& taskId)
+{
+    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
+    auto it = mUploadTasks.find(taskId);
+    return (it != mUploadTasks.end()) ? it->second : nullptr;
+}
+
+std::vector<std::shared_ptr<PrinterUploadManager::UploadTaskData>> PrinterUploadManager::getAllUploadTasks()
+{
+    std::vector<std::shared_ptr<UploadTaskData>> tasks;
+    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
+    tasks.reserve(mUploadTasks.size());
+    for (auto& [taskId, taskData] : mUploadTasks) {
+        (void)taskId;
+        tasks.emplace_back(taskData);
+    }
+    return tasks;
+}
+
+bool PrinterUploadManager::updateUploadTaskStatus(const std::string& taskId, UploadTaskStatus status,
+                                                  PrinterNetworkErrorCode code,
+                                                  const std::string& message)
+{
+    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
+    auto it = mUploadTasks.find(taskId);
+    if (it == mUploadTasks.end()) {
+        return false;
+    }
+    it->second->info.status = status;
+    it->second->info.code = code;
+    if (!message.empty()) {
+        it->second->info.message = message;
+    }
+    if (status == UploadTaskStatus::SUCCESS) {
+        it->second->info.progress = 100;
+    }
+    if (status != UploadTaskStatus::UPLOADING) {
+        auto now = std::chrono::system_clock::now();
+        it->second->info.endTime = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
+    }
+    return true;
+}
+
+void PrinterUploadManager::updateUploadTaskProgress(const std::string& taskId, uint64_t uploaded, uint64_t total, bool& cancel)
+{
+    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
+    auto it = mUploadTasks.find(taskId);
+    if (it == mUploadTasks.end()) {
+        cancel = true;
+        return;
+    }
+
+    it->second->info.uploadedBytes = uploaded;
+    it->second->info.totalBytes    = total;
+    it->second->info.progress      = total > 0 ? static_cast<int>((uploaded * 100) / total) : 0;
+    cancel = (it->second->info.status == UploadTaskStatus::CANCELLED) || !mIsInitialized.load();
+}
+
+void PrinterUploadManager::deleteUploadTask(const std::string& taskId, const std::shared_ptr<UploadTaskData>& expectedTaskData)
+{
+    std::lock_guard<std::mutex> lock(mUploadTasksMutex);
+    auto it = mUploadTasks.find(taskId);
+    if (it != mUploadTasks.end() && it->second == expectedTaskData) {
+        mUploadTasks.erase(it);
+    }
 }
 
 } // namespace Slic3r
