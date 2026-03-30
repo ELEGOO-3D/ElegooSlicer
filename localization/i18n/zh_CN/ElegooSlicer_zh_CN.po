@@ -693,7 +693,7 @@ msgid "Text shape"
 msgstr "文本形状"
 
 msgid "Edit your text below."
-msgstr ""
+msgstr "在下面编辑你的文本。"
 
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
@@ -780,7 +780,7 @@ msgid "Text doesn't show current horizontal alignment."
 msgstr "文本不显示当前水平对齐方式"
 
 msgid "Open text editor"
-msgstr ""
+msgstr "打开文本编辑器"
 
 msgid "Edit Text"
 msgstr "编辑文字"
