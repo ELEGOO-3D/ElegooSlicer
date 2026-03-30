@@ -6,7 +6,7 @@
 #include "libslic3r/Utils.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
-
+#include "libslic3r_version.h"
 #define ELEGOO_NETWORK_LIBRARY "ElegooNetwork"
 
 // Do not lock mMutex: uninit() may block in SDK cleanup while other threads still hit this check.
@@ -21,6 +21,35 @@
 namespace Slic3r {
 
 namespace {
+
+std::string get_cloud_os_name()
+{
+#if defined(_WIN32) || defined(_WIN64)
+    return "windows";
+#elif defined(__APPLE__) && defined(__MACH__)
+    return "mac";
+#elif defined(__linux__)
+    return "linux";
+#else
+    return "unknown";
+#endif
+}
+
+std::string get_cloud_arch_name()
+{
+#if defined(__aarch64__) || defined(_M_ARM64)
+    return "arm64";
+#elif defined(__x86_64__) || defined(_M_X64)
+    return "x86_64";
+#else
+    return "unknown";
+#endif
+}
+
+std::string build_cloud_user_agent()
+{
+    return std::string("ElegooSlicer/") + ELEGOOSLICER_VERSION + " (" + get_cloud_os_name() + "; " + get_cloud_arch_name() + ")";
+}
 
 // Map log level string to spdlog log level: trace=0, debug=1, info=2, warn=3, error=4, critical=5, off=6
 unsigned int level_string_to_spdlog(const std::string& level)
@@ -230,6 +259,9 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
     std::replace(caCertDir.begin(), caCertDir.end(), '\\', '/');
     cfg.cloud.caCertPath = caCertDir + "/cert/cacert.pem"; // Use system default CA certs
     cfg.cloud.rtmLogPath = data_dir() + "/log/rtm.log";
+
+    cfg.cloud.userAgent = build_cloud_user_agent();
+    
     if (!elink::ElegooLink::getInstance().initialize(cfg)) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": error initializing ElegooLink";
     }
