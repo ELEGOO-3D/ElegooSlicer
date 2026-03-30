@@ -1121,6 +1121,11 @@ void GUI_App::shutdown()
 {
     BOOST_LOG_TRIVIAL(info) << "GUI_App::shutdown enter";
 
+    // Mark the app as closing before starting global UI teardown so delayed
+    // UI tasks can bail out instead of touching dying windows.
+    if (!m_is_recreating_gui)
+        m_is_closing = true;
+
     // Cleanup WebViews early in the shutdown process
     // This is critical on macOS to prevent WKWebView process leaks
     WebView::CleanupAll();
@@ -1139,7 +1144,6 @@ void GUI_App::shutdown()
     }
 
     if (m_is_recreating_gui) return;
-    m_is_closing = true;
     BOOST_LOG_TRIVIAL(info) << "GUI_App::shutdown exit";
 }
 

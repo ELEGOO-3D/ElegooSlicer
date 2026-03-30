@@ -590,7 +590,9 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         event.Skip();
         if (event.IsShown()) {
             // Delay initialization slightly to ensure window is fully displayed on the correct display
-            wxGetApp().CallAfter([this]() {
+            this->CallAfter([this]() {
+                if (wxGetApp().is_closing() || this->IsBeingDeleted())
+                    return;
                 // Initialize HomeView's WebView (HomeView is created in MainFrame constructor)
                 if (m_home_view) {
                     m_home_view->initializeNavigationWebView();
@@ -1278,8 +1280,8 @@ static void initializePrinterManagerViewWebView(MainFrame* frame, PrinterManager
 {
     if (!view || !frame) return;
     if (frame->IsShown()) {
-        wxGetApp().CallAfter([view]() {
-            if (view) {
+        view->CallAfter([view]() {
+            if (!wxGetApp().is_closing() && !view->IsBeingDeleted()) {
                 view->initializeWebView();
             }
         });
