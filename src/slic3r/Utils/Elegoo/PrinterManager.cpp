@@ -844,19 +844,17 @@ PrinterNetworkResult<bool> PrinterManager::refreshPrinterStatus(const std::strin
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, false);
     }
-    if (printer.value().connectStatus != PRINTER_CONNECT_STATUS_CONNECTED) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not connected, printerId: %s") % printerId;
-        return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_CONNECTION_ERROR, false);
-    }
 
-    std::shared_ptr<IPrinterNetwork> network = getPrinterNetwork(printerId);
+    std::shared_ptr<IPrinterNetwork> network = NetworkFactory::createPrinterNetwork(printer.value());
     if (!network) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": no network connection for printer: %s") % printerId;
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__
+                                 << boost::format(": no network connection for printer: %s, and failed to create printer network") %
+                                        printerId;
         return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::NETWORK_ERROR, false);
     }
 
-    UserNetworkInfo           requestUserInfo = UserNetworkManager::getInstance()->getUserInfo();
-    PrinterNetworkResult<bool> result         = network->refreshPrinterStatus();
+    UserNetworkInfo            requestUserInfo = UserNetworkManager::getInstance()->getUserInfo();
+    PrinterNetworkResult<bool> result          = network->refreshPrinterStatus();
     checkUserAuthStatus(printer.value(), result, requestUserInfo);
     return result;
 }
