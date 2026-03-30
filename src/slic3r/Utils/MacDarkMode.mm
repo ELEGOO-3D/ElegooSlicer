@@ -205,8 +205,15 @@ void WKWebView_cleanup(void * web)
 
 void openFolderForFile(wxString const & file)
 {
-    NSArray *fileURLs = [NSArray arrayWithObjects:wxCFStringRef(file).AsNSString(), /* ... */ nil];
+    NSURL *fileURL = [NSURL fileURLWithPath:wxCFStringRef(file).AsNSString()];
+    NSArray *fileURLs = [NSArray arrayWithObjects:fileURL, nil];
     [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:fileURLs];
+}
+
+void openFolder(wxString const & folder)
+{
+    NSURL *folderURL = [NSURL fileURLWithPath:wxCFStringRef(folder).AsNSString()];
+    [[NSWorkspace sharedWorkspace] openURL:folderURL];
 }
     
 }

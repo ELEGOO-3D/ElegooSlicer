@@ -514,7 +514,7 @@ void desktop_open_datadir_folder()
 		const wchar_t *argv[] = { L"explorer", widepath.GetData(), nullptr };
 		::wxExecute(const_cast<wchar_t**>(argv), wxEXEC_ASYNC, nullptr);
 #elif __APPLE__
-		openFolderForFile(from_u8(path));
+		openFolder(from_u8(path));
 #else
 		const char *argv[] = { "xdg-open", path.data(), nullptr };
 
@@ -557,9 +557,17 @@ void desktop_open_any_folder( const std::string& path )
 
 #ifdef _WIN32
     const wxString widepath = from_u8(path);
-    ::wxExecute(L"explorer /select," + widepath, wxEXEC_ASYNC, nullptr);
+	boost::filesystem::path p(path);
+	if (fs::is_directory(p))
+		::wxExecute(L"explorer " + widepath, wxEXEC_ASYNC, nullptr);
+	else
+		::wxExecute(L"explorer /select," + widepath, wxEXEC_ASYNC, nullptr);
 #elif __APPLE__
-    openFolderForFile(from_u8(path));
+	boost::filesystem::path p(path);
+	if (fs::is_directory(p))
+		openFolder(from_u8(path));
+	else
+		openFolderForFile(from_u8(path));
 #else
 
     // Orca#6449: Open containing dir instead of opening the file directly.
