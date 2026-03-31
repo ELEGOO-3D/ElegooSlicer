@@ -19,7 +19,6 @@
 
 #ifdef __WIN32__
 #include <WebView2.h>
-#include <wrl/client.h>
 #include <Shellapi.h>
 #include <slic3r/Utils/Http.hpp>
 #elif defined __linux__
@@ -107,57 +106,7 @@ public:
         // Clean up any registered script message handlers
         RemoveScriptMessageHandler("wx");
     }
-    
-    void DisableUnnecessaryPermissions()
-    {
-        ICoreWebView2 *webView2 = (ICoreWebView2 *) GetNativeBackend();
-        if (!webView2) {
-            pendingPermissionSetup = true;
-            return;
-        }
 
-        // Create permission handler
-        class PermissionHandler : public ICoreWebView2PermissionRequestedEventHandler {
-        public:
-            virtual ~PermissionHandler() = default;
-            
-            HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppvObject) override {
-                if (riid == IID_IUnknown || riid == IID_ICoreWebView2PermissionRequestedEventHandler) {
-                    *ppvObject = this;
-                    AddRef();
-                    return S_OK;
-                }
-                return E_NOINTERFACE;
-            }
-            ULONG STDMETHODCALLTYPE AddRef() override { return ++refCount; }
-            ULONG STDMETHODCALLTYPE Release() override {
-                ULONG count = --refCount;
-                if (count == 0) delete this;
-                return count;
-            }
-            HRESULT STDMETHODCALLTYPE Invoke(ICoreWebView2* sender, ICoreWebView2PermissionRequestedEventArgs* args) override {
-                COREWEBVIEW2_PERMISSION_KIND kind;
-                args->get_PermissionKind(&kind);
-                
-                // Deny geolocation, camera, and microphone permissions
-                if (kind == COREWEBVIEW2_PERMISSION_KIND_GEOLOCATION ||
-                    kind == COREWEBVIEW2_PERMISSION_KIND_CAMERA ||
-                    kind == COREWEBVIEW2_PERMISSION_KIND_MICROPHONE) {
-                    args->put_State(COREWEBVIEW2_PERMISSION_STATE_DENY);
-                    BOOST_LOG_TRIVIAL(info) << "WebView2: Denied permission request (kind: " << kind << ")";
-                }
-                return S_OK;
-            }
-        private:
-            std::atomic<ULONG> refCount{1};
-        };
-
-        EventRegistrationToken token;
-        webView2->add_PermissionRequested(new PermissionHandler(), &token);
-        
-        pendingPermissionSetup = false;
-    }
-    
     bool SetUserAgent(const wxString &userAgent) override
     {
         bool dark = userAgent.Contains("dark");
@@ -219,16 +168,77 @@ public:
             thiz->pendingColorScheme = COREWEBVIEW2_PREFERRED_COLOR_SCHEME_AUTO;
             thiz->SetColorScheme(colorScheme);
         }
-        if (pendingPermissionSetup) {
+        if (m_focusForwardPending && GetNativeBackend() != nullptr) {
             auto thiz = const_cast<WebViewEdge *>(this);
-            thiz->DisableUnnecessaryPermissions();
+            thiz->m_focusForwardPending = !ForwardFocusToDescendant(GetHWND());
         }
         wxWebViewEdge::DoGetClientSize(x, y);
     };
+
+    WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) override
+    {
+        if (nMsg == WM_SETFOCUS) {
+            m_focusForwardPending = true;
+            HWND wrapperHWND = GetHWND();
+            CallAfter([this, wrapperHWND]() {
+                m_focusForwardPending = !ForwardFocusToDescendant(wrapperHWND);
+            });
+        }
+        return wxWebViewEdge::MSWWindowProc(nMsg, wParam, lParam);
+    }
+
+    bool MSWShouldPreProcessMessage(WXMSG *msg) override
+    {
+        if (GetNativeBackend() != nullptr) {
+            UINT message = msg->message;
+            if (message == WM_KEYDOWN || message == WM_KEYUP ||
+                message == WM_CHAR   || message == WM_SYSKEYDOWN ||
+                message == WM_SYSKEYUP || message == WM_SYSCHAR) {
+                HWND msgHwnd    = static_cast<HWND>(msg->hwnd);
+                HWND wrapperHWND = GetHWND();
+                if (msgHwnd != wrapperHWND && ::IsChild(wrapperHWND, msgHwnd)) {
+                    return false;
+                }
+            }
+        }
+        return wxWebViewEdge::MSWShouldPreProcessMessage(msg);
+    }
+
 private:
+    static HWND FindFocusableDescendant(HWND parent)
+    {
+        for (HWND child = ::GetWindow(parent, GW_CHILD); child; child = ::GetWindow(child, GW_HWNDNEXT)) {
+            if (!::IsWindowVisible(child) || !::IsWindowEnabled(child))
+                continue;
+
+            if (HWND deeper = FindFocusableDescendant(child))
+                return deeper;
+
+            return child;
+        }
+
+        return nullptr;
+    }
+
+    static bool ForwardFocusToDescendant(HWND wrapperHWND)
+    {
+        if (!wrapperHWND || !::IsWindow(wrapperHWND))
+            return false;
+
+        HWND currentFocus = ::GetFocus();
+        if (currentFocus != wrapperHWND && !::IsChild(wrapperHWND, currentFocus))
+            return false;
+
+        HWND target = FindFocusableDescendant(wrapperHWND);
+        if (target && target != currentFocus && target != wrapperHWND)
+            ::SetFocus(target);
+
+        return target != nullptr;
+    }
+
     wxString pendingUserAgent;
     COREWEBVIEW2_PREFERRED_COLOR_SCHEME pendingColorScheme = COREWEBVIEW2_PREFERRED_COLOR_SCHEME_AUTO;
-    bool pendingPermissionSetup = false;
+    bool m_focusForwardPending = true;
 };
 
 #elif defined __WXOSX__
@@ -351,10 +361,7 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52", ELEGOOSLICER_VERSION, 
             Slic3r::GUI::wxGetApp().dark_mode() ? "dark" : "light"));
         webView->Create(parent, wxID_ANY, url2, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE);
-        
-        // Disable unnecessary permissions (geolocation, camera, microphone)
-        static_cast<WebViewEdge*>(webView)->DisableUnnecessaryPermissions();
-        
+
         // We register the wxfs:// protocol for testing purposes
         webView->RegisterHandler(wxSharedPtr<wxWebViewHandler>(new wxWebViewArchiveHandler("bbl")));
         // And the memory: file system
