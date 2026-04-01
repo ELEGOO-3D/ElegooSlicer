@@ -1,7 +1,7 @@
 {
     "name": "Orca Arena Printer",
     "url": "",
-    "version": "01.05.00.05",
+    "version": "01.05.00.06",
     "force_update": "0",
     "description": "Orca Arena configuration files",
     "machine_model_list": [
