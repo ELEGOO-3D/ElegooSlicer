@@ -60,6 +60,7 @@
                             </div>
                             <div class="dropdowns-container">
                                 <el-select v-model="curPrinter" class="printer-select" :show-arrow="false"
+                                    popper-class="printsend-printer-dropdown"
                                     :placeholder="$t('printSend.pleaseConnectPrinter')" @change="onPrinterChanged"
                                     value-key="printerId">
                                     <template #label="{ value }">

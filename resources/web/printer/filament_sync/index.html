@@ -27,6 +27,7 @@
             <div class="main">
                 <div v-if="printerList&&printerList.length >0">
                     <el-select v-model="curPrinter" class="model-select" :show-arrow="false" value-key="printerId"
+                        popper-class="filament-printer-dropdown"
                         :placeholder="$t('filamentSync.pleaseSelectPrinter')"  @change="onPrinterChanged">
                         <template #label="{ value }">
                             <div class="model-container">

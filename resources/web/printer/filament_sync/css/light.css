@@ -59,6 +59,12 @@
   height: 2em;
   width: 2em;
 }
+
+.filament-printer-dropdown .el-select-dropdown__wrap,
+.filament-printer-dropdown .el-scrollbar__wrap {
+  max-height: 398px;
+}
+
 .model-select svg {
   color: var(--text-primary) !important;
   height: 2em;
@@ -67,6 +73,21 @@
 
 .model-option {
   height: 114px;
+}
+
+.model-option.el-select-dropdown__item {
+  display: flex;
+  align-items: center;
+  height: 114px;
+  line-height: normal;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.model-option .model-container {
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .model-container {
@@ -118,6 +139,11 @@
   font-weight: normal;
   line-height: 16px;
   color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ===== PRINTER STATUS ===== */
@@ -142,6 +168,8 @@
 
 .printer-status-current {
   flex-shrink: 0;
+  line-height: 20px;
+  max-width: 120px;
 }
 
 .filament-title {
