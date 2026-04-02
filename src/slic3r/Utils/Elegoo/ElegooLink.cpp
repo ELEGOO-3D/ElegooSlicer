@@ -964,6 +964,39 @@ PrinterNetworkResult<PrinterPrintTaskResponse> ElegooLink::getPrintTaskList(cons
                                                           parseUnknownErrorMsg(resultCode, elinkResult.message));
 }
 
+PrinterNetworkResult<PrinterExceptionResponse> ElegooLink::getExceptionList(const std::string& printerId, int pageNumber, int pageSize)
+{
+    PrinterExceptionResponse exceptionResponse;
+    exceptionResponse.total = 0;
+    exceptionResponse.exceptionList.clear();
+
+    CHECK_INITIALIZED(exceptionResponse);
+
+    PrinterNetworkErrorCode       resultCode = PrinterNetworkErrorCode::UNKNOWN_ERROR;
+    elink::GetExceptionListParams params;
+    params.printerId  = printerId;
+    params.pageNumber = pageNumber;
+    params.pageSize   = pageSize;
+    auto elinkResult  = elink::ElegooLink::getInstance().getExceptionList(params);
+    resultCode        = parseElegooResult(elinkResult.code);
+    if (resultCode == PrinterNetworkErrorCode::SUCCESS) {
+        if (elinkResult.hasData()) {
+            exceptionResponse.total = elinkResult.value().total;
+            for (const auto& exceptionDetail : elinkResult.value().exceptionList) {
+                PrinterExceptionDetail detail;
+                detail.id    = exceptionDetail.Id;
+                detail.refId = exceptionDetail.refId;
+                detail.code  = exceptionDetail.code;
+                detail.level = exceptionDetail.level;
+                detail.time  = exceptionDetail.time;
+                exceptionResponse.exceptionList.push_back(detail);
+            }
+        }
+    }
+    return PrinterNetworkResult<PrinterExceptionResponse>(resultCode, exceptionResponse,
+                                                          parseUnknownErrorMsg(resultCode, elinkResult.message));
+}
+
 PrinterNetworkResult<bool> ElegooLink::deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds)
 {
     CHECK_INITIALIZED(false);

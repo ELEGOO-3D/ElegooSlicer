@@ -648,6 +648,21 @@ PrinterNetworkResult<PrinterPrintTaskResponse> IPCClient::getPrintTaskList(const
                                                           response.message);
 }
 
+PrinterNetworkResult<PrinterExceptionResponse> IPCClient::getExceptionList(const std::string& printerId, int pageNumber, int pageSize)
+{
+    nlohmann::json params;
+    params["printerId"]  = printerId;
+    params["pageNumber"] = pageNumber;
+    params["pageSize"]   = pageSize;
+    IPCResponse response = sendRequest("printer.getExceptionList", params);
+    PrinterExceptionResponse exceptionResponse;
+    if (!response.data.is_null()) {
+        exceptionResponse = convertJsonToPrinterExceptionResponse(response.data);
+    }
+    return PrinterNetworkResult<PrinterExceptionResponse>(static_cast<PrinterNetworkErrorCode>(response.code), exceptionResponse,
+                                                          response.message);
+}
+
 PrinterNetworkResult<bool> IPCClient::deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds)
 {
     nlohmann::json params;

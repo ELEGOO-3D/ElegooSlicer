@@ -35,6 +35,7 @@ public:
     virtual PrinterNetworkResult<std::string>                     getPrinterStatusRaw()                                     = 0;
     virtual PrinterNetworkResult<PrinterPrintFileResponse>        getFileList(int pageNumber, int pageSize)                 = 0;
     virtual PrinterNetworkResult<PrinterPrintTaskResponse>        getPrintTaskList(int pageNumber, int pageSize)            = 0;
+    virtual PrinterNetworkResult<PrinterExceptionResponse>        getExceptionList(int pageNumber, int pageSize)            = 0;
     virtual PrinterNetworkResult<bool>                            deletePrintTasks(const std::vector<std::string>& taskIds) = 0;
     virtual PrinterNetworkResult<bool>                            sendRtmMessage(const std::string& message)                = 0;
     virtual PrinterNetworkResult<PrinterPrintFileResponse>        getFileDetail(const std::string& fileName)                = 0;

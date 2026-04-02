@@ -436,6 +436,52 @@ PrinterPrintTaskResponse convertJsonToPrinterPrintTaskResponse(const nlohmann::j
     return response;
 }
 
+nlohmann::json convertPrinterExceptionDetailToJson(const PrinterExceptionDetail& detail)
+{
+    nlohmann::json json = nlohmann::json::object();
+    json["id"]    = detail.id;
+    json["refId"] = detail.refId;
+    json["code"]  = detail.code;
+    json["level"] = detail.level;
+    json["time"]  = detail.time;
+    return json;
+}
+
+PrinterExceptionDetail convertJsonToPrinterExceptionDetail(const nlohmann::json& json)
+{
+    PrinterExceptionDetail detail;
+    detail.id    = JsonUtils::safeGetString(json, "id", "");
+    detail.refId = JsonUtils::safeGetString(json, "refId", "");
+    detail.code  = JsonUtils::safeGetString(json, "code", "");
+    detail.level = JsonUtils::safeGetInt(json, "level", 0);
+    detail.time  = JsonUtils::safeGetInt64(json, "time", 0);
+    return detail;
+}
+
+nlohmann::json convertPrinterExceptionResponseToJson(const PrinterExceptionResponse& response)
+{
+    nlohmann::json json = nlohmann::json::object();
+    json["total"]       = response.total;
+    nlohmann::json exceptionList = nlohmann::json::array();
+    for (const auto& detail : response.exceptionList) {
+        exceptionList.push_back(convertPrinterExceptionDetailToJson(detail));
+    }
+    json["exceptionList"] = exceptionList;
+    return json;
+}
+
+PrinterExceptionResponse convertJsonToPrinterExceptionResponse(const nlohmann::json& json)
+{
+    PrinterExceptionResponse response;
+    response.total = JsonUtils::safeGetInt(json, "total", 0);
+    if (json.contains("exceptionList") && json["exceptionList"].is_array()) {
+        for (const auto& detailJson : json["exceptionList"]) {
+            response.exceptionList.push_back(convertJsonToPrinterExceptionDetail(detailJson));
+        }
+    }
+    return response;
+}
+
 nlohmann::json convertUploadTaskInfoToJson(const UploadTaskInfo& task)
 {
     nlohmann::json json;

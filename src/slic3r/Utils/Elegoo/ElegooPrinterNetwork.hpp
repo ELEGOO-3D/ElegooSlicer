@@ -25,6 +25,7 @@ public:
     virtual PrinterNetworkResult<std::string> getPrinterStatusRaw() override;
     virtual PrinterNetworkResult<PrinterPrintFileResponse> getFileList(int pageNumber, int pageSize) override;
     virtual PrinterNetworkResult<PrinterPrintTaskResponse> getPrintTaskList(int pageNumber, int pageSize) override;
+    virtual PrinterNetworkResult<PrinterExceptionResponse> getExceptionList(int pageNumber, int pageSize) override;
     virtual PrinterNetworkResult<bool> deletePrintTasks(const std::vector<std::string>& taskIds) override;
     virtual PrinterNetworkResult<bool> sendRtmMessage(const std::string& message) override;
     virtual PrinterNetworkResult<PrinterPrintFileResponse> getFileDetail(const std::string& fileName) override;

@@ -759,6 +759,33 @@ PrinterNetworkResult<PrinterPrintTaskResponse> PrinterManager::getPrintTaskList(
     checkUserAuthStatus(printer.value(), result, requestUserInfo);
     return result;
 }
+PrinterNetworkResult<PrinterExceptionResponse> PrinterManager::getExceptionList(const std::string& printerId, int pageNumber, int pageSize)
+{
+    if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
+        return IPCClient::getInstance()->getExceptionList(printerId, pageNumber, pageSize);
+    }
+
+    auto printer = PrinterCache::getInstance()->getPrinter(printerId);
+    if (!printer.has_value()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not found, printerId: %s") % printerId;
+        return PrinterNetworkResult<PrinterExceptionResponse>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, PrinterExceptionResponse());
+    }
+    if (printer.value().connectStatus != PRINTER_CONNECT_STATUS_CONNECTED) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": printer not connected, printerId: %s") % printerId;
+        return PrinterNetworkResult<PrinterExceptionResponse>(PrinterNetworkErrorCode::PRINTER_CONNECTION_ERROR, PrinterExceptionResponse());
+    }
+
+    std::shared_ptr<IPrinterNetwork> network = getPrinterNetwork(printerId);
+    if (!network) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": no network connection for printer: %s") % printerId;
+        return PrinterNetworkResult<PrinterExceptionResponse>(PrinterNetworkErrorCode::NETWORK_ERROR, PrinterExceptionResponse());
+    }
+
+    UserNetworkInfo requestUserInfo = UserNetworkManager::getInstance()->getUserInfo();
+    auto            result          = network->getExceptionList(pageNumber, pageSize);
+    checkUserAuthStatus(printer.value(), result, requestUserInfo);
+    return result;
+}
 PrinterNetworkResult<bool> PrinterManager::deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds)
 {
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {

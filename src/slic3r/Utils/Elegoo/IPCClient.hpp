@@ -46,6 +46,7 @@ public:
     PrinterNetworkResult<PrinterPrintFileResponse> getFileList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<PrinterPrintFileResponse> getFileDetail(const std::string& printerId, const std::string& fileName);
     PrinterNetworkResult<PrinterPrintTaskResponse> getPrintTaskList(const std::string& printerId, int pageNumber, int pageSize);
+    PrinterNetworkResult<PrinterExceptionResponse> getExceptionList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<bool>                     deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds);
     PrinterNetworkResult<bool>                     sendRtmMessage(const std::string& printerId, const std::string& message);
 

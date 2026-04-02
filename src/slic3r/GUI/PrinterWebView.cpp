@@ -537,6 +537,33 @@ void PrinterWebView::setupIPCHandlers()
         result.code = printTaskResponse.isSuccess() ? 0 : static_cast<int>(printTaskResponse.code);
         return result;
     });
+    mIpc->onRequest("getExceptionList", [this](const IPCRequest& request){
+        auto params = request.params;
+        std::string printerId = params.value("printerId", "");
+        int pageNumber = params.value("pageNumber", 1);
+        int pageSize = params.value("pageSize", 10);
+        auto exceptionResponse = PrinterManager::getInstance()->getExceptionList(printerId, pageNumber, pageSize);
+        IPCResult result;
+        nlohmann::json exceptionListJson;
+        exceptionListJson["total"] = 0;
+        exceptionListJson["exceptionList"] = nlohmann::json::array();
+        if(exceptionResponse.hasData()) {
+            exceptionListJson["total"] = exceptionResponse.data.value().total;
+            for(auto& exceptionDetail : exceptionResponse.data.value().exceptionList) {
+                nlohmann::json exceptionJson;
+                exceptionJson["id"] = exceptionDetail.id;
+                exceptionJson["refId"] = exceptionDetail.refId;
+                exceptionJson["code"] = exceptionDetail.code;
+                exceptionJson["level"] = exceptionDetail.level;
+                exceptionJson["time"] = exceptionDetail.time;
+                exceptionListJson["exceptionList"].push_back(exceptionJson);
+            }
+        }
+        result.data = exceptionListJson;
+        result.message = exceptionResponse.message;
+        result.code = exceptionResponse.isSuccess() ? 0 : static_cast<int>(exceptionResponse.code);
+        return result;
+    });
     mIpc->onRequest("deletePrintTasks", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");

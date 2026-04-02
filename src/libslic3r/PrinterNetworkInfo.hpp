@@ -213,6 +213,21 @@ struct PrinterPrintFileResponse
     std::vector<PrinterPrintFile> fileList;
 };
 
+struct PrinterExceptionDetail
+{
+    std::string id;
+    std::string refId;
+    std::string code;
+    int         level{0};
+    int64_t     time{0};
+};
+
+struct PrinterExceptionResponse
+{
+    int total{0};
+    std::vector<PrinterExceptionDetail> exceptionList;
+};
+
 
 struct PrinterNetworkInfo
 {
@@ -344,6 +359,11 @@ nlohmann::json convertPrinterPrintTaskToJson(const PrinterPrintTask& task);
 PrinterPrintTask convertJsonToPrinterPrintTask(const nlohmann::json& json);
 nlohmann::json convertPrinterPrintTaskResponseToJson(const PrinterPrintTaskResponse& response);
 PrinterPrintTaskResponse convertJsonToPrinterPrintTaskResponse(const nlohmann::json& json);
+
+nlohmann::json convertPrinterExceptionDetailToJson(const PrinterExceptionDetail& detail);
+PrinterExceptionDetail convertJsonToPrinterExceptionDetail(const nlohmann::json& json);
+nlohmann::json convertPrinterExceptionResponseToJson(const PrinterExceptionResponse& response);
+PrinterExceptionResponse convertJsonToPrinterExceptionResponse(const nlohmann::json& json);
 
 nlohmann::json convertUploadTaskInfoToJson(const UploadTaskInfo& task);
 UploadTaskInfo convertJsonToUploadTaskInfo(const nlohmann::json& json);

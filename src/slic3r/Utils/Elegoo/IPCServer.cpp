@@ -512,6 +512,13 @@ IPCResponse IPCServer::handleRequest(const IPCRequest& request)
                 response.message = result.message;
                 if (result.hasData())
                     response.data = convertPrinterPrintTaskResponseToJson(*result.data);
+            } else if (actualMethod == "getExceptionList") {
+                auto result      = PrinterManager::getInstance()->getExceptionList(request.params["printerId"], request.params["pageNumber"],
+                                                                                   request.params["pageSize"]);
+                response.code    = static_cast<int>(result.code);
+                response.message = result.message;
+                if (result.hasData())
+                    response.data = convertPrinterExceptionResponseToJson(*result.data);
             } else if (actualMethod == "deletePrintTasks") {
                 std::vector<std::string> taskIds;
                 if (request.params["taskIds"].is_array()) {

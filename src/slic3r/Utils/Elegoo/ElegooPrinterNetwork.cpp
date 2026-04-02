@@ -93,6 +93,11 @@ PrinterNetworkResult<PrinterPrintTaskResponse> ElegooPrinterNetwork::getPrintTas
     return ElegooLink::getInstance()->getPrintTaskList(mPrinterNetworkInfo.printerId, pageNumber, pageSize);
 }
 
+PrinterNetworkResult<PrinterExceptionResponse> ElegooPrinterNetwork::getExceptionList(int pageNumber, int pageSize)
+{
+    return ElegooLink::getInstance()->getExceptionList(mPrinterNetworkInfo.printerId, pageNumber, pageSize);
+}
+
 PrinterNetworkResult<bool> ElegooPrinterNetwork::deletePrintTasks(const std::vector<std::string>& taskIds)
 {
     return ElegooLink::getInstance()->deletePrintTasks(mPrinterNetworkInfo.printerId, taskIds);

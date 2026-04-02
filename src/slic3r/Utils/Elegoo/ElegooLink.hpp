@@ -43,6 +43,7 @@ private:
     PrinterNetworkResult<std::string>                     getPrinterStatusRaw(const std::string& printerId);
     PrinterNetworkResult<PrinterPrintFileResponse> getFileList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<PrinterPrintTaskResponse> getPrintTaskList(const std::string& printerId, int pageNumber, int pageSize);
+    PrinterNetworkResult<PrinterExceptionResponse> getExceptionList(const std::string& printerId, int pageNumber, int pageSize);
     PrinterNetworkResult<bool> deletePrintTasks(const std::string& printerId, const std::vector<std::string>& taskIds);
     PrinterNetworkResult<PrinterPrintFileResponse> getFileDetail(const std::string& printerId, const std::string& fileName);
     PrinterNetworkResult<bool> updatePrinterName(const std::string& printerId, const std::string& printerName);
