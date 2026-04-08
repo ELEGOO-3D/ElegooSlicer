@@ -217,7 +217,7 @@ elink::PrinterType getPrinterType(const PrinterNetworkInfo& printerNetworkInfo)
     if (model.find(vendor) == std::string::npos) {
         model = vendor + " " + model;
     }
-    if (model == "elegoo centauri carbon 2" || model == "elegoo centauri 2") {
+    if (model == "elegoo centauri carbon 2") {
         return elink::PrinterType::ELEGOO_FDM_CC2;
     } else if (model == "elegoo centauri carbon" || model == "elegoo centauri") {
         return elink::PrinterType::ELEGOO_FDM_CC;

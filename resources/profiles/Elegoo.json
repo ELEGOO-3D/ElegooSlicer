@@ -1,16 +1,12 @@
 {
     "name": "Elegoo",
-    "version": "01.05.00.06",
+    "version": "01.05.00.07",
     "force_update": "0",
     "description": "Elegoo configurations",
     "machine_model_list": [
         {
             "name": "Elegoo Centauri Carbon 2",
             "sub_path": "machine/ECC2/Elegoo Centauri Carbon 2.json"
-        },
-        {
-            "name": "Elegoo Centauri 2",
-            "sub_path": "machine/EC2/Elegoo Centauri 2.json"
         },
         {
             "name": "Elegoo Centauri Carbon",
@@ -2165,22 +2161,6 @@
         {
             "name": "Elegoo Centauri Carbon 2 0.8 nozzle",
             "sub_path": "machine/ECC2/Elegoo Centauri Carbon 2 0.8 nozzle.json"
-        },
-        {
-            "name": "Elegoo Centauri 2 0.4 nozzle",
-            "sub_path": "machine/EC2/Elegoo Centauri 2 0.4 nozzle.json"
-        },
-        {
-            "name": "Elegoo Centauri 2 0.2 nozzle",
-            "sub_path": "machine/EC2/Elegoo Centauri 2 0.2 nozzle.json"
-        },
-        {
-            "name": "Elegoo Centauri 2 0.6 nozzle",
-            "sub_path": "machine/EC2/Elegoo Centauri 2 0.6 nozzle.json"
-        },
-        {
-            "name": "Elegoo Centauri 2 0.8 nozzle",
-            "sub_path": "machine/EC2/Elegoo Centauri 2 0.8 nozzle.json"
         },
         {
             "name": "Elegoo Neptune 4 0.4 nozzle",
