@@ -172,6 +172,15 @@ echo ===========================================================================
 echo.
 
 rem Run CMake
+if "%BUILD_TYPE%"=="Debug" (
+    set ENABLE_DEBUG_OUTPUT=1
+) else if "%BUILD_TYPE%"=="RelWithDebInfo" (
+    set ENABLE_DEBUG_OUTPUT=1
+) else (
+    set ENABLE_DEBUG_OUTPUT=0
+)
+
+rem Run CMake
 cmake -S "%WP%" -B "%BUILD_DIR%" -G "Ninja" ^
     -DCMAKE_C_COMPILER=cl ^
     -DCMAKE_CXX_COMPILER=cl ^
@@ -180,6 +189,7 @@ cmake -S "%WP%" -B "%BUILD_DIR%" -G "Ninja" ^
     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ^
     -DBBL_RELEASE_TO_PUBLIC=1 ^
     -DELEGOO_INTERNAL_TESTING=%ELEGOO_INTERNAL_TESTING% ^
+    -DELEGOO_ENABLE_DEBUG_OUTPUT=%ENABLE_DEBUG_OUTPUT% ^
     -DCMAKE_INSTALL_PREFIX="%BUILD_DIR%\ElegooSlicer" ^
     -Wno-dev
 

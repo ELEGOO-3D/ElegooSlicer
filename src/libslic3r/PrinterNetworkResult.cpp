@@ -30,6 +30,8 @@ std::string getErrorMessage(PrinterNetworkErrorCode error)
             return _u8L("Connection failed. Please check the network of your computer and the printer, then try again.");
         case PrinterNetworkErrorCode::NETWORK_ERROR:
             return _u8L("Network error occurred. Please check the network of your computer and the printer, then try again.");
+        case PrinterNetworkErrorCode::NOT_CONNECTED_TO_SUBSERVICE:
+            return _u8L("Not connected to subservice. Please try again later.");
         case PrinterNetworkErrorCode::INVALID_USERNAME_OR_PASSWORD:
             return _u8L("Unauthorized access, please check your account login status and try again.");
         case PrinterNetworkErrorCode::INVALID_TOKEN:
@@ -100,6 +102,8 @@ std::string getErrorMessage(PrinterNetworkErrorCode error)
             return _u8L("Unauthorized access, please check your account login status and try again.");
         case PrinterNetworkErrorCode::SERVER_FORBIDDEN:
             return _u8L("Forbidden access. Please try again later.");
+        case PrinterNetworkErrorCode::SERVER_PIN_CODE_MISMATCH:
+            return _u8L("Pairing failed. Please select the correct printer model.");
         case PrinterNetworkErrorCode::INSUFFICIENT_MEMORY:
             return _u8L("Insufficient memory. Please try again later.");
         case PrinterNetworkErrorCode::PRINTER_SERIAL_NUMBER_EMPTY:
@@ -108,10 +112,28 @@ std::string getErrorMessage(PrinterNetworkErrorCode error)
             return _u8L("Printer not connected to unbind.");
         case PrinterNetworkErrorCode::OPERATION_NOT_IMPLEMENTED:
             return _u8L("Operation not implemented. Please try again later.");
-        case PrinterNetworkErrorCode::NOT_MAIN_CLIENT:
-            return _u8L("Operation failed. Please check if multiple clients are open and continue on the main client.");
         case PrinterNetworkErrorCode::FILE_TOO_LARGE:
             return _u8L("The file is too large to upload. Please try another way to start the transfer or print.");
+        case PrinterNetworkErrorCode::IPC_NOT_CONNECTED:
+            return _u8L("Unable to connect to main process. Please try again.");
+        case PrinterNetworkErrorCode::IPC_CONNECTION_FAILED:
+            return _u8L("Failed to connect to main process. Please try again.");
+        case PrinterNetworkErrorCode::IPC_CONNECTION_LOST:
+            return _u8L("Connection to main process lost. Please try again.");
+        case PrinterNetworkErrorCode::IPC_CONNECTION_CLOSED:
+            return _u8L("Connection to main process closed. Please try again.");
+        case PrinterNetworkErrorCode::IPC_IO_ERROR:
+            return _u8L("Communication error with main process. Please try again.");
+        case PrinterNetworkErrorCode::IPC_SEND_FAILED:
+            return _u8L("Failed to send request to main process. Please try again.");
+        case PrinterNetworkErrorCode::IPC_INVALID_MESSAGE:
+            return _u8L("Invalid data received from main process. Please try again.");
+        case PrinterNetworkErrorCode::IPC_PROTOCOL_ERROR:
+            return _u8L("Communication protocol error with main process. Please try again.");
+        case PrinterNetworkErrorCode::IPC_TOO_MANY_PENDING:
+            return _u8L("Too many requests to main process. Please try again later.");
+        case PrinterNetworkErrorCode::IPC_DEADLOCK_PREVENTED:
+            return _u8L("Internal communication error. Please try again.");
         default:
             return _u8L("An unknown error occurred. Please try again later.");
     }

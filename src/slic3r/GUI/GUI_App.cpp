@@ -105,6 +105,7 @@
 #include "Notebook.hpp"
 #include "Widgets/Label.hpp"
 #include "Widgets/ProgressDialog.hpp"
+#include "Widgets/WebView.hpp"
 
 //BBS: DailyTip and UserGuide Dialog
 #include "WebDownPluginDlg.hpp"
@@ -117,6 +118,7 @@
 
 #include "Elegoo/UserLoginView.hpp"
 #include "slic3r/Utils/Elegoo/PrinterNetwork.hpp"
+#include "Elegoo/BeginnerGuideView.hpp"
 //#ifdef WIN32
 //#include "BaseException.h"
 //#endif
@@ -147,7 +149,7 @@ typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS2)(
 #endif
 
 #ifdef WIN32
-#include "dev-utils/BaseException.h"
+#include "dev-utils/CrashReporter.h"
 #endif
 
 #if ENABLE_THUMBNAIL_GENERATOR_DEBUG
@@ -986,6 +988,10 @@ void GUI_App::post_init()
     if (this->preset_updater) { // G-Code Viewer does not initialize preset_updater.
         CallAfter([this] {
             bool cw_showed = this->config_wizard_startup();
+            
+            // Show beginner guide only when user is on Prepare page.
+            // If current page is not Prepare, it will be shown when switching to Prepare for the first time.
+            TryShowBeginnerGuideOnPreparePage();
 
             std::string http_url = get_http_url(app_config->get_country_code());
             std::string language = GUI::into_u8(current_language_code());
@@ -1037,6 +1043,7 @@ void GUI_App::post_init()
     CallAfter([this] {
         check_message();
     });
+
 
     DeviceManager::load_filaments_blacklist_config();
 
@@ -1114,6 +1121,15 @@ void GUI_App::shutdown()
 {
     BOOST_LOG_TRIVIAL(info) << "GUI_App::shutdown enter";
 
+    // Mark the app as closing before starting global UI teardown so delayed
+    // UI tasks can bail out instead of touching dying windows.
+    if (!m_is_recreating_gui)
+        m_is_closing = true;
+
+    // Cleanup WebViews early in the shutdown process
+    // This is critical on macOS to prevent WKWebView process leaks
+    WebView::CleanupAll();
+
     m_downloader->close();
 
 	if (m_removable_drive_manager) {
@@ -1128,7 +1144,6 @@ void GUI_App::shutdown()
     }
 
     if (m_is_recreating_gui) return;
-    m_is_closing = true;
     BOOST_LOG_TRIVIAL(info) << "GUI_App::shutdown exit";
 }
 
@@ -2286,8 +2301,8 @@ bool GUI_App::on_init_inner()
 #endif
 
 #ifdef WIN32
-    //BBS set crash log folder
-    CBaseException::set_log_folder(data_dir());
+    // Initialize Crashpad crash reporter
+    CrashReporter::init(data_dir());
 #endif
 
     wxGetApp().Bind(wxEVT_QUERY_END_SESSION, [this](auto & e) {
@@ -2758,13 +2773,14 @@ bool GUI_App::on_init_inner()
 //#else
         if (!m_post_initialized && !m_adding_script_handler) {
 //#endif
-            m_post_initialized = true;
+           
 #ifdef WIN32
             this->mainframe->register_win32_callbacks();
 #endif
             this->post_init();
 
             update_publish_status();
+            m_post_initialized = true;
         }
 
         if (m_post_initialized && app_config->dirty())
@@ -3562,6 +3578,27 @@ void GUI_App::ShowDownNetPluginDlg() {
         ;
     }
 #endif
+}
+
+void GUI_App::ShowBeginnerGuide(){
+    BeginnerGuideView guideDlg(nullptr);
+    guideDlg.ShowModal();
+    
+    // Mark that beginner guide has been shown
+    app_config->set_beginner_guide_shown(true);
+    app_config->save();
+}
+
+bool GUI_App::TryShowBeginnerGuideOnPreparePage()
+{
+    if (!m_post_initialized||!m_initialized || !app_config || app_config->get_beginner_guide_shown() || !mainframe)
+        return false;
+
+    if (mainframe->current_tab() != MainFrame::tp3DEditor)
+        return false;
+
+    ShowBeginnerGuide();
+    return true;
 }
 
 void GUI_App::ShowUserLogin(bool show)

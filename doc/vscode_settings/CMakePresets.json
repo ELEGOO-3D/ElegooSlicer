@@ -14,7 +14,8 @@
                 "WIN10SDK_PATH":"C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0",
                 "CMAKE_PREFIX_PATH":"${sourceDir}/deps/build-dbginfo/ElegooSlicer_dep/usr/local",
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "ELEGOO_INTERNAL_TESTING":"0"
+                "ELEGOO_INTERNAL_TESTING":"0",
+                "ELEGOO_ENABLE_DEBUG_OUTPUT":"1"
             }
         }
     ],

@@ -19,6 +19,7 @@ PrinterPluginManager::~PrinterPluginManager() {
 bool PrinterPluginManager::init() {
     std::lock_guard<std::mutex> lock(mInitMutex);
     if (mInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "PrinterPluginManager::init: already initialized";
         return true;
     }
     
@@ -35,13 +36,15 @@ bool PrinterPluginManager::init() {
     }
 
 
-    mInitialized = true; 
+    mInitialized = true;
+    BOOST_LOG_TRIVIAL(info) << "PrinterPluginManager::init: complete, plugin types=" << mPluginList.size();
     return true;
 }
 
 bool PrinterPluginManager::uninit() {
     std::lock_guard<std::mutex> lock(mInitMutex);
     if (!mInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "PrinterPluginManager::uninit: not initialized, skip";
         return true;
     }  
     
@@ -51,6 +54,7 @@ bool PrinterPluginManager::uninit() {
 
     mPluginList.clear();
     mInitialized = false;
+    BOOST_LOG_TRIVIAL(info) << "PrinterPluginManager::uninit: complete";
     return true;
 }
 

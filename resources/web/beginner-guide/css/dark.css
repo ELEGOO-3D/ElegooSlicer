@@ -1,0 +1,4 @@
+@import url("../../styles/dark.css");
+.guide-sidebar {
+    background-image: url('../img/sider.dark.png');
+}

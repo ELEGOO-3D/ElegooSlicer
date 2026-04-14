@@ -53,6 +53,16 @@ PrinterNetworkResult<PrinterNetworkInfo> ElegooUserNetwork::bindWANPrinter(const
 PrinterNetworkResult<bool> ElegooUserNetwork::unbindWANPrinter(const std::string& serialNumber)
 {
     return ElegooLink::getInstance()->unbindWANPrinter(serialNumber);
-}   
+}
+
+PrinterNetworkResult<std::vector<LicenseExpiredDevice>> ElegooUserNetwork::getLicenseExpiredDevices()
+{
+    return ElegooLink::getInstance()->getLicenseExpiredDevices();
+}
+
+PrinterNetworkResult<bool> ElegooUserNetwork::renewLicense(const std::string& serialNumber)
+{
+    return ElegooLink::getInstance()->renewLicense(serialNumber);
+}
 } // namespace Slic3r 
 

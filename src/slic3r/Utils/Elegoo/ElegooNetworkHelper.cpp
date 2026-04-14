@@ -32,6 +32,14 @@ std::string buildUrl(const std::string& base, const std::string& language, const
         }
         parameters += "region=" + region;
     }
+    std::string theme = wxGetApp().dark_mode() ? "dark" : "light";
+    if(!theme.empty()) {
+        if(!parameters.empty()) {
+            parameters += "&";
+        }
+        parameters += "theme=" + theme;
+    }
+
     return base + (parameters.empty() ? "" : "?" + parameters);
 }
 
@@ -71,7 +79,17 @@ std::string ElegooNetworkHelper::getProfileUpdateUrl() {
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_profile_update_url" : "elegoo_global_profile_update_url",
                       isChina ? ELEGOO_CHINA_PROFILE_UPDATE_URL : ELEGOO_GLOBAL_PROFILE_UPDATE_URL);
-    return buildUrl(profileUpdateUrl, language, region);
+    if(isChina) {
+        profileUpdateUrl += "?country=china";
+    } else {
+        profileUpdateUrl += "?country=other";
+    }
+    if(language.find("zh-CN") != std::string::npos) {
+        profileUpdateUrl += "&language=zh";
+    } else {
+        profileUpdateUrl += "&language=en";
+    }
+    return profileUpdateUrl;
 }
 
 std::string ElegooNetworkHelper::getAppUpdateUrl() {

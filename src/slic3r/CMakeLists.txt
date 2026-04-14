@@ -645,6 +645,13 @@ set(SLIC3R_GUI_SOURCES
     Utils/Elegoo/PrinterMmsManager.hpp 
     Utils/Elegoo/PrinterPluginManager.cpp
     Utils/Elegoo/PrinterPluginManager.hpp
+    Utils/Elegoo/PrinterUploadManager.cpp
+    Utils/Elegoo/PrinterUploadManager.hpp
+    Utils/Elegoo/IPCCommon.hpp
+    Utils/Elegoo/IPCServer.cpp
+    Utils/Elegoo/IPCServer.hpp
+    Utils/Elegoo/IPCClient.cpp
+    Utils/Elegoo/IPCClient.hpp
     Utils/Elegoo/UserNetworkManager.cpp
     Utils/Elegoo/UserNetworkManager.hpp
     Utils/Elegoo/UserDataStorage.cpp
@@ -671,6 +678,10 @@ set(SLIC3R_GUI_SOURCES
     GUI/Elegoo/HomeView.hpp
     GUI/Elegoo/HomepageView.cpp
     GUI/Elegoo/HomepageView.hpp
+    GUI/Elegoo/ElegooDialog.cpp
+    GUI/Elegoo/ElegooDialog.hpp
+    GUI/Elegoo/ElegooPanel.cpp
+    GUI/Elegoo/ElegooPanel.hpp
     GUI/Elegoo/UserLoginView.cpp
     GUI/Elegoo/UserLoginView.hpp
     GUI/Elegoo/PrinterManagerView.cpp
@@ -683,6 +694,10 @@ set(SLIC3R_GUI_SOURCES
     Utils/UndoRedo.hpp
     Utils/WxFontUtils.cpp
     Utils/WxFontUtils.hpp
+    Utils/IPCMessage.cpp
+    Utils/IPCMessage.hpp
+    GUI/Elegoo/BeginnerGuideView.cpp
+    GUI/Elegoo/BeginnerGuideView.hpp
 
 )
 

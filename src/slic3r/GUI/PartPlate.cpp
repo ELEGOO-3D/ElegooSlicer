@@ -2505,23 +2505,27 @@ void PartPlate::generate_logo_polygon(ExPolygon &logo_polygon)
         bool is_bbl_vendor = false;
 
 		if (m_plater) {
-            if (auto preset_bundle = wxGetApp().preset_bundle; preset_bundle)
+            if (auto preset_bundle = wxGetApp().preset_bundle; preset_bundle) {
                 is_bbl_vendor = preset_bundle->is_bbl_vendor();
+                
+                // 尝试获取自定义的 bed_texture_area
+                auto edited_preset = preset_bundle->printers.get_edited_preset();
+                DynamicPrintConfig        global_config        = edited_preset.config;
+                const ConfigOptionPoints* bed_texture_area_opt = global_config.opt<ConfigOptionPoints>("bed_texture_area");
+                if (bed_texture_area_opt){
+                    Pointfs bed_texture_area = bed_texture_area_opt->values;
+                    if (bed_texture_area.size()==4){
+                        for (size_t i = 0; i < 4; i++) {
+                            bed_texture_area[i](0) += m_shape[0](0);
+                            bed_texture_area[i](1) += m_shape[0](1);
+                            logo_polygon.contour.append({scale_(bed_texture_area[i](0)), scale_(bed_texture_area[i](1))});
+                        }
+                        return;
+                    }
+                }
+            }
 		}
-        DynamicPrintConfig        global_config        = wxGetApp().preset_bundle->printers.get_edited_preset().config;
-        const ConfigOptionPoints* bed_texture_area_opt = global_config.opt<ConfigOptionPoints>("bed_texture_area");
-        if (bed_texture_area_opt){
-            Pointfs bed_texture_area = bed_texture_area_opt->values;
-            if (bed_texture_area.size()==4){
-                for (size_t i = 0; i < 4; i++) {
-                    bed_texture_area[i](0) += m_shape[0](0);
-                    bed_texture_area[i](1) += m_shape[0](1);
-                    logo_polygon.contour.append({scale_(bed_texture_area[i](0)), scale_(bed_texture_area[i](1))});
-				}
-                return;
-			}
-		}
-		
+
 		// rectangle case
         for (int i = 0; i < 4; i++) {
             const Vec2d& p = m_shape[i];

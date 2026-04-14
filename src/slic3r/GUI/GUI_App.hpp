@@ -340,6 +340,7 @@ public:
     bool is_editor() const { return m_app_mode == EAppMode::Editor; }
     bool is_gcode_viewer() const { return m_app_mode == EAppMode::GCodeViewer; }
     bool is_recreating_gui() const { return m_is_recreating_gui; }
+    bool is_closing() const { return m_is_closing; }
     std::string logo_name() const { return is_editor() ? "ElegooSlicer" : "ElegooSlicer-gcodeviewer"; }
     
     // SoftFever
@@ -439,6 +440,8 @@ public:
 
     wxString transition_tridid(int trid_id);
     void            ShowUserGuide();
+    void            ShowBeginnerGuide();
+    bool            TryShowBeginnerGuideOnPreparePage();
     void            ShowDownNetPluginDlg();
     void            ShowUserLogin(bool show = true);
     void            ShowOnlyFilament();

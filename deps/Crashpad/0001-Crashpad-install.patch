@@ -1,0 +1,66 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -71,4 +71,11 @@ add_subdirectory(tools)
+ 
+ if (CRASHPAD_BUILD_EXAMPLES)
+     add_subdirectory(examples)
+ endif (CRASHPAD_BUILD_EXAMPLES)
++
++# Install headers (cross-platform: Windows, macOS, Linux)
++include(GNUInstallDirs)
++install(DIRECTORY client DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/crashpad FILES_MATCHING PATTERN "*.h")
++install(DIRECTORY util DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/crashpad FILES_MATCHING PATTERN "*.h")
++install(DIRECTORY third_party/mini_chromium/mini_chromium/base DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/crashpad FILES_MATCHING PATTERN "*.h")
++install(DIRECTORY third_party/mini_chromium/mini_chromium/build DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/crashpad FILES_MATCHING PATTERN "*.h")
+
+diff --git a/handler/CMakeLists.txt b/handler/CMakeLists.txt
+--- a/handler/CMakeLists.txt
++++ b/handler/CMakeLists.txt
+@@ -81,4 +81,10 @@ if (ANDROID)
+             ${CUSTOM_CRASHPAD_HANDLER_DESTINATION}
+         )
+     endif (CUSTOM_CRASHPAD_HANDLER_DESTINATION)
+ endif (ANDROID)
++
++# Install handler executable to bin/crashpad
++install(TARGETS handler
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/crashpad
++    BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}/crashpad
++    COMPONENT crashpad_handler)
+
+diff --git a/client/CMakeLists.txt b/client/CMakeLists.txt
+--- a/client/CMakeLists.txt
++++ b/client/CMakeLists.txt
+@@ -59,2 +59,9 @@ if (LINUX)
+     target_link_libraries(client PUBLIC Threads::Threads)
+ endif (LINUX)
++
++# Install client library to lib/crashpad
++install(TARGETS client
++    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/crashpad
++    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/crashpad
++    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}/crashpad
++    COMPONENT crashpad_client)
+
+diff --git a/util/CMakeLists.txt b/util/CMakeLists.txt
+--- a/util/CMakeLists.txt
++++ b/util/CMakeLists.txt
+@@ -456,3 +456,6 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
+ if (APPLE)
+     target_compile_options(util PRIVATE -fobjc-arc)
+ endif()
++
++# Note: util is an OBJECT library. install(TARGETS ...) won't install .lib/.a files.
++# The .lib files are manually copied in deps/Crashpad/Crashpad.cmake for MSVC.
+
+diff --git a/third_party/mini_chromium/CMakeLists.txt b/third_party/mini_chromium/CMakeLists.txt
+--- a/third_party/mini_chromium/CMakeLists.txt
++++ b/third_party/mini_chromium/CMakeLists.txt
+@@ -164,3 +164,6 @@ if (WIN32)
+     target_compile_definitions(mini_chromium PUBLIC UNICODE)
+     target_compile_definitions(mini_chromium PUBLIC WIN32_LEAN_AND_MEAN)
+ endif (WIN32)
++
++# Note: mini_chromium is an OBJECT library. install(TARGETS ...) won't install .lib/.a files.
++# The .lib files are manually copied in deps/Crashpad/Crashpad.cmake for MSVC.

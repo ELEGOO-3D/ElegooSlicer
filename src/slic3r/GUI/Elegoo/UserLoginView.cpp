@@ -1,25 +1,21 @@
 #include "UserLoginView.hpp"
-#include <wx/webview.h>
-#include <wx/filename.h>
-#include <wx/stdpaths.h>
-#include <slic3r/Utils/WebviewIPCManager.h>
-#include <slic3r/GUI/GUI_App.hpp>
-#include <slic3r/GUI/Widgets/WebView.hpp>
+
 #include "slic3r/GUI/I18N.hpp"
-#include "libslic3r/AppConfig.hpp"
-#include "libslic3r/Utils.hpp"
-#include <boost/filesystem.hpp>
-#include "slic3r/GUI/MainFrame.hpp"
+#include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/Utils/JsonUtils.hpp"
 #include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
 #include "slic3r/Utils/Elegoo/ElegooNetworkHelper.hpp"
+
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
+#include <thread>
+
 namespace Slic3r { namespace GUI {
 
 std::atomic<bool> UserLoginView::s_isShown{false};
 
-wxBEGIN_EVENT_TABLE(UserLoginView, MsgDialog) EVT_CLOSE(UserLoginView::onClose) wxEND_EVENT_TABLE()
+wxBEGIN_EVENT_TABLE(UserLoginView, ElegooDialog)
+wxEND_EVENT_TABLE()
 
 void UserLoginView::ShowLoginDialog()
 {
@@ -29,82 +25,50 @@ void UserLoginView::ShowLoginDialog()
         return;
     }
     
-    UserLoginView* dialog = new UserLoginView(wxGetApp().mainframe);
+    UserLoginView* dialog = new UserLoginView(nullptr);
     dialog->ShowModal();
     delete dialog;
 }
 
 UserLoginView::UserLoginView(wxWindow* parent)
-    : MsgDialog(static_cast<wxWindow*>(wxGetApp().mainframe), _L("Login"), _L(""), 0)
+    : ElegooDialog(parent, _L("Login"), _L(""), 0)
 {
+    // Get login URL from network helper
+    std::shared_ptr<INetworkHelper> networkHelper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
+    if (!networkHelper) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": could not create network helper";
+        return;
+    }
     
-    // Bind close event to handle async operations
-    Bind(wxEVT_CLOSE_WINDOW, &UserLoginView::onClose, this);
-
-    // Bind ESC key hook to disable ESC key closing the dialog
-    Bind(wxEVT_CHAR_HOOK, [this](wxKeyEvent& e) {
-        if (e.GetKeyCode() == WXK_ESCAPE) {
-            // Do nothing - disable ESC key closing the dialog
-            return;
-        }
-        e.Skip();
-    });
-
-    SetIcon(wxNullIcon);
-
-    initUI();
+    std::string url = networkHelper->getLoginUrl();
+    mLanguage = networkHelper->getLanguage();
+    mRegion = networkHelper->getRegion();
+    
+    // Initialize WebView with network URL
+    initWebView(url, WebViewUrlType::Network);
+    
+    // Set UserAgent (needs to be done after WebView is created)
+    if (getBrowser()) {
+        getBrowser()->SetUserAgent(networkHelper->getUserAgent());
+    }
+    
+    // Set dialog size
+    wxSize pSize = FromDIP(wxSize(496, 723));
+    SetSize(pSize);
+    CenterOnParent();
 }
 
 UserLoginView::~UserLoginView()
 {
     s_isShown = false;
-    cleanupIPC();
-}
-
-void UserLoginView::initUI()
-{
-    // Create webview
-    mBrowser = WebView::CreateWebView(this, "");
-    if (mBrowser == nullptr) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": could not init m_browser";
-        return;
-    }
-
-    mIpc = std::make_unique<webviewIpc::WebviewIPCManager>(mBrowser);
-    setupIPCHandlers();
-
-    // Load login page - online URL
-    std::shared_ptr<INetworkHelper> networkHelper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
-    if (!networkHelper) {
-        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": could not create network helper";
-        return;
-    } 
-    std::string url = networkHelper->getLoginUrl();
-    mLanguage = networkHelper->getLanguage();
-    mRegion = networkHelper->getRegion();
-    mBrowser->SetUserAgent(networkHelper->getUserAgent());
-    mBrowser->LoadURL(url);
-    mBrowser->EnableAccessToDevTools(wxGetApp().app_config->get_bool("developer_mode"));
-    mBrowser->Bind(wxEVT_WEBVIEW_ERROR, &UserLoginView::onWebViewError, this);
-    wxBoxSizer* topsizer = new wxBoxSizer(wxVERTICAL);
-    SetSizer(topsizer);
-    topsizer->Add(mBrowser, wxSizerFlags().Expand().Proportion(1));
-    wxSize pSize = FromDIP(wxSize(496, 723));
-    SetSize(pSize);
-    CenterOnParent();
-
-    // Hide the logo if it exists
-    if (logo) {
-        logo->Hide();
-    }
 }
 
 void UserLoginView::setupIPCHandlers()
 {
-    if (!mIpc)
+    if (!getIpc())
         return;
 
-    mIpc->onRequest("report.userInfo", [this](const webviewIpc::IPCRequest& request) {
+    getIpc()->onRequest("report.userInfo", [this](const IPCRequest& request) {
         auto        data     = request.params;
         std::string     xxx  = data.dump();
         UserNetworkInfo userNetworkInfo;
@@ -136,7 +100,7 @@ void UserLoginView::setupIPCHandlers()
         if(!userNetworkInfo.userId.empty() && !userNetworkInfo.token.empty()) {
             userNetworkInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
         } else {
-            return webviewIpc::IPCResult::error();
+            return IPCResult::error();
         }
    
         UserNetworkManager::getInstance()->login(userNetworkInfo);
@@ -146,102 +110,43 @@ void UserLoginView::setupIPCHandlers()
             EndModal(wxID_OK);
         });
       
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
-    mIpc->onRequest("report.websiteOpen", [this](const webviewIpc::IPCRequest& request) {
+    getIpc()->onRequest("report.websiteOpen", [](const IPCRequest& request) {
         auto        params = request.params;
         std::string url    = params.value("url", "");
-        CallAfter([this, url]() {
+        wxGetApp().CallAfter([url]() {
             wxLaunchDefaultBrowser(url);
         });
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
-    mIpc->onRequest("reload", [this](const webviewIpc::IPCRequest& request) {
-        if(mIsLoading){
-          return webviewIpc::IPCResult::success();
+    getIpc()->onRequest("reload", [this](const IPCRequest& request) {
+        if(isLoading()){
+          return IPCResult::success();
         }
         std::shared_ptr<INetworkHelper> networkHelper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
-        if (networkHelper) {
+        if (networkHelper && getBrowser()) {
             std::string url = networkHelper->getLoginUrl();
             CallAfter([this, url]() {
-                mBrowser->LoadURL(url);
+                getBrowser()->LoadURL(url);
             });
         }
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
-    mIpc->onRequest("isLoading", [this](const webviewIpc::IPCRequest& request) {
+    getIpc()->onRequest("isLoading", [this](const IPCRequest& request) {
         nlohmann::json data = nlohmann::json::object();
-        data["isLoading"] = mIsLoading;
-        return webviewIpc::IPCResult::success(data);
+        data["isLoading"] = isLoading();
+        return IPCResult::success(data);
     });
 }
 
-void UserLoginView::cleanupIPC()
+
+void UserLoginView::onCloseWindow(wxCloseEvent& event)
 {
-}
-
-void UserLoginView::onWebViewLoaded(wxWebViewEvent& event) {
-    mIsLoading = false;
-}
-void UserLoginView::OnNavigationRequest(wxWebViewEvent& evt){
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetTarget().ToUTF8().data();
-    mIsLoading = true;
-}
-void UserLoginView::OnNavigationComplete(wxWebViewEvent& evt){
-    BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << evt.GetTarget().ToUTF8().data();
-    mIsLoading = false;
-}
-
-#define FAILED_URL_SUFFIX "/web/error-page/connection-failed.html"
-void UserLoginView::onWebViewError(wxWebViewEvent& evt)
-{
-    auto e = "unknown error";
-    switch (evt.GetInt()) {
-    case wxWEBVIEW_NAV_ERR_CONNECTION: e = "wxWEBVIEW_NAV_ERR_CONNECTION"; break;
-    case wxWEBVIEW_NAV_ERR_CERTIFICATE: e = "wxWEBVIEW_NAV_ERR_CERTIFICATE"; break;
-    case wxWEBVIEW_NAV_ERR_AUTH: e = "wxWEBVIEW_NAV_ERR_AUTH"; break;
-    case wxWEBVIEW_NAV_ERR_SECURITY: e = "wxWEBVIEW_NAV_ERR_SECURITY"; break;
-    case wxWEBVIEW_NAV_ERR_NOT_FOUND: e = "wxWEBVIEW_NAV_ERR_NOT_FOUND"; break;
-    case wxWEBVIEW_NAV_ERR_REQUEST: e = "wxWEBVIEW_NAV_ERR_REQUEST"; break;
-    case wxWEBVIEW_NAV_ERR_USER_CANCELLED: e = "wxWEBVIEW_NAV_ERR_USER_CANCELLED"; break;
-    case wxWEBVIEW_NAV_ERR_OTHER: e = "wxWEBVIEW_NAV_ERR_OTHER"; break;
-    }
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__
-                            << boost::format(": error loading page %1% %2% %3% %4%") % evt.GetURL() % evt.GetTarget() % e % evt.GetString();
-
-    std::string url     = evt.GetURL().ToStdString();
-    std::string target  = evt.GetTarget().ToStdString();
-    std::string error   = e;
-    std::string message = evt.GetString().ToStdString();
-    mIsLoading = false;
-    if(url.find(FAILED_URL_SUFFIX)!=std::string::npos){
-        return;
-    }
-
-
-    auto code = evt.GetInt();
-    // if (code == wxWEBVIEW_NAV_ERR_CONNECTION || code == wxWEBVIEW_NAV_ERR_NOT_FOUND || code == wxWEBVIEW_NAV_ERR_REQUEST) 
-    {
-        std::thread([this]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                wxGetApp().CallAfter([this]() {
-                    auto path = resources_dir() + FAILED_URL_SUFFIX;
-                    #if WIN32
-                        std::replace(path.begin(), path.end(), '/', '\\');
-                    #endif
-                    auto failedUrl = wxString::Format("file:///%s", from_u8(path));
-                    mBrowser->LoadURL(failedUrl);
-                });
-        }).detach();
-    }
-}
-
-void UserLoginView::onClose(wxCloseEvent& event)
-{
-    cleanupIPC();
-    event.Skip();
+    s_isShown = false;
+    ElegooDialog::onCloseWindow(event);
 }
 
 }} // namespace Slic3r::GUI

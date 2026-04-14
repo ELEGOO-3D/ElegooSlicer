@@ -180,7 +180,6 @@ private:
     void render_logo_texture(GLTexture &logo_texture, GLModel &logo_buffer, bool bottom);
     void render_exclude_area(bool force_default_color);
     //void render_background_for_picking(const ColorRGBA render_color) const;
-    void render_grid(bool bottom);
     void render_height_limit(PartPlate::HeightLimitMode mode = HEIGHT_LIMIT_BOTH);
     // void render_label(GLCanvas3D& canvas) const;
     // void render_grabber(const ColorRGBA render_color, bool use_lighting) const;
@@ -368,6 +367,7 @@ public:
     bool intersects(const BoundingBoxf3& bb) const;
 
     void render(const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom, bool only_body = false, bool force_background_color = false, HeightLimitMode mode = HEIGHT_LIMIT_NONE, int hover_id = -1, bool render_cali = false, bool show_grid = true);
+    void render_grid(bool bottom);
 
     void set_selected();
     void set_unselected();

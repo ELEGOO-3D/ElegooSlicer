@@ -81,33 +81,33 @@ void PrinterMmsSyncView::setupIPCHandlers()
     if (!mIpc) return;
 
     // Handle getPrinterList
-    mIpc->onRequest("getPrinterList", [this](const webviewIpc::IPCRequest& request) {
+    mIpc->onRequest("getPrinterList", [this](const IPCRequest& request) {
         try {
             return getPrinterList();
         } catch (const std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in getPrinterList: %s") % e.what();
-            return webviewIpc::IPCResult::error("Failed to get printer list");
+            return IPCResult::error("Failed to get printer list");
         }
     });
 
     // Handle getPrinterFilamentInfo (async due to potentially time-consuming operations)
-    mIpc->onRequestAsync("getPrinterFilamentInfo", [this](const webviewIpc::IPCRequest& request,
-                                                          std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("getPrinterFilamentInfo", [this](const IPCRequest& request,
+                                                          std::function<void(const IPCResult&)> sendResponse) {
         nlohmann::json params = request.params;
         try {
-            webviewIpc::IPCResult response = this->getPrinterFilamentInfo(params);
+            IPCResult response = this->getPrinterFilamentInfo(params);
             sendResponse(response);
         } catch (const std::exception& e) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in getPrinterFilamentInfo: %s") % e.what();
-            sendResponse(webviewIpc::IPCResult::error(std::string("Failed to get printer filament info: ") + e.what()));  
+            sendResponse(IPCResult::error(std::string("Failed to get printer filament info: ") + e.what()));  
         } catch (...) {
             BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": unknown error in getPrinterFilamentInfo";
-            sendResponse(webviewIpc::IPCResult::error("Failed to get printer filament info: Unknown error"));
+            sendResponse(IPCResult::error("Failed to get printer filament info: Unknown error"));
         }
     });
 
     // Handle syncMmsFilament
-    mIpc->onEvent("syncMmsFilament", [this](const webviewIpc::IPCEvent& event) {
+    mIpc->onEvent("syncMmsFilament", [this](const IPCEvent& event) {
         try {
             auto data = event.data;
             CallAfter([this,data]() {
@@ -120,7 +120,7 @@ void PrinterMmsSyncView::setupIPCHandlers()
     });
 
     // Handle closeDialog
-    mIpc->onEvent("closeDialog", [this](const webviewIpc::IPCEvent& event) {
+    mIpc->onEvent("closeDialog", [this](const IPCEvent& event) {
         try {
             CallAfter([this]() {
                 EndModal(wxID_CANCEL);
@@ -136,9 +136,9 @@ void PrinterMmsSyncView::EndModal(int ret)
     MsgDialog::EndModal(ret);
 }
 
-webviewIpc::IPCResult PrinterMmsSyncView::getPrinterList()
+IPCResult PrinterMmsSyncView::getPrinterList()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     std::string selectedPrinterId = wxGetApp().app_config->get("recent", CONFIG_KEY_SELECTED_PRINTER_ID);
     auto printerList = PrinterManager::getInstance()->getPrinterList();
     nlohmann::json printerArray = json::array();
@@ -179,9 +179,9 @@ webviewIpc::IPCResult PrinterMmsSyncView::getPrinterList()
     return result;
 }
 
-webviewIpc::IPCResult PrinterMmsSyncView::getPrinterFilamentInfo(const nlohmann::json& params)
+IPCResult PrinterMmsSyncView::getPrinterFilamentInfo(const nlohmann::json& params)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     nlohmann::json printerFilamentInfo = nlohmann::json::object();
     std::string printerId = params["printerId"];
     auto mmsGroupResult = PrinterMmsManager::getInstance()->getPrinterMmsInfo(printerId);
@@ -240,7 +240,7 @@ webviewIpc::IPCResult PrinterMmsSyncView::getPrinterFilamentInfo(const nlohmann:
     }
     PrinterNetworkInfo printerNetworkInfo = PrinterManager::getInstance()->getPrinterNetworkInfo(printerId);
     if(!printerNetworkInfo.printerId.empty()) {
-        PrinterMmsManager::getInstance()->getFilamentMmsMapping(printerNetworkInfo, printFilamentList, mmsGroup);
+        PrinterMmsManager::getInstance()->getFilamentMmsMapping(printFilamentList, mmsGroup);
         for (auto& printFilament : printFilamentList) {
             printFilamentArray.push_back(convertPrintFilamentMmsMappingToJson(printFilament));
         }
@@ -260,9 +260,9 @@ webviewIpc::IPCResult PrinterMmsSyncView::getPrinterFilamentInfo(const nlohmann:
     return result;
 }
 
-webviewIpc::IPCResult PrinterMmsSyncView::syncMmsFilament(const nlohmann::json& params)
+IPCResult PrinterMmsSyncView::syncMmsFilament(const nlohmann::json& params)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     nlohmann::json mmsInfo = params["mmsInfo"];
     nlohmann::json printFilamentList = params["printFilamentList"];
     nlohmann::json printer = params["printer"];

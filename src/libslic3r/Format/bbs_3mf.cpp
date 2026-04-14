@@ -17,6 +17,7 @@
 #include <limits>
 #include <stdexcept>
 #include <iomanip>
+#include <regex>
 
 #include <boost/assign.hpp>
 #include <boost/bimap.hpp>
@@ -3741,9 +3742,9 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
             }
             else if (boost::starts_with(m_curr_characters, "ElegooSlicer-")) {
                 m_is_bbl_3mf = true;
-                static const boost::regex regex_ver(R"((\d+)\.(\d+)\.(\d+)(?:\.(\d+))?)");
-                boost::smatch what;
-                if (boost::regex_search(m_curr_characters, what, regex_ver)) {
+                static const std::regex regex_ver(R"((\d+)\.(\d+)\.(\d+)(?:\.(\d+))?)");
+                std::smatch what;
+                if (std::regex_search(m_curr_characters, what, regex_ver)) {
                     if (what.size() >= 4) { 
                         m_bambuslicer_generator_version = Semver::parse(what[0].str());
                     }

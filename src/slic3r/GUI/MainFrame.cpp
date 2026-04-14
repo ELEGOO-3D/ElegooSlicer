@@ -38,6 +38,8 @@
 #include "GLCanvas3D.hpp"
 #include "Plater.hpp"
 #include "WebViewDialog.hpp"
+#include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
+#include "Gizmos/GLGizmosManager.hpp"
 #include "../Utils/Process.hpp"
 #include "format.hpp"
 // BBS
@@ -46,6 +48,9 @@
 #include "Widgets/ProgressDialog.hpp"
 #include "BindDialog.hpp"
 #include "../Utils/MacDarkMode.hpp"
+#ifdef WIN32
+#include "dev-utils/CrashReporter.h"
+#endif
 
 #include <fstream>
 #include <string_view>
@@ -65,6 +70,7 @@
 #include "PrinterWebView.hpp"
 #include "Elegoo/PrinterManagerView.hpp"
 
+
 #ifdef _WIN32
 #include <dbt.h>
 #include <shlobj.h>
@@ -73,7 +79,9 @@
 #include <slic3r/GUI/CreatePresetsDialog.hpp>
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
-
+#include "slic3r/Utils/Elegoo/IPCServer.hpp"
+#include "slic3r/Utils/Elegoo/IPCClient.hpp"
+#include "slic3r/Utils/Elegoo/PrinterNetworkEvent.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -85,6 +93,7 @@ wxDEFINE_EVENT(EVT_REGION_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_LOGIN_HANDLE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_INFO_UPDATED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_LOGOUT, wxCommandEvent);
+wxDEFINE_EVENT(EVT_ELEGOO_AI_ENABLED_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_VER, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_SHOW, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SHOW_IP_DIALOG, wxCommandEvent);
@@ -275,15 +284,28 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
 
     // Initialize multi-instance coordinator first
     MultiInstanceCoordinator::getInstance()->init();
-    MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([this](bool isMaster) {
+    PrinterManager::getInstance()->init();
+
+    // Initialize IPC server if master
+    if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+        IPCServer::getInstance()->start();
+    } else {
+        IPCClient::getInstance()->start();
+    }
+    // Register callback for role changes (slave <-> master)
+    MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([](bool isMaster) {
         if (isMaster) {
-            wxGetApp().CallAfter([this]() {
+            // Promoted to master
+            BOOST_LOG_TRIVIAL(info) << "Role change: slave promoted to master";
+            wxGetApp().CallAfter([]() {
+                IPCClient::getInstance()->stop(); 
+                IPCServer::getInstance()->start();
                 PrinterManager::getInstance()->init();
             });
-        }
+        } 
     });
-    // Initialize printer manager before initializing webview
-    PrinterManager::getInstance()->init();
+    
+
 
     // initialize tabpanel and menubar
     init_tabpanel();
@@ -394,6 +416,13 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         wxGetApp().CallAfter([this]() {
             if (m_home_view) {
                 m_home_view->onRegionChanged();
+            }
+        });
+    });
+    Bind(EVT_GLCANVAS_COLOR_MODE_CHANGED, [this](SimpleEvent&) {
+        wxGetApp().CallAfter([this]() {
+            if (m_home_view) {
+                m_home_view->onThemeChanged();
             }
         });
     });
@@ -561,7 +590,9 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         event.Skip();
         if (event.IsShown()) {
             // Delay initialization slightly to ensure window is fully displayed on the correct display
-            wxGetApp().CallAfter([this]() {
+            this->CallAfter([this]() {
+                if (wxGetApp().is_closing() || this->IsBeingDeleted())
+                    return;
                 // Initialize HomeView's WebView (HomeView is created in MainFrame constructor)
                 if (m_home_view) {
                     m_home_view->initializeNavigationWebView();
@@ -1029,13 +1060,11 @@ void MainFrame::shutdown()
 //             m_plater->print = undef;
 //         Slic3r::GUI::deregister_on_request_update_callback();
 
-    // set to null tabs and a plater
-    // to avoid any manipulations with them from App->wxEVT_IDLE after of the mainframe closing
-    wxGetApp().tabs_list.clear();
-    wxGetApp().model_tabs_list.clear();
-    wxGetApp().shutdown();
-    // BBS: why clear ?
-    //wxGetApp().plater_ = nullptr;
+    // Elegoo / printer stack: disconnect signals and drain async handlers, then tear down printer UI,
+    // stop IPC and PrinterManager (joins monitor / async connects) before GUI_App::shutdown()'s
+    // WebView::CleanupAll, so background connect work does not overlap global WebView teardown.
+    Slic3r::disconnectAllPrinterNetworkEvents();
+
     if (m_printer_manager_view) {
         // Remove from tabpanel before deletion to prevent Layout() crash
         int idx = m_tabpanel->FindPage(m_printer_manager_view);
@@ -1045,7 +1074,20 @@ void MainFrame::shutdown()
         delete m_printer_manager_view;
         m_printer_manager_view = nullptr;
     }
+
+    // set to null tabs and a plater
+    // to avoid any manipulations with them from App->wxEVT_IDLE after of the mainframe closing
+    wxGetApp().tabs_list.clear();
+    wxGetApp().model_tabs_list.clear();
+
+    IPCServer::getInstance()->stop();
+    IPCClient::getInstance()->stop();
     PrinterManager::getInstance()->close();
+
+    wxGetApp().shutdown();
+    // BBS: why clear ?
+    //wxGetApp().plater_ = nullptr;
+
     MultiInstanceCoordinator::getInstance()->uninit();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "MainFrame::shutdown exit";
 }
@@ -1165,6 +1207,10 @@ void MainFrame::init_tabpanel() {
             show_option(false);
             break;
         }*/
+        
+        if (sel == tp3DEditor) {
+            wxGetApp().TryShowBeginnerGuideOnPreparePage();
+        }
     });
 
     if (wxGetApp().is_editor()) {
@@ -1234,8 +1280,8 @@ static void initializePrinterManagerViewWebView(MainFrame* frame, PrinterManager
 {
     if (!view || !frame) return;
     if (frame->IsShown()) {
-        wxGetApp().CallAfter([view]() {
-            if (view) {
+        view->CallAfter([view]() {
+            if (!wxGetApp().is_closing() && !view->IsBeingDeleted()) {
                 view->initializeWebView();
             }
         });
@@ -2336,6 +2382,7 @@ static wxMenu* generate_help_menu()
 {
     wxMenu* helpMenu = new wxMenu();
 
+    append_menu_item(helpMenu, wxID_ANY, _L("Beginner Guide"), _L("Beginner Guide"), [](wxCommandEvent &) {wxGetApp().ShowBeginnerGuide();});
     // shortcut key
     append_menu_item(helpMenu, wxID_ANY, _L("Keyboard Shortcuts") + sep + "&?", _L("Show the list of the keyboard shortcuts"),
         [](wxCommandEvent&) { wxGetApp().keyboard_shortcuts(); });
@@ -2375,6 +2422,17 @@ static wxMenu* generate_help_menu()
             NetworkTestDialog dlg(wxGetApp().mainframe);
             dlg.ShowModal();
         });
+
+#if ELEGOO_INTERNAL_TESTING
+#ifdef WIN32
+    // Test crash (for testing crash reporting)
+    helpMenu->AppendSeparator();
+    append_menu_item(helpMenu, wxID_ANY, _L("Test Crash Report"), _L("Trigger a test crash to verify crash reporting"),
+        [](wxCommandEvent&) { 
+            CrashReporter::triggerTestCrash();
+        });
+#endif
+#endif
 
     // About
 #ifndef __APPLE__
@@ -3704,6 +3762,11 @@ void MainFrame::request_select_tab(TabPosition pos, const std::string& printerId
         evt->SetString(wxString::FromUTF8(printerId));
     }
     wxQueueEvent(this, evt);
+}
+
+int MainFrame::current_tab() const
+{
+    return m_tabpanel ? m_tabpanel->GetSelection() : wxNOT_FOUND;
 }
 
 int MainFrame::get_calibration_curr_tab() {

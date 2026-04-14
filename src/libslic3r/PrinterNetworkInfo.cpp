@@ -1,9 +1,7 @@
 #include <string>
-#include <functional>
-
 #include <vector>
-#include <map>
 #include "PrinterNetworkInfo.hpp"
+#include "slic3r/Utils/JsonUtils.hpp"
 
 namespace Slic3r {
 
@@ -11,106 +9,49 @@ PrinterNetworkInfo convertJsonToPrinterNetworkInfo(const nlohmann::json& json)
 {
     PrinterNetworkInfo printerNetworkInfo;
     try {
-        if (json.contains("printerId")) {
-            printerNetworkInfo.printerId = json["printerId"];
-        }
-        if (json.contains("printerName")) {
-            printerNetworkInfo.printerName = json["printerName"];
-        }
-        if (json.contains("host")) {
-            printerNetworkInfo.host = json["host"];
-        }
-        if (json.contains("port")) {
-            printerNetworkInfo.port = json["port"].get<int>();
-        }
-        if (json.contains("vendor")) {
-            printerNetworkInfo.vendor = json["vendor"];
-        }
-        if (json.contains("printerModel")) {
-            printerNetworkInfo.printerModel = json["printerModel"];
-        }
-        if (json.contains("protocolVersion")) {
-            printerNetworkInfo.protocolVersion = json["protocolVersion"];
-        }
-        if (json.contains("firmwareVersion")) {
-            printerNetworkInfo.firmwareVersion = json["firmwareVersion"];
-        }
-        if (json.contains("hostType")) {
-            printerNetworkInfo.hostType = json["hostType"];
-        }
-        if (json.contains("mainboardId")) {
-            printerNetworkInfo.mainboardId = json["mainboardId"];
-        }
-        if (json.contains("serialNumber")) {
-            printerNetworkInfo.serialNumber = json["serialNumber"];
-        }
-        if (json.contains("username")) {
-            printerNetworkInfo.username = json["username"];
-        }
-        if (json.contains("password")) {
-            printerNetworkInfo.password = json["password"];
-        }
-        if (json.contains("authMode")) {
-            printerNetworkInfo.authMode = json["authMode"];
-        }
-        if (json.contains("token")) {
-            printerNetworkInfo.token = json["token"];
-        }
-        if (json.contains("accessCode")) {
-            printerNetworkInfo.accessCode = json["accessCode"];
-        }
-        if (json.contains("networkType")) {
-            printerNetworkInfo.networkType = static_cast<NetworkType>(json["networkType"].get<int>());
-        }
-        if (json.contains("pinCode")) {
-            printerNetworkInfo.pinCode = json["pinCode"];
-        }
-        if (json.contains("webUrl")) {
-            printerNetworkInfo.webUrl = json["webUrl"];
-        }
+        printerNetworkInfo.printerId = JsonUtils::safeGetString(json, "printerId", "");
+        printerNetworkInfo.printerName = JsonUtils::safeGetString(json, "printerName", "");
+        printerNetworkInfo.host = JsonUtils::safeGetString(json, "host", "");
+        printerNetworkInfo.port = JsonUtils::safeGetInt(json, "port", 0);
+        printerNetworkInfo.vendor = JsonUtils::safeGetString(json, "vendor", "");
+        printerNetworkInfo.printerModel = JsonUtils::safeGetString(json, "printerModel", "");
+        printerNetworkInfo.protocolVersion = JsonUtils::safeGetString(json, "protocolVersion", "");
+        printerNetworkInfo.firmwareVersion = JsonUtils::safeGetString(json, "firmwareVersion", "");
+        printerNetworkInfo.hostType = JsonUtils::safeGetString(json, "hostType", "");
+        printerNetworkInfo.mainboardId = JsonUtils::safeGetString(json, "mainboardId", "");
+        printerNetworkInfo.serialNumber = JsonUtils::safeGetString(json, "serialNumber", "");
+        printerNetworkInfo.username = JsonUtils::safeGetString(json, "username", "");
+        printerNetworkInfo.password = JsonUtils::safeGetString(json, "password", "");
+        printerNetworkInfo.authMode = static_cast<PrinterAuthMode>(JsonUtils::safeGetInt(json, "authMode", 0));
+        printerNetworkInfo.token = JsonUtils::safeGetString(json, "token", "");
+        printerNetworkInfo.accessCode = JsonUtils::safeGetString(json, "accessCode", "");
+        printerNetworkInfo.pinCode = JsonUtils::safeGetString(json, "pinCode", "");
+        printerNetworkInfo.webUrl = JsonUtils::safeGetString(json, "webUrl", "");
+        printerNetworkInfo.networkType = static_cast<NetworkType>(JsonUtils::safeGetInt(json, "networkType", 0));
+        printerNetworkInfo.isPhysicalPrinter = JsonUtils::safeGetBool(json, "isPhysicalPrinter", false);
+        printerNetworkInfo.addTime = JsonUtils::safeGet<uint64_t>(json, "addTime", 0);
+        printerNetworkInfo.modifyTime = JsonUtils::safeGet<uint64_t>(json, "modifyTime", 0);
+        printerNetworkInfo.lastActiveTime = JsonUtils::safeGet<uint64_t>(json, "lastActiveTime", 0);
+        printerNetworkInfo.connectStatus = static_cast<PrinterConnectStatus>(JsonUtils::safeGetInt(json, "connectStatus", 0));
+        printerNetworkInfo.printerStatus = static_cast<PrinterStatus>(JsonUtils::safeGetInt(json, "printerStatus", 0));
+        printerNetworkInfo.isAdded = JsonUtils::safeGetBool(json, "isAdded", false);
+        
         if (json.contains("extraInfo")) {
             printerNetworkInfo.extraInfo = json["extraInfo"].dump();
         } else {
             printerNetworkInfo.extraInfo = "{}";
         }
-        if (json.contains("isPhysicalPrinter")) {
-            printerNetworkInfo.isPhysicalPrinter = json["isPhysicalPrinter"].get<bool>();
-        }
-        if (json.contains("addTime")) {
-            printerNetworkInfo.addTime = json["addTime"].get<uint64_t>();
-        }
-        if (json.contains("modifyTime")) {
-            printerNetworkInfo.modifyTime = json["modifyTime"].get<uint64_t>();
-        }
-        if (json.contains("lastActiveTime")) {
-            printerNetworkInfo.lastActiveTime = json["lastActiveTime"].get<uint64_t>();
-        }
-        if (json.contains("connectStatus")) {
-            printerNetworkInfo.connectStatus = static_cast<PrinterConnectStatus>(json["connectStatus"].get<int>());
-        }
-        if (json.contains("printerStatus")) {
-            printerNetworkInfo.printerStatus = static_cast<PrinterStatus>(json["printerStatus"].get<int>());
-        }
+        
         if (json.contains("printTask")) {
-            if (json["printTask"].contains("taskId")) {
-                printerNetworkInfo.printTask.taskId = json["printTask"]["taskId"];
-            }
-            if (json["printTask"].contains("fileName")) {
-                printerNetworkInfo.printTask.fileName = json["printTask"]["fileName"];
-            }
-            if (json["printTask"].contains("totalTime")) {
-                printerNetworkInfo.printTask.totalTime = json["printTask"]["totalTime"].get<int>();
-            }
-            if (json["printTask"].contains("currentTime")) {
-                printerNetworkInfo.printTask.currentTime = json["printTask"]["currentTime"].get<int>();
-            }
-            if (json["printTask"].contains("estimatedTime")) {
-                printerNetworkInfo.printTask.estimatedTime = json["printTask"]["estimatedTime"].get<int>();
-            }
-            if (json["printTask"].contains("progress")) {
-                printerNetworkInfo.printTask.progress = json["printTask"]["progress"].get<int>();
-            }
+            auto& printTask = json["printTask"];
+            printerNetworkInfo.printTask.taskId = JsonUtils::safeGetString(printTask, "taskId", "");
+            printerNetworkInfo.printTask.fileName = JsonUtils::safeGetString(printTask, "fileName", "");
+            printerNetworkInfo.printTask.totalTime = JsonUtils::safeGetInt64(printTask, "totalTime", 0);
+            printerNetworkInfo.printTask.currentTime = JsonUtils::safeGetInt64(printTask, "currentTime", 0);
+            printerNetworkInfo.printTask.estimatedTime = JsonUtils::safeGetInt64(printTask, "estimatedTime", 0);
+            printerNetworkInfo.printTask.progress = JsonUtils::safeGetInt(printTask, "progress", 0);
         }
+        
         if (json.contains("printCapabilities")) {
             if (json["printCapabilities"].contains("supportsAutoBedLeveling")) {
                 printerNetworkInfo.printCapabilities.supportsAutoBedLeveling = json["printCapabilities"]["supportsAutoBedLeveling"]
@@ -127,17 +68,15 @@ PrinterNetworkInfo convertJsonToPrinterNetworkInfo(const nlohmann::json& json)
                 printerNetworkInfo.printCapabilities.supportsFilamentMapping = json["printCapabilities"]["supportsFilamentMapping"]
                                                                                    .get<bool>();
             }
+            if (json["printCapabilities"].contains("supportsAutoRefill")) {
+                printerNetworkInfo.printCapabilities.supportsAutoRefill = json["printCapabilities"]["supportsAutoRefill"].get<bool>();
+            }
         }
         if (json.contains("systemCapabilities")) {
-            if (json["systemCapabilities"].contains("supportsMultiFilament")) {
-                printerNetworkInfo.systemCapabilities.supportsMultiFilament = json["systemCapabilities"]["supportsMultiFilament"].get<bool>();
-            }
-            if (json["systemCapabilities"].contains("canGetDiskInfo")) {
-                printerNetworkInfo.systemCapabilities.canGetDiskInfo = json["systemCapabilities"]["canGetDiskInfo"].get<bool>();
-            }
-            if (json["systemCapabilities"].contains("canSetPrinterName")) {
-                printerNetworkInfo.systemCapabilities.canSetPrinterName = json["systemCapabilities"]["canSetPrinterName"].get<bool>();
-            }
+            auto& sysCaps = json["systemCapabilities"];
+            printerNetworkInfo.systemCapabilities.supportsMultiFilament = JsonUtils::safeGetBool(sysCaps, "supportsMultiFilament", false);
+            printerNetworkInfo.systemCapabilities.canGetDiskInfo = JsonUtils::safeGetBool(sysCaps, "canGetDiskInfo", false);
+            printerNetworkInfo.systemCapabilities.canSetPrinterName = JsonUtils::safeGetBool(sysCaps, "canSetPrinterName", false);
         }
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to convert json to printer network info: " + std::string(e.what()));
@@ -190,6 +129,7 @@ nlohmann::json convertPrinterNetworkInfoToJson(const PrinterNetworkInfo& printer
     printCapabilitiesJson["supportsTimeLapse"]          = printerNetworkInfo.printCapabilities.supportsTimeLapse;
     printCapabilitiesJson["supportsHeatedBedSwitching"] = printerNetworkInfo.printCapabilities.supportsHeatedBedSwitching;
     printCapabilitiesJson["supportsFilamentMapping"]    = printerNetworkInfo.printCapabilities.supportsFilamentMapping;
+    printCapabilitiesJson["supportsAutoRefill"]         = printerNetworkInfo.printCapabilities.supportsAutoRefill;
     json["printCapabilities"]                           = printCapabilitiesJson;
     nlohmann::json systemCapabilitiesJson;
     systemCapabilitiesJson["supportsMultiFilament"] = printerNetworkInfo.systemCapabilities.supportsMultiFilament;
@@ -204,12 +144,14 @@ PrinterMms convertJsonToPrinterMms(const nlohmann::json& json)
 {
     PrinterMms mms;
     try {
-        mms.mmsId       = json["mmsId"];
-        mms.temperature = json["temperature"];
-        mms.humidity    = json["humidity"];
-        mms.connected   = json["connected"];
-        for (auto& tray : json["trayList"]) {
-            mms.trayList.push_back(convertJsonToPrinterMmsTray(tray));
+        mms.mmsId = JsonUtils::safeGetString(json, "mmsId", "");
+        mms.temperature = JsonUtils::safeGetDouble(json, "temperature", 0.0);
+        mms.humidity = JsonUtils::safeGetInt(json, "humidity", 0);
+        mms.connected = JsonUtils::safeGetBool(json, "connected", false);
+        if (json.contains("trayList") && json["trayList"].is_array()) {
+            for (auto& tray : json["trayList"]) {
+                mms.trayList.push_back(convertJsonToPrinterMmsTray(tray));
+            }
         }
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to convert json to printer mms: " + std::string(e.what()));
@@ -261,24 +203,24 @@ PrinterMmsTray convertJsonToPrinterMmsTray(const nlohmann::json& json)
 {
     PrinterMmsTray tray;
     try {
-        tray.trayId           = json["trayId"];
-        tray.mmsId            = json["mmsId"];
-        tray.trayName         = json["trayName"];
-        tray.settingId        = json["settingId"];
-        tray.filamentId       = json["filamentId"];
-        tray.from             = json["from"];
-        tray.vendor           = json["vendor"];
-        tray.serialNumber     = json["serialNumber"];
-        tray.filamentType     = json["filamentType"];
-        tray.filamentName     = json["filamentName"];
-        tray.filamentColor    = json["filamentColor"];
-        tray.filamentDiameter = json["filamentDiameter"];
-        tray.filamentPresetName = json["filamentPresetName"];
-        tray.minNozzleTemp    = json["minNozzleTemp"];
-        tray.maxNozzleTemp    = json["maxNozzleTemp"];
-        tray.minBedTemp       = json["minBedTemp"];
-        tray.maxBedTemp       = json["maxBedTemp"];
-        tray.status           = json["status"];
+        tray.trayId = JsonUtils::safeGetString(json, "trayId", "");
+        tray.mmsId = JsonUtils::safeGetString(json, "mmsId", "");
+        tray.trayName = JsonUtils::safeGetString(json, "trayName", "");
+        tray.settingId = JsonUtils::safeGetString(json, "settingId", "");
+        tray.filamentId = JsonUtils::safeGetString(json, "filamentId", "");
+        tray.from = JsonUtils::safeGetString(json, "from", "");
+        tray.vendor = JsonUtils::safeGetString(json, "vendor", "");
+        tray.serialNumber = JsonUtils::safeGetInt(json, "serialNumber", 0);
+        tray.filamentType = JsonUtils::safeGetString(json, "filamentType", "");
+        tray.filamentName = JsonUtils::safeGetString(json, "filamentName", "");
+        tray.filamentColor = JsonUtils::safeGetString(json, "filamentColor", "");
+        tray.filamentDiameter = JsonUtils::safeGetString(json, "filamentDiameter", "");
+        tray.filamentPresetName = JsonUtils::safeGetString(json, "filamentPresetName", "");
+        tray.minNozzleTemp = JsonUtils::safeGetDouble(json, "minNozzleTemp", 0.0);
+        tray.maxNozzleTemp = JsonUtils::safeGetDouble(json, "maxNozzleTemp", 0.0);
+        tray.minBedTemp = JsonUtils::safeGetDouble(json, "minBedTemp", 0.0);
+        tray.maxBedTemp = JsonUtils::safeGetDouble(json, "maxBedTemp", 0.0);
+        tray.status = static_cast<TrayStatus>(JsonUtils::safeGetInt(json, "status", -1));
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to convert json to printer mms tray: " + std::string(e.what()));
     }
@@ -308,14 +250,16 @@ PrinterMmsGroup convertJsonToPrinterMmsGroup(const nlohmann::json& json)
 {
     PrinterMmsGroup mmsGroup;
     try {
-        mmsGroup.connectNum    = json["connectNum"];
-        mmsGroup.connected     = json["connected"];
-        mmsGroup.activeMmsId   = json["activeMmsId"];
-        mmsGroup.activeTrayId  = json["activeTrayId"];
-        mmsGroup.autoRefill    = json["autoRefill"];
-        mmsGroup.mmsSystemName = json["mmsSystemName"];
-        mmsGroup.vtTray        = convertJsonToPrinterMmsTray(json["vtTray"]);
-        if (json.contains("mmsList")) {
+        mmsGroup.connectNum = JsonUtils::safeGetInt(json, "connectNum", 0);
+        mmsGroup.connected = JsonUtils::safeGetBool(json, "connected", false);
+        mmsGroup.activeMmsId = JsonUtils::safeGetString(json, "activeMmsId", "");
+        mmsGroup.activeTrayId = JsonUtils::safeGetString(json, "activeTrayId", "");
+        mmsGroup.autoRefill = JsonUtils::safeGetBool(json, "autoRefill", false);
+        mmsGroup.mmsSystemName = JsonUtils::safeGetString(json, "mmsSystemName", "");
+        if (json.contains("vtTray")) {
+            mmsGroup.vtTray = convertJsonToPrinterMmsTray(json["vtTray"]);
+        }
+        if (json.contains("mmsList") && json["mmsList"].is_array()) {
             for (auto& mms : json["mmsList"]) {
                 mmsGroup.mmsList.push_back(convertJsonToPrinterMms(mms));
             }
@@ -330,6 +274,7 @@ nlohmann::json convertPrintFilamentMmsMappingToJson(const PrintFilamentMmsMappin
 {
     nlohmann::json json       = nlohmann::json::object();
     json["filamentId"]        = printFilamentMmsMapping.filamentId;
+    json["vendor"]            = printFilamentMmsMapping.vendor;
     json["filamentName"]      = printFilamentMmsMapping.filamentName;
     json["filamentAlias"]     = printFilamentMmsMapping.filamentAlias;
     json["filamentColor"]     = printFilamentMmsMapping.filamentColor;
@@ -345,15 +290,18 @@ PrintFilamentMmsMapping convertJsonToPrintFilamentMmsMapping(const nlohmann::jso
 {
     PrintFilamentMmsMapping printFilamentMmsMapping;
     try {
-        printFilamentMmsMapping.filamentId        = json["filamentId"];
-        printFilamentMmsMapping.filamentName      = json["filamentName"];
-        printFilamentMmsMapping.filamentAlias     = json["filamentAlias"];
-        printFilamentMmsMapping.filamentColor     = json["filamentColor"];
-        printFilamentMmsMapping.filamentType      = json["filamentType"];
-        printFilamentMmsMapping.filamentWeight    = json["filamentWeight"];
-        printFilamentMmsMapping.filamentDensity   = json["filamentDensity"];
-        printFilamentMmsMapping.index             = json["index"];
-        printFilamentMmsMapping.mappedMmsFilament = convertJsonToPrinterMmsTray(json["mappedMmsFilament"]);
+        printFilamentMmsMapping.filamentId = JsonUtils::safeGetString(json, "filamentId", "");
+        printFilamentMmsMapping.vendor = JsonUtils::safeGetString(json, "vendor", "");
+        printFilamentMmsMapping.filamentName = JsonUtils::safeGetString(json, "filamentName", "");
+        printFilamentMmsMapping.filamentAlias = JsonUtils::safeGetString(json, "filamentAlias", "");
+        printFilamentMmsMapping.filamentColor = JsonUtils::safeGetString(json, "filamentColor", "");
+        printFilamentMmsMapping.filamentType = JsonUtils::safeGetString(json, "filamentType", "");
+        printFilamentMmsMapping.filamentWeight = JsonUtils::safeGetDouble(json, "filamentWeight", 0.0);
+        printFilamentMmsMapping.filamentDensity = JsonUtils::safeGetDouble(json, "filamentDensity", 0.0);
+        printFilamentMmsMapping.index = JsonUtils::safeGetInt(json, "index", 0);
+        if (json.contains("mappedMmsFilament")) {
+            printFilamentMmsMapping.mappedMmsFilament = convertJsonToPrinterMmsTray(json["mappedMmsFilament"]);
+        }
     } catch (const std::exception& e) {
         throw std::runtime_error("Failed to convert json to print filament mms mapping: " + std::string(e.what()));
     }
@@ -390,75 +338,28 @@ nlohmann::json convertUserNetworkInfoToJson(const UserNetworkInfo& userNetworkIn
 UserNetworkInfo convertJsonToUserNetworkInfo(const nlohmann::json& json)
 {
     UserNetworkInfo userNetworkInfo;
-    if (json.contains("userId")) {
-        userNetworkInfo.userId = json["userId"];
-    }
-    if (json.contains("username")) {
-        userNetworkInfo.username = json["username"];
-    }
-    if (json.contains("token")) {
-        userNetworkInfo.token = json["token"];
-    }
-    if (json.contains("refreshToken")) {
-        userNetworkInfo.refreshToken = json["refreshToken"];
-    }
-    if (json.contains("hostType")) {
-        userNetworkInfo.hostType = json["hostType"];
-    }
-    if (json.contains("accessTokenExpireTime")) {
-        userNetworkInfo.accessTokenExpireTime = json["accessTokenExpireTime"];
-    }
-    if (json.contains("refreshTokenExpireTime")) {
-        userNetworkInfo.refreshTokenExpireTime = json["refreshTokenExpireTime"];
-    }
-    if (json.contains("rtcToken")) {
-        userNetworkInfo.rtcToken = json["rtcToken"];
-    }
-    if (json.contains("rtcTokenExpireTime")) {
-        userNetworkInfo.rtcTokenExpireTime = json["rtcTokenExpireTime"];
-    }
-    if (json.contains("nickname")) {
-        userNetworkInfo.rtcTokenExpireTime = json["rtcTokenExpireTime"];
-    }
-    if (json.contains("email")) {
-        userNetworkInfo.email = json["email"];
-    }
-    if (json.contains("avatar")) {
-        userNetworkInfo.avatar = json["avatar"];
-    }
-    if (json.contains("nickname")) {
-        userNetworkInfo.nickname = json["nickname"];
-    }
-    if (json.contains("openid")) {
-        userNetworkInfo.openid = json["openid"];
-    }
-    if (json.contains("phone")) {
-        userNetworkInfo.phone = json["phone"];
-    }
-    if (json.contains("region")) {
-        userNetworkInfo.region = json["region"];
-    }
-    if (json.contains("language")) {
-        userNetworkInfo.language = json["language"];
-    }
-    if (json.contains("createTime")) {
-        userNetworkInfo.createTime = json["createTime"];
-    }
-    if (json.contains("loginTime")) {
-        userNetworkInfo.loginTime = json["loginTime"];
-    }
-    if (json.contains("loginStatus")) {
-        userNetworkInfo.loginStatus = json["loginStatus"];
-    }
-    if (json.contains("lastTokenRefreshTime")) {
-        userNetworkInfo.lastTokenRefreshTime = json["lastTokenRefreshTime"];
-    }
-    if (json.contains("extraInfo")) {
-        userNetworkInfo.extraInfo = json["extraInfo"];
-    }
-    if (json.contains("loginErrorMessage")) {
-        userNetworkInfo.loginErrorMessage = json["loginErrorMessage"];
-    }
+    userNetworkInfo.userId = JsonUtils::safeGetString(json, "userId", "");
+    userNetworkInfo.username = JsonUtils::safeGetString(json, "username", "");
+    userNetworkInfo.token = JsonUtils::safeGetString(json, "token", "");
+    userNetworkInfo.refreshToken = JsonUtils::safeGetString(json, "refreshToken", "");
+    userNetworkInfo.hostType = JsonUtils::safeGetString(json, "hostType", "");
+    userNetworkInfo.accessTokenExpireTime = JsonUtils::safeGetInt64(json, "accessTokenExpireTime", 0);
+    userNetworkInfo.refreshTokenExpireTime = JsonUtils::safeGetInt64(json, "refreshTokenExpireTime", 0);
+    userNetworkInfo.rtcToken = JsonUtils::safeGetString(json, "rtcToken", "");
+    userNetworkInfo.rtcTokenExpireTime = JsonUtils::safeGetInt64(json, "rtcTokenExpireTime", 0);
+    userNetworkInfo.nickname = JsonUtils::safeGetString(json, "nickname", "");
+    userNetworkInfo.email = JsonUtils::safeGetString(json, "email", "");
+    userNetworkInfo.avatar = JsonUtils::safeGetString(json, "avatar", "");
+    userNetworkInfo.openid = JsonUtils::safeGetString(json, "openid", "");
+    userNetworkInfo.phone = JsonUtils::safeGetString(json, "phone", "");
+    userNetworkInfo.region = JsonUtils::safeGetString(json, "region", "");
+    userNetworkInfo.language = JsonUtils::safeGetString(json, "language", "");
+    userNetworkInfo.createTime = JsonUtils::safeGetInt64(json, "createTime", 0);
+    userNetworkInfo.loginTime = JsonUtils::safeGetInt64(json, "loginTime", 0);
+    userNetworkInfo.loginStatus = static_cast<LoginStatus>(JsonUtils::safeGetInt(json, "loginStatus", 0));
+    userNetworkInfo.lastTokenRefreshTime = JsonUtils::safeGetInt64(json, "lastTokenRefreshTime", 0);
+    userNetworkInfo.extraInfo = JsonUtils::safeGetString(json, "extraInfo", "");
+    userNetworkInfo.loginErrorMessage = JsonUtils::safeGetString(json, "loginErrorMessage", "");
     return userNetworkInfo;
 }
 
@@ -475,6 +376,208 @@ LoginStatus parseLoginStatusByErrorCode(PrinterNetworkErrorCode resultCode)
     default:
         return LOGIN_STATUS_OTHER_NETWORK_ERROR;
     }
+}
+
+nlohmann::json convertPrinterPrintTaskToJson(const PrinterPrintTask& task)
+{
+    nlohmann::json json = nlohmann::json::object();
+    json["taskId"] = task.taskId;
+    json["thumbnail"] = task.thumbnail;
+    json["taskName"] = task.taskName;
+    json["fileName"] = task.fileName;
+    json["totalTime"] = task.totalTime;
+    json["currentTime"] = task.currentTime;
+    json["estimatedTime"] = task.estimatedTime;
+    json["beginTime"] = task.beginTime;
+    json["endTime"] = task.endTime;
+    json["progress"] = task.progress;
+    json["taskStatus"] = task.taskStatus;
+    return json;
+}
+
+PrinterPrintTask convertJsonToPrinterPrintTask(const nlohmann::json& json)
+{
+    PrinterPrintTask task;
+    task.taskId = JsonUtils::safeGetString(json, "taskId", "");
+    task.thumbnail = JsonUtils::safeGetString(json, "thumbnail", "");
+    task.taskName = JsonUtils::safeGetString(json, "taskName", "");
+    task.fileName = JsonUtils::safeGetString(json, "fileName", "");
+    task.totalTime = JsonUtils::safeGetInt64(json, "totalTime", 0);
+    task.currentTime = JsonUtils::safeGetInt64(json, "currentTime", 0);
+    task.estimatedTime = JsonUtils::safeGetInt64(json, "estimatedTime", 0);
+    task.beginTime = JsonUtils::safeGetInt64(json, "beginTime", 0);
+    task.endTime = JsonUtils::safeGetInt64(json, "endTime", 0);
+    task.progress = JsonUtils::safeGetInt(json, "progress", 0);
+    task.taskStatus = JsonUtils::safeGetInt(json, "taskStatus", 0);
+    return task;
+}
+
+nlohmann::json convertPrinterPrintTaskResponseToJson(const PrinterPrintTaskResponse& response)
+{
+    nlohmann::json json = nlohmann::json::object();
+    json["totalTasks"] = response.totalTasks;
+    nlohmann::json taskList = nlohmann::json::array();
+    for (const auto& task : response.taskList) {
+        taskList.push_back(convertPrinterPrintTaskToJson(task));
+    }
+    json["taskList"] = taskList;
+    return json;
+}
+
+PrinterPrintTaskResponse convertJsonToPrinterPrintTaskResponse(const nlohmann::json& json)
+{
+    PrinterPrintTaskResponse response;
+    response.totalTasks = JsonUtils::safeGetInt(json, "totalTasks", 0);
+    if (json.contains("taskList") && json["taskList"].is_array()) {
+        for (const auto& taskJson : json["taskList"]) {
+            response.taskList.push_back(convertJsonToPrinterPrintTask(taskJson));
+        }
+    }
+    return response;
+}
+
+nlohmann::json convertUploadTaskInfoToJson(const UploadTaskInfo& task)
+{
+    nlohmann::json json;
+    json["taskId"] = task.taskId;
+    json["printerId"] = task.printerId;
+    json["fileName"] = task.fileName;
+    json["uploadedBytes"] = task.uploadedBytes;
+    json["totalBytes"] = task.totalBytes;
+    json["progress"] = task.progress;
+    json["status"] = static_cast<int>(task.status);
+    json["code"] = static_cast<int>(task.code);
+    json["message"] = task.message;
+    json["beginTime"] = task.beginTime;
+    json["endTime"] = task.endTime;
+    return json;
+}
+
+UploadTaskInfo convertJsonToUploadTaskInfo(const nlohmann::json& json)
+{
+    UploadTaskInfo task;
+    if (json.is_null()) return task;
+    
+    task.taskId = JsonUtils::safeGetString(json, "taskId", "");
+    task.printerId = JsonUtils::safeGetString(json, "printerId", "");
+    task.fileName = JsonUtils::safeGetString(json, "fileName", "");
+    task.uploadedBytes = JsonUtils::safeGet<uint64_t>(json, "uploadedBytes", 0);
+    task.totalBytes = JsonUtils::safeGet<uint64_t>(json, "totalBytes", 0);
+    task.progress = JsonUtils::safeGetInt(json, "progress", 0);
+    task.status = static_cast<UploadTaskStatus>(JsonUtils::safeGetInt(json, "status", 0));
+    task.code = static_cast<PrinterNetworkErrorCode>(JsonUtils::safeGetInt(json, "code", 0));
+    task.message = JsonUtils::safeGetString(json, "message", "");
+    task.beginTime = JsonUtils::safeGetInt64(json, "beginTime", 0);
+    task.endTime = JsonUtils::safeGetInt64(json, "endTime", 0);
+    return task;
+}
+
+nlohmann::json convertPrinterPrintFileToJson(const PrinterPrintFile& file)
+{
+    nlohmann::json json = nlohmann::json::object();
+    json["fileName"] = file.fileName;
+    json["printTime"] = file.printTime;
+    json["layer"] = file.layer;
+    json["layerHeight"] = file.layerHeight;
+    json["thumbnail"] = file.thumbnail;
+    json["size"] = file.size;
+    json["createTime"] = file.createTime;
+    json["totalFilamentUsed"] = file.totalFilamentUsed;
+    json["totalFilamentUsedLength"] = file.totalFilamentUsedLength;
+    json["totalPrintTimes"] = file.totalPrintTimes;
+    json["lastPrintTime"] = file.lastPrintTime;
+    nlohmann::json mappingList = nlohmann::json::array();
+    for (const auto& mapping : file.filamentMmsMappingList) {
+        mappingList.push_back(convertPrintFilamentMmsMappingToJson(mapping));
+    }
+    json["filamentMmsMappingList"] = mappingList;
+    return json;
+}
+
+PrinterPrintFile convertJsonToPrinterPrintFile(const nlohmann::json& json)
+{
+    PrinterPrintFile file;
+    file.fileName = JsonUtils::safeGetString(json, "fileName", "");
+    file.printTime = JsonUtils::safeGetInt64(json, "printTime", 0);
+    file.layer = JsonUtils::safeGetInt(json, "layer", 0);
+    file.layerHeight = JsonUtils::safeGetDouble(json, "layerHeight", 0.0);
+    file.thumbnail = JsonUtils::safeGetString(json, "thumbnail", "");
+    file.size = JsonUtils::safeGetInt64(json, "size", 0);
+    file.createTime = JsonUtils::safeGetInt64(json, "createTime", 0);
+    file.totalFilamentUsed = JsonUtils::safeGetDouble(json, "totalFilamentUsed", 0.0);
+    file.totalFilamentUsedLength = JsonUtils::safeGetDouble(json, "totalFilamentUsedLength", 0.0);
+    file.totalPrintTimes = JsonUtils::safeGetInt(json, "totalPrintTimes", 0);
+    file.lastPrintTime = JsonUtils::safeGetInt64(json, "lastPrintTime", 0);
+    if (json.contains("filamentMmsMappingList") && json["filamentMmsMappingList"].is_array()) {
+        for (const auto& mappingJson : json["filamentMmsMappingList"]) {
+            file.filamentMmsMappingList.push_back(convertJsonToPrintFilamentMmsMapping(mappingJson));
+        }
+    }
+    return file;
+}
+
+nlohmann::json convertPrinterPrintFileResponseToJson(const PrinterPrintFileResponse& response)
+{
+    nlohmann::json json = nlohmann::json::object();
+    json["totalFiles"] = response.totalFiles;
+    nlohmann::json fileList = nlohmann::json::array();
+    for (const auto& file : response.fileList) {
+        fileList.push_back(convertPrinterPrintFileToJson(file));
+    }
+    json["fileList"] = fileList;
+    return json;
+}
+
+PrinterPrintFileResponse convertJsonToPrinterPrintFileResponse(const nlohmann::json& json)
+{
+    PrinterPrintFileResponse response;
+    response.totalFiles = JsonUtils::safeGetInt(json, "totalFiles", 0);
+    if (json.contains("fileList") && json["fileList"].is_array()) {
+        for (const auto& fileJson : json["fileList"]) {
+            response.fileList.push_back(convertJsonToPrinterPrintFile(fileJson));
+        }
+    }
+    return response;
+}
+
+nlohmann::json convertPrinterNetworkParamsToJson(const PrinterNetworkParams& params)
+{
+    nlohmann::json json;
+    json["printerId"] = params.printerId;
+    json["filePath"] = params.filePath;
+    json["fileName"] = params.fileName;
+    json["bedType"] = params.bedType;
+    json["timeLapse"] = params.timeLapse;
+    json["heatedBedLeveling"] = params.heatedBedLeveling;
+    json["autoRefill"] = params.autoRefill;
+    json["uploadAndStartPrint"] = params.uploadAndStartPrint;
+    json["hasMms"] = params.hasMms;
+    nlohmann::json mappingList = nlohmann::json::array();
+    for (const auto& mapping : params.filamentMmsMappingList) {
+        mappingList.push_back(convertPrintFilamentMmsMappingToJson(mapping));
+    }
+    json["filamentMmsMappingList"] = mappingList;
+    return json;
+}
+
+PrinterNetworkParams convertJsonToPrinterNetworkParams(const nlohmann::json& json)
+{
+    PrinterNetworkParams params;
+    params.printerId = JsonUtils::safeGetString(json, "printerId", "");
+    params.filePath = JsonUtils::safeGetString(json, "filePath", "");
+    params.fileName = JsonUtils::safeGetString(json, "fileName", "");
+    params.bedType = JsonUtils::safeGetInt(json, "bedType", 0);
+    params.timeLapse = JsonUtils::safeGetBool(json, "timeLapse", false);
+    params.heatedBedLeveling = JsonUtils::safeGetBool(json, "heatedBedLeveling", false);
+    params.autoRefill = JsonUtils::safeGetBool(json, "autoRefill", false);
+    params.uploadAndStartPrint = JsonUtils::safeGetBool(json, "uploadAndStartPrint", false);
+    params.hasMms = JsonUtils::safeGetBool(json, "hasMms", false);
+    if (json.contains("filamentMmsMappingList") && json["filamentMmsMappingList"].is_array()) {
+        for (const auto& mappingJson : json["filamentMmsMappingList"]) {
+            params.filamentMmsMappingList.push_back(convertJsonToPrintFilamentMmsMapping(mappingJson));
+        }
+    }
+    return params;
 }
 
 } // namespace Slic3r

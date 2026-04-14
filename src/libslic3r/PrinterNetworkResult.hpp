@@ -4,6 +4,9 @@
 #include <string>
 #include <optional>
 #include <string_view>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace Slic3r {
 
@@ -26,6 +29,7 @@ enum class PrinterNetworkErrorCode
     OPERATION_NOT_IMPLEMENTED = 7, // Operation not implemented
     NETWORK_ERROR             = 8, // Network error
     INSUFFICIENT_MEMORY       = 9, // Insufficient memory
+    NOT_CONNECTED_TO_SUBSERVICE = 10, // Not connected to subservice
 
     // Authentication-related errors (200-299)
     INVALID_USERNAME_OR_PASSWORD = 201, // Username or password invalid
@@ -63,6 +67,7 @@ enum class PrinterNetworkErrorCode
   
     SERVER_UNAUTHORIZED = 2050, // Unauthorized access
     SERVER_FORBIDDEN = 2051,    // Forbidden access
+    SERVER_PIN_CODE_MISMATCH = 2052,// PIN code does not match, e.g. SN or model does not match
 
     HOST_TYPE_NOT_SUPPORTED = 9998,          // Host type not supported
     PRINTER_NETWORK_EXCEPTION = 9999,          // External error
@@ -80,8 +85,19 @@ enum class PrinterNetworkErrorCode
     USER_NETWORK_BUSY = 10011, // User network busy
     PRINTER_SERIAL_NUMBER_EMPTY = 10012, // Printer serial number empty
     PRINTER_NOT_CONNECTED_TO_UNBIND = 10013, // Printer not connected to unbind
-    NOT_MAIN_CLIENT = 10014, // Not main client
-    FILE_TOO_LARGE = 10015, // File too large
+    FILE_TOO_LARGE = 10014, // File too large
+
+    // IPC (Inter-Process Communication) errors (100000-100099)
+    IPC_NOT_CONNECTED        = 100000, // IPC connection not established
+    IPC_CONNECTION_FAILED    = 100001, // Failed to connect to master process
+    IPC_CONNECTION_LOST      = 100002, // Connection lost during operation
+    IPC_CONNECTION_CLOSED    = 100003, // Connection closed by peer
+    IPC_IO_ERROR             = 100004, // I/O error during communication
+    IPC_SEND_FAILED          = 100005, // Failed to send request to main process
+    IPC_INVALID_MESSAGE      = 100006, // Invalid message format
+    IPC_PROTOCOL_ERROR       = 100007, // Protocol violation
+    IPC_TOO_MANY_PENDING     = 100008, // Too many pending requests
+    IPC_DEADLOCK_PREVENTED   = 100009, // Deadlock prevented (called from I/O thread)
 };
 
 

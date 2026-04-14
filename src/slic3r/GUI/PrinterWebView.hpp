@@ -55,7 +55,7 @@ public:
     void onConnectionStatus(const nlohmann::json& data);
     void onPrinterEventRaw(const nlohmann::json& data);
 
-
+    bool Show(bool show = true) override;
 private:
     void SendAPIKey();
     void OnScriptMessage(const wxWebViewEvent& event);
@@ -89,6 +89,7 @@ private:
 private:
     std::unique_ptr<webviewIpc::WebviewIPCManager> mIpc;
     
+    wxString m_url_deferred;
 };
 
 }} // namespace Slic3r::GUI

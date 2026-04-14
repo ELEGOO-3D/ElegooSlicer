@@ -16,6 +16,7 @@
 #include <slic3r/GUI/Widgets/WebView.hpp>
 #include <wx/webview.h>
 #include "slic3r/Utils/PrintHost.hpp"
+#include "slic3r/Utils/Elegoo/IPCServer.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Utils.hpp"
@@ -376,6 +377,7 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     mTabBar->Bind(wxEVT_AUINOTEBOOK_DRAG_MOTION, &PrinterManagerView::onTabDragMotion, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_END_DRAG, &PrinterManagerView::onTabEndDrag, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &PrinterManagerView::onTabChanged, this);
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: constructed (WebView deferred)";
 }
 
 void PrinterManagerView::initializeWebView()
@@ -442,16 +444,30 @@ void PrinterManagerView::initializeWebView()
     loadTabState();
     
     Layout();
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView::initializeWebView: complete";
 }
 
 PrinterManagerView::~PrinterManagerView() {
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: destructor";
     // Save tab state before destruction
     saveTabState();
 
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnectAll();
-    PrinterNetworkEvent::getInstance()->eventRawChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->rtcTokenChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->rtmMessageChanged.disconnectAll();
+    if (mConnectStatusChangedHandlerId != 0) {
+        PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnect(mConnectStatusChangedHandlerId);
+        mConnectStatusChangedHandlerId = 0;
+    }
+    if (mEventRawChangedHandlerId != 0) {
+        PrinterNetworkEvent::getInstance()->eventRawChanged.disconnect(mEventRawChangedHandlerId);
+        mEventRawChangedHandlerId = 0;
+    }
+    if (mRtcTokenChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->rtcTokenChanged.disconnect(mRtcTokenChangedHandlerId);
+        mRtcTokenChangedHandlerId = 0;
+    }
+    if (mRtmMessageChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->rtmMessageChanged.disconnect(mRtmMessageChangedHandlerId);
+        mRtmMessageChangedHandlerId = 0;
+    }
 
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     mPrinterViews.clear();
@@ -516,6 +532,17 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
             url += "?lang=" + lang;
         }
     }
+
+    if(wxGetApp().app_config->get_bool("developer_mode")){
+        if(!url.Contains("?"))
+        {
+            url = url + "?dev=true";
+        }
+        else
+        {
+            url = url + "&dev=true";
+        }
+    }  
 
     view->load_url(url);
     // Local network shows IP address, cloud printing shows printer name
@@ -625,18 +652,18 @@ void PrinterManagerView::setupIPCHandlers()
     if (!mIpc) return;
 
     // Handle request_printer_list
-    mIpc->onRequest("request_printer_list", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_printer_list", [this](const IPCRequest& request){
         return getPrinterList();
     });
 
     // Handle request_printer_model_list
-    mIpc->onRequest("request_printer_model_list", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_printer_model_list", [this](const IPCRequest& request){
         return getPrinterModelList();
     });
 
 
     // Handle request_printer_detail
-    mIpc->onRequest("request_printer_detail", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_printer_detail", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         if (!printerId.empty()) {
@@ -644,27 +671,27 @@ void PrinterManagerView::setupIPCHandlers()
                 openPrinterTab(printerId);
             });
         }
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
     // Handle request_discover_printers (async due to time-consuming operation)
-    mIpc->onRequestAsync("request_discover_printers", [this](const webviewIpc::IPCRequest& request, 
-                                                           std::function<void(const webviewIpc::IPCResult&)> sendResponse) {  
+    mIpc->onRequestAsync("request_discover_printers", [this](const IPCRequest& request, 
+                                                           std::function<void(const IPCResult&)> sendResponse) {  
         try {
             // Call the static method to avoid accessing this pointer
             auto result = this->discoverPrinter();
             sendResponse(result);
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("Discovery failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Discovery failed: ") + e.what()));
         }
     });
 
     // Handle request_add_printer (async)
-    mIpc->onRequestAsync("request_add_printer", [this](const webviewIpc::IPCRequest& request,
-                                                        std::function<void(const webviewIpc::IPCResult&)> sendResponse) {  
+    mIpc->onRequestAsync("request_add_printer", [this](const IPCRequest& request,
+                                                        std::function<void(const IPCResult&)> sendResponse) {  
         auto params = request.params;
         if (!params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("Missing printer parameter"));
+            sendResponse(IPCResult::error("Missing printer parameter"));
             return;
         }
         nlohmann::json printer = params["printer"];
@@ -673,18 +700,18 @@ void PrinterManagerView::setupIPCHandlers()
             auto result = addPrinter(printer);
             sendResponse(result);        
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("Add printer failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Add printer failed: ") + e.what()));
         } catch (...) {
-            sendResponse(webviewIpc::IPCResult::error("Add printer failed: Unknown error"));
+            sendResponse(IPCResult::error("Add printer failed: Unknown error"));
         }
     });
 
     // Handle request_cancel_add_printer
-    mIpc->onRequestAsync("request_cancel_add_printer", [this](const webviewIpc::IPCRequest& request,
-                                                                 std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_cancel_add_printer", [this](const IPCRequest& request,
+                                                                 std::function<void(const IPCResult&)> sendResponse) {
         auto params = request.params;
         if (!params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("Missing printer parameter"));
+            sendResponse(IPCResult::error("Missing printer parameter"));
             return;
         }
         nlohmann::json printer = params["printer"];
@@ -692,18 +719,18 @@ void PrinterManagerView::setupIPCHandlers()
             auto result = cancelBindPrinter(printer);
             sendResponse(result);
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("Cancel bind printer failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Cancel bind printer failed: ") + e.what()));
         } catch (...) {
-            sendResponse(webviewIpc::IPCResult::error("Cancel bind printer failed: Unknown error"));
+            sendResponse(IPCResult::error("Cancel bind printer failed: Unknown error"));
         }
     });
     // Handle request_add_physical_printer (async)
-    mIpc->onRequestAsync("request_add_physical_printer", [this](const webviewIpc::IPCRequest& request,
-                                                                 std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_add_physical_printer", [this](const IPCRequest& request,
+                                                                 std::function<void(const IPCResult&)> sendResponse) {
       
         auto params = request.params;
         if (!params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("Missing printer parameter"));
+            sendResponse(IPCResult::error("Missing printer parameter"));
             return;
         }
         
@@ -712,14 +739,14 @@ void PrinterManagerView::setupIPCHandlers()
                 auto result = addPhysicalPrinter(printer);   
                 sendResponse(result);
             } catch (const std::exception& e) {
-                sendResponse(webviewIpc::IPCResult::error(std::string("Add physical printer failed: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Add physical printer failed: ") + e.what()));
             } catch (...) {
-                sendResponse(webviewIpc::IPCResult::error("Add physical printer failed: Unknown error"));
+                sendResponse(IPCResult::error("Add physical printer failed: Unknown error"));
             }
     });
 
     // Handle request_update_printer_name
-    mIpc->onRequest("request_update_printer_name", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_update_printer_name", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         std::string printerName = params.value("printerName", "");
@@ -727,11 +754,11 @@ void PrinterManagerView::setupIPCHandlers()
     });
 
     // Handle request_update_physical_printer
-    mIpc->onRequestAsync("request_update_physical_printer", [this](const webviewIpc::IPCRequest& request,
-                                                                    std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_update_physical_printer", [this](const IPCRequest& request,
+                                                                    std::function<void(const IPCResult&)> sendResponse) {
         auto params = request.params;
         if (!params.contains("printerId") || !params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("missing printerId or printer parameter"));
+            sendResponse(IPCResult::error("missing printerId or printer parameter"));
             return;
         }
         
@@ -742,15 +769,15 @@ void PrinterManagerView::setupIPCHandlers()
             auto result = updatePhysicalPrinter(printerId, printer);
             sendResponse(result);
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("update physical printer failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("update physical printer failed: ") + e.what()));
         } catch (...) {
-            sendResponse(webviewIpc::IPCResult::error("update physical printer failed: unknown error"));
+            sendResponse(IPCResult::error("update physical printer failed: unknown error"));
         }
     });
 
     // Handle request_update_printer_host
-    mIpc->onRequestAsync("request_update_printer_host", [this](const webviewIpc::IPCRequest& request,
-                                                                std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_update_printer_host", [this](const IPCRequest& request,
+                                                                std::function<void(const IPCResult&)> sendResponse) {
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         std::string host = params.value("host", "");
@@ -759,108 +786,202 @@ void PrinterManagerView::setupIPCHandlers()
                 auto result = updatePrinterHost(printerId, host);
                 sendResponse(result);
             } catch (const std::exception& e) {
-                sendResponse(webviewIpc::IPCResult::error(std::string("Update printer host failed: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Update printer host failed: ") + e.what()));
             } catch (...) {
-                sendResponse(webviewIpc::IPCResult::error("Update printer host failed: Unknown error"));    
+                sendResponse(IPCResult::error("Update printer host failed: Unknown error"));    
             }
     });
 
     // Handle request_delete_printer
-    mIpc->onRequest("request_delete_printer", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_delete_printer", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         return deletePrinter(printerId);
     });
 
     // Handle request_browse_ca_file (async because it shows a file dialog)
-    mIpc->onRequestAsync("request_browse_ca_file", [this](const webviewIpc::IPCRequest& request,
-                                                          std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_browse_ca_file", [this](const IPCRequest& request,
+                                                          std::function<void(const IPCResult&)> sendResponse) {
         wxGetApp().CallAfter([this, sendResponse]() {
             try {
-                webviewIpc::IPCResult result = browseCAFile();
+                IPCResult result = browseCAFile();
                 sendResponse(result);
             } catch (const std::exception& e) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in browseCAFile: %s") % e.what();
-                sendResponse(webviewIpc::IPCResult::error(std::string("Failed to browse CA file: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Failed to browse CA file: ") + e.what()));
             } catch (...) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": unknown error in browseCAFile";
-                sendResponse(webviewIpc::IPCResult::error("Failed to browse CA file: Unknown error"));
+                sendResponse(IPCResult::error("Failed to browse CA file: Unknown error"));
             }
         });
     });
 
     // Handle request_refresh_printers
-    mIpc->onRequest("request_refresh_printers", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_refresh_printers", [this](const IPCRequest& request){
         // Implementation for refresh printers
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
+    // Handle request_refresh_wan_printers
+    mIpc->onRequest("request_refresh_wan_printers", [this](const IPCRequest& request){
+        PrinterManager::getInstance()->enqueueWanSyncRequest();
+        return IPCResult::success();
+    });
     // Handle request_logout_print_host
-    mIpc->onRequest("request_logout_print_host", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_logout_print_host", [this](const IPCRequest& request){
         // Implementation for logout print host
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
     // Handle request_connect_physical_printer
-    mIpc->onRequest("request_connect_physical_printer", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_connect_physical_printer", [this](const IPCRequest& request){
         // Implementation for connect physical printer
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
-    mIpc->onRequest("checkLoginStatus", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("checkLoginStatus", [this](const IPCRequest& request){
         return handleCheckLoginStatus();
     });
 
-    mIpc->onRequest("ready", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("ready", [this](const IPCRequest& request){
         return handleReady();
     });
 
-    mIpc->onRequest("request_user_info", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_user_info", [this](const IPCRequest& request){
         UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();   
         nlohmann::json data = convertUserNetworkInfoToJson(userNetworkInfo);
-        return webviewIpc::IPCResult::success(data);
-    });
-    
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        if (targetView) {
-            nlohmann::json data;
-            data["status"] = event.status;
-            targetView->onConnectionStatus(data);
-        }
-    });
-    PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        if (targetView) {
-            nlohmann::json data;
-            data["event"] = event.event;
-            targetView->onPrinterEventRaw(data);
-        }
+        return IPCResult::success(data);
     });
 
-    UserNetworkEvent::getInstance()->rtcTokenChanged.connect([this](const UserRtcTokenEvent& event) {
-        nlohmann::json data;
-        data["rtcToken"] = event.userInfo.rtcToken;
-        data["userId"] = event.userInfo.userId;
-        data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
-        forEachPrinterView([&data](const std::string&, PrinterWebView* view) {
-            view->onRtcTokenChanged(data);
+    mIpc->onRequest("get_license_expired_devices", [this](const IPCRequest& request){
+        auto licenseResult = PrinterManager::getInstance()->getLicenseExpiredDevices();
+        IPCResult result;
+        nlohmann::json devicesJson;
+        devicesJson["devices"] = nlohmann::json::array();
+        if (licenseResult.hasData()) {
+            for (const auto& device : licenseResult.data.value()) {
+                nlohmann::json deviceJson;
+                deviceJson["serialNumber"] = device.serialNumber;
+                deviceJson["status"] = device.status;
+                devicesJson["devices"].push_back(deviceJson);
+            }
+        }
+        result.data = devicesJson;
+        result.message = licenseResult.message;
+        result.code = licenseResult.isSuccess() ? 0 : static_cast<int>(licenseResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("renew_license", [this](const IPCRequest& request){
+        auto params = request.params;
+        std::string serialNumber = params.value("serialNumber", "");
+        auto renewResult = PrinterManager::getInstance()->renewLicense(serialNumber);
+        IPCResult result;
+        result.message = renewResult.message;
+        result.code = renewResult.isSuccess() ? 0 : static_cast<int>(renewResult.code);
+        return result;
+    });
+
+    mIpc->onRequest("get_license_expired_devices", [this](const IPCRequest& request){
+        auto licenseResult = PrinterManager::getInstance()->getLicenseExpiredDevices();
+        IPCResult result;
+        nlohmann::json devicesJson;
+        devicesJson["devices"] = nlohmann::json::array();
+        if (licenseResult.hasData()) {
+            for (const auto& device : licenseResult.data.value()) {
+                nlohmann::json deviceJson;
+                deviceJson["serialNumber"] = device.serialNumber;
+                deviceJson["status"] = device.status;
+                devicesJson["devices"].push_back(deviceJson);
+            }
+        }
+        result.data = devicesJson;
+        result.message = licenseResult.message;
+        result.code = licenseResult.isSuccess() ? 0 : static_cast<int>(licenseResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("renew_license", [this](const IPCRequest& request){
+        auto params = request.params;
+        std::string serialNumber = params.value("serialNumber", "");
+        auto renewResult = PrinterManager::getInstance()->renewLicense(serialNumber);
+        IPCResult result;
+        result.message = renewResult.message;
+        result.code = renewResult.isSuccess() ? 0 : static_cast<int>(renewResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("refresh_printer_status", [this](const IPCRequest& request){
+        IPCResult result;
+        auto printerList = PrinterManager::getInstance()->getPrinterList(); 
+        for (const auto& printer : printerList) {
+            auto refreshResult = PrinterManager::getInstance()->refreshPrinterStatus(printer.printerId);
+        }
+        result.code = 0;
+        return result;
+    });
+    
+    mConnectStatusChangedHandlerId = PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["status"] = event.status;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onConnectionStatus(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.connectStatusChanged", data, ""));
+            }
         });
     });
-    UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        if (targetView) {
+    mEventRawChangedHandlerId = PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["event"] = event.event;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onPrinterEventRaw(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.eventRawChanged", data, ""));
+            }
+        });
+    });
+
+    mRtcTokenChangedHandlerId = UserNetworkEvent::getInstance()->rtcTokenChanged.connect([this](const UserRtcTokenEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            nlohmann::json data;
+            data["rtcToken"] = event.userInfo.rtcToken;
+            data["userId"] = event.userInfo.userId;
+            data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
+            forEachPrinterView([&data](const std::string&, PrinterWebView* view) { view->onRtcTokenChanged(data); });
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtcTokenChanged", data, ""));
+            }
+        });
+    });
+    mRtmMessageChangedHandlerId = UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
             nlohmann::json data;
             data["message"] = event.message;
-            targetView->onRtmMessage(data);
-        }
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onRtmMessage(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtmMessageChanged", data, ""));
+            }
+        });
     });
 
 }
 
-webviewIpc::IPCResult PrinterManagerView::deletePrinter(const std::string& printerId)
+IPCResult PrinterManagerView::deletePrinter(const std::string& printerId)
 { 
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto networkResult = PrinterManager::getInstance()->deletePrinter(printerId);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
@@ -904,9 +1025,9 @@ void PrinterManagerView::closeInvalidPrinterTab(std::vector<PrinterNetworkInfo>&
     });
 
 }
-webviewIpc::IPCResult PrinterManagerView::updatePrinterName(const std::string& printerId, const std::string& printerName)
+IPCResult PrinterManagerView::updatePrinterName(const std::string& printerId, const std::string& printerName)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     wxGetApp().CallAfter([this, printerId, printerName]() {
         PrinterWebView* view = findPrinterView(printerId);
         if (view) {
@@ -921,9 +1042,9 @@ webviewIpc::IPCResult PrinterManagerView::updatePrinterName(const std::string& p
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::updatePrinterHost(const std::string& printerId, const std::string& host)
+IPCResult PrinterManagerView::updatePrinterHost(const std::string& printerId, const std::string& host)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto networkResult = PrinterManager::getInstance()->updatePrinterHost(printerId, host);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
@@ -949,9 +1070,9 @@ webviewIpc::IPCResult PrinterManagerView::updatePrinterHost(const std::string& p
     return result;
 }
 
-webviewIpc::IPCResult PrinterManagerView::updatePhysicalPrinter(const std::string& printerId, const nlohmann::json& printer)
+IPCResult PrinterManagerView::updatePhysicalPrinter(const std::string& printerId, const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
 
     PrinterNetworkInfo oldPrinter =  PrinterManager::getInstance()->getPrinterNetworkInfo(printerId);
@@ -983,9 +1104,9 @@ webviewIpc::IPCResult PrinterManagerView::updatePhysicalPrinter(const std::strin
     return result;
 }
 
-webviewIpc::IPCResult PrinterManagerView::addPrinter(const nlohmann::json& printer)
+IPCResult PrinterManagerView::addPrinter(const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
     printerInfo.isPhysicalPrinter = false;
     auto networkResult = PrinterManager::getInstance()->addPrinter(printerInfo);
@@ -993,9 +1114,9 @@ webviewIpc::IPCResult PrinterManagerView::addPrinter(const nlohmann::json& print
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
+IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkErrorCode errorCode = PrinterNetworkErrorCode::SUCCESS;
     PrinterNetworkInfo printerInfo;
     try {
@@ -1013,18 +1134,18 @@ webviewIpc::IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::jso
     return result;
 }
 
-webviewIpc::IPCResult PrinterManagerView::cancelBindPrinter(const nlohmann::json& printer)
+IPCResult PrinterManagerView::cancelBindPrinter(const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
     auto networkResult = PrinterManager::getInstance()->cancelBindPrinter(printerInfo);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::discoverPrinter()
+IPCResult PrinterManagerView::discoverPrinter()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto printerListResult = PrinterManager::getInstance()->discoverPrinter();
     std::vector<PrinterNetworkInfo> printerList;
     if(printerListResult.hasData()) {
@@ -1045,9 +1166,9 @@ webviewIpc::IPCResult PrinterManagerView::discoverPrinter()
     result.message = printerListResult.message;
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::getPrinterList()
+IPCResult PrinterManagerView::getPrinterList()
 {  
-    webviewIpc::IPCResult result;
+    IPCResult result;
     // Cache for printer images (printerId -> base64 image data)
     static std::map<std::string, std::string> printerImageCache;
     auto printerList = PrinterManager::getInstance()->getPrinterList();
@@ -1087,15 +1208,14 @@ webviewIpc::IPCResult PrinterManagerView::getPrinterList()
     // Return object with printer list and main client status
     nlohmann::json resultData;
     resultData["printers"] = response;
-    resultData["isMainClient"] = MultiInstanceCoordinator::getInstance()->isMaster();
     result.data = resultData;
     result.code = 0;
     result.message = getErrorMessage(PrinterNetworkErrorCode::SUCCESS);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::browseCAFile()
+IPCResult PrinterManagerView::browseCAFile()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkErrorCode errorCode = PrinterNetworkErrorCode::SUCCESS;
     std::string path = "";
     try {
@@ -1113,7 +1233,7 @@ webviewIpc::IPCResult PrinterManagerView::browseCAFile()
     result.message = getErrorMessage(errorCode);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::handleReady()
+IPCResult PrinterManagerView::handleReady()
 {
     lock_guard<mutex> lock(mUserInfoMutex);
     mIsReady = true;
@@ -1125,9 +1245,9 @@ webviewIpc::IPCResult PrinterManagerView::handleReady()
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": sent pending user info to WebView";
     }
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": ready";
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
-webviewIpc::IPCResult PrinterManagerView::handleCheckLoginStatus()
+IPCResult PrinterManagerView::handleCheckLoginStatus()
 {
     UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();
     auto            result          = UserNetworkManager::getInstance()->checkUserNeedReLogin();
@@ -1137,18 +1257,18 @@ webviewIpc::IPCResult PrinterManagerView::handleCheckLoginStatus()
             // need re-login
             auto evt = new wxCommandEvent(EVT_USER_LOGIN);
             wxQueueEvent(wxGetApp().mainframe, evt);
-            return webviewIpc::IPCResult::success();
+            return IPCResult::success();
         }
     } else {
-        return webviewIpc::IPCResult::error(result.message);
+        return IPCResult::error(result.message);
     }
     // don't need to re-login, return user info
     nlohmann::json data = convertUserNetworkInfoToJson(userNetworkInfo);
-    return webviewIpc::IPCResult::success(data);
+    return IPCResult::success(data);
 }
-webviewIpc::IPCResult PrinterManagerView::getPrinterModelList()
+IPCResult PrinterManagerView::getPrinterModelList()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto vendorPrinterModelConfigMap = PrinterManager::getVendorPrinterModelConfig();   
     nlohmann::json response = nlohmann::json::array();
     for (auto& vendor : vendorPrinterModelConfigMap) {

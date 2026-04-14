@@ -4,6 +4,11 @@ project(ElegooSlicer-native)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Find Crashpad before dev-utils (which needs it) - Windows only
+if (WIN32)
+    find_package(Crashpad REQUIRED MODULE)
+endif ()
+
 # Include dev-utils for encoding check and other utilities
 add_subdirectory(dev-utils)
 # add_subdirectory(avrdude)
@@ -111,7 +116,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dev-utils/platform/msw/ElegooSlicer.r
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dev-utils/platform/msw/ElegooSlicer.manifest.in ${CMAKE_CURRENT_BINARY_DIR}/ElegooSlicer.manifest @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dev-utils/platform/osx/Info.plist.in ${CMAKE_CURRENT_BINARY_DIR}/Info.plist @ONLY)
 if (WIN32)
-    add_library(ElegooSlicer SHARED ElegooSlicer.cpp ElegooSlicer.hpp dev-utils/BaseException.cpp dev-utils/BaseException.h dev-utils/StackWalker.cpp dev-utils/StackWalker.h)
+    add_library(ElegooSlicer SHARED ElegooSlicer.cpp ElegooSlicer.hpp dev-utils/CrashReporter.cpp dev-utils/CrashReporter.h)
 else ()
     add_executable(ElegooSlicer ElegooSlicer.cpp ElegooSlicer.hpp)
 endif ()
@@ -129,6 +134,13 @@ if (NOT WIN32 AND NOT APPLE)
 endif ()
 
 target_link_libraries(ElegooSlicer libslic3r cereal::cereal)
+if (WIN32)
+    target_include_directories(ElegooSlicer PRIVATE ${Crashpad_INCLUDE_DIR})
+    target_link_libraries(ElegooSlicer Crashpad::client)
+    # Setup crashpad_handler for Windows
+    elegooslicer_setup_crashpad_handler(ElegooSlicer)
+endif ()
+
 # target_include_directories(ElegooSlicer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/slic3r)
 if (APPLE)
 #    add_compile_options(-stdlib=libc++)
@@ -222,7 +234,6 @@ if (WIN32)
         )
     endif ()
 
-
 else ()
     if (APPLE AND NOT CMAKE_MACOSX_BUNDLE)
         # On OSX, the name of the binary matches the name of the Application.
@@ -279,6 +290,16 @@ else ()
             COMMENT "Copying Agora frameworks to app bundle with symlinks preserved"
             VERBATIM
         )
+        
+        # # copy elegoo-link-service to MacOS folder
+        # add_custom_command(TARGET ElegooSlicer POST_BUILD
+        #     COMMAND rm -f "$<TARGET_BUNDLE_CONTENT_DIR:ElegooSlicer>/MacOS/elegoo-link-service"
+        #     COMMAND cp "${CMAKE_PREFIX_PATH}/bin/elegoo-link-service" "$<TARGET_BUNDLE_CONTENT_DIR:ElegooSlicer>/MacOS/elegoo-link-service"
+        #     COMMAND bash -c "if ! otool -l '$<TARGET_BUNDLE_CONTENT_DIR:ElegooSlicer>/MacOS/elegoo-link-service' | grep -q '@executable_path/../Frameworks'; then install_name_tool -add_rpath @executable_path/../Frameworks '$<TARGET_BUNDLE_CONTENT_DIR:ElegooSlicer>/MacOS/elegoo-link-service'; echo 'Added rpath to elegoo-link-service'; else echo 'Rpath already exists in elegoo-link-service'; fi"
+        #     COMMENT "Copying elegoo-link-service to app bundle and fixing rpath"
+        #     VERBATIM
+        # )
+
     endif()
     add_custom_command(TARGET ElegooSlicer POST_BUILD
         COMMAND ln -sfn "${SLIC3R_RESOURCES_DIR}" "${BIN_RESOURCES_DIR}"
@@ -305,6 +326,7 @@ if (WIN32)
         install(TARGETS ElegooSlicer_app_gui RUNTIME DESTINATION ".")
     endif ()
     install(FILES ${output_dlls_${build_type}} DESTINATION ".")
+    # Install crashpad_handler
 else ()
     install(TARGETS ElegooSlicer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR})
     

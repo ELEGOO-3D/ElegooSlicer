@@ -99,6 +99,14 @@ const PrintSendApp = {
             return (this.mmsInfo && this.mmsInfo.mmsList) || [];
         },
 
+        networkPrinters() {
+            return this.printerList.filter(printer => printer.networkType === 1);
+        },
+
+        localPrinters() {
+            return this.printerList.filter(printer => printer.networkType === 0);
+        },
+
         // Check if selected printer model does not match the current project printer model
         printerModelNotMatch() {
             return this.curPrinter && this.printInfo.currentProjectPrinterModel && this.curPrinter.printerModel !== this.printInfo.currentProjectPrinterModel;
@@ -372,6 +380,26 @@ const PrintSendApp = {
             return brightness > 180 ? '#222' : '#fff';
         },
 
+        standardizeFilamentName(name, vendor = '') {
+            let standardized = (name || '').toUpperCase().trim();
+            const vendorUpper = (vendor || '').toUpperCase().trim();
+
+            if (vendorUpper && standardized.includes(vendorUpper)) {
+                standardized = standardized.split(vendorUpper).join('').trim();
+            }
+            if (standardized.includes('GENERIC')) {
+                standardized = standardized.split('GENERIC').join('').trim();
+            }
+
+            const atPos = standardized.indexOf('@');
+            if (atPos !== -1) {
+                standardized = standardized.substring(0, atPos).trim();
+            }
+
+            standardized = standardized.replace(/-/g, ' ').trim();
+            return standardized;
+        },
+
         // MMS popover methods  
         updateFilamentMapping(filamentIndex, tray) {
             const filamentSection = document.getElementsByClassName('filament-section');
@@ -381,8 +409,15 @@ const PrintSendApp = {
             console.log('Selected MMS Tray:', tray);
             for (let i = 0; i < this.printInfo.filamentList.length; i++) {
                 if (this.printInfo.filamentList[i].index === filamentIndex) {
-                    const filament = this.printInfo.filamentList[i];
-                    if (filament.filamentType !== tray.filamentType && tray.filamentType !== '') {
+                    const filament = this.printInfo.filamentList[i]; 
+                    const filamentType = (filament.filamentType || '').toUpperCase().trim();
+                    const trayFilamentType = (tray.filamentType || '').toUpperCase().trim();
+                    const filamentVendor = filament.vendor || '';
+                    const trayVendor = tray.vendor || '';
+                    const filamentName = this.standardizeFilamentName(filament.filamentName, filamentVendor);
+                    const trayFilamentName = this.standardizeFilamentName(tray.filamentName, trayVendor);
+                    if ((filamentType !== trayFilamentType && trayFilamentType !== '') &&
+                        (filamentName !== trayFilamentName && trayFilamentName !== '')) {
                         this.showStatusTip(this.$t('printSend.filamentTypeNotMatch'));
                         return;
                     }
@@ -545,7 +580,7 @@ const PrintSendApp = {
             } else {
                 this.hasMmsInfo = false;
             }
-
+            this.refreshShowFilamentSection();
             this.$nextTick(() => {
                 this.adjustModelNameWidth();
             });

@@ -2,6 +2,7 @@
 #define HOMEVIEW_HPP
 
 #include <wx/wx.h>
+#include <wx/statline.h>
 #include <wx/webview.h>
 #include <memory>
 #include <map>
@@ -28,6 +29,7 @@ public:
     void switchToPage(const wxString& pageName);
     void refreshUserInfo();
     void onRegionChanged();
+    void onThemeChanged();
     
     // Initialize navigation WebView after window is shown (fixes macOS multi-display rendering issue)
     void initializeNavigationWebView();
@@ -40,14 +42,14 @@ private:
     void showPage(const wxString& pageName);
     
     // IPC handlers
-    webviewIpc::IPCResult handleGetUserInfo();
-    webviewIpc::IPCResult handleNavigateToPage(const nlohmann::json& data);
-    webviewIpc::IPCResult handleShowLoginDialog();
-    webviewIpc::IPCResult handleCheckLoginStatus();
-    webviewIpc::IPCResult handleReady();
+    IPCResult handleGetUserInfo();
+    IPCResult handleNavigateToPage(const nlohmann::json& data);
+    IPCResult handleShowLoginDialog();
+    IPCResult handleCheckLoginStatus();
+    IPCResult handleReady();
     
     // Async operations
-    webviewIpc::IPCResult handleLogout();
+    IPCResult handleLogout();
     
     // Event handlers
     void onWebViewLoaded(wxWebViewEvent& event);
