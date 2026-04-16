@@ -6,6 +6,8 @@
 #include "libslic3r/Utils.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
+#include <chrono>
+#include <thread>
 #include "libslic3r_version.h"
 #define ELEGOO_NETWORK_LIBRARY "ElegooNetwork"
 
