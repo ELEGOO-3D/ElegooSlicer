@@ -155,17 +155,6 @@ echo [INFO] Enable Debug Output: %enable_debug_output%
 echo.
 
 
-@REM Clean previous build
-set folderPath=".\%build_dir%\ElegooSlicer"
-if exist "%folderPath%" (
-    echo [INFO] Cleaning previous build folder: %folderPath%
-    rd /s /q "%folderPath%"
-    echo [OK] Previous build folder cleaned successfully
-) else (
-    echo [INFO] No previous build folder found, skipping cleanup
-)
-
-
 if "%dlweb%"=="ON" (
     setlocal enabledelayedexpansion
     echo ----------------------------------------------------------------------------
@@ -263,6 +252,17 @@ echo                    STAGE 2: BUILDING ELEGOOSLICER
 echo ============================================================================
 echo [INFO] Configuring ElegooSlicer with CMake...
 echo.
+
+@REM Clean previous build
+set folderPath=".\%build_dir%\ElegooSlicer"
+if exist "%folderPath%" (
+    echo [INFO] Cleaning previous build folder: %folderPath%
+    rd /s /q "%folderPath%"
+    echo [OK] Previous build folder cleaned successfully
+) else (
+    echo [INFO] No previous build folder found, skipping cleanup
+)
+
 
 cd %WP%
 mkdir %build_dir% 2>nul
@@ -382,31 +382,54 @@ if "%sign%"=="ON" (
         goto error_end
     )
 
+    set VERIFY_TOOL_PATH=!WindowsSdkDir!bin\!WindowsSDKVersion!\x64\signtool.exe
+    if not exist "!VERIFY_TOOL_PATH!" (
+        echo [ERROR] Verify tool not found: !VERIFY_TOOL_PATH!. Exiting.
+        goto error_end
+    ) 
+
     echo [INFO] Signing tool: %SIGNTOOL_PATH%
     echo [INFO] Config path: %SIGN_CONFIG_PATH%
+    echo [INFO] Verify tool: !VERIFY_TOOL_PATH!
     echo.
     
     cd %WP%
     cd %build_dir%
-    
-    echo [INFO] Signing elegoo-slicer.exe...
-    %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i .\ElegooSlicer\elegoo-slicer.exe -m 3 -r elegoo
-    if !ERRORLEVEL! neq 0 (
-        echo [ERROR] Failed to sign elegoo-slicer.exe. Exiting.
+    set signed_file_count=0
+    set skipped_signed_file_count=0
+    set checked_file_count=0
+
+    for %%e in (dll exe) do (
+        for /r ".\ElegooSlicer" %%f in (*.%%e) do (
+            echo [INFO] Verifying %%~nxf...
+            "!VERIFY_TOOL_PATH!"  verify /pa "%%f"
+            if !ERRORLEVEL! equ 0 (
+                echo [INFO] %%~nxf already has a valid signature. Skipping sign.
+                set /a skipped_signed_file_count+=1
+            ) else (
+                echo [INFO] %%~nxf signature is invalid or missing. Signing...
+                %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i "%%f" -m 3 -r elegoo
+                if !ERRORLEVEL! neq 0 (
+                    echo [ERROR] Failed to sign %%f. Exiting.
+                    goto error_end
+                )
+                set /a signed_file_count+=1
+                echo [OK] %%~nxf signed successfully
+            )
+            set /a checked_file_count+=1
+            echo.
+        )
+    )
+
+    if !checked_file_count! equ 0 (
+        echo [ERROR] No .dll or .exe files found in .\ElegooSlicer. Exiting.
         goto error_end
     )
-    echo [OK] elegoo-slicer.exe signed successfully
-    echo.
-    
-    echo [INFO] Signing ElegooSlicer.dll...
-    %SIGNTOOL_PATH% --config %SIGN_CONFIG_PATH% --cmd sign -i .\ElegooSlicer\ElegooSlicer.dll -m 3 -r elegoo
-    if !ERRORLEVEL! neq 0 (
-        echo [ERROR] Failed to sign ElegooSlicer.dll. Exiting.
-        goto error_end
-    )
-    echo [OK] ElegooSlicer.dll signed successfully
-    echo.
-    echo [OK] All binaries signed successfully
+
+    echo [INFO] Total checked files: !checked_file_count!
+    echo [INFO] Newly signed files: !signed_file_count!
+    echo [INFO] Already valid files: !skipped_signed_file_count!
+    echo [OK] Binary signature verification completed
     echo ----------------------------------------------------------------------------
     echo.
 )
