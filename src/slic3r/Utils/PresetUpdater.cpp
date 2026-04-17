@@ -295,6 +295,15 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
     fs::path tmp_path = target_path;
     tmp_path += format(".%1%%2%", get_current_pid(), TMP_EXTENSION);
 
+    auto remove_tmp_if_exists = [&tmp_path]() {
+        try {
+            if (fs::exists(tmp_path))
+                fs::remove(tmp_path);
+        } catch (...) {
+            // Keep best-effort cleanup only.
+        }
+    };
+
     BOOST_LOG_TRIVIAL(info) << format("[BBS Updater]download file `%1%`, stored to `%2%`, tmp path `%3%`",
         url,
         target_path.string(),
@@ -314,11 +323,41 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
                 error);
         })
         .on_complete([&](std::string body, unsigned /* http_status */) {
-            boost::nowide::ofstream file(tmp_path.string(), std::ios::out | std::ios::binary | std::ios::trunc);
-            file.write(body.c_str(), body.size());
-            file.close();
-            fs::rename(tmp_path, target_path);
-            res = true;
+            try {
+                const fs::path parent_dir = target_path.parent_path();
+                if (!parent_dir.empty() && !fs::exists(parent_dir)) {
+                    fs::create_directories(parent_dir);
+                }
+
+                boost::nowide::ofstream file(tmp_path.string(), std::ios::out | std::ios::binary | std::ios::trunc);
+                if (!file.is_open()) {
+                    BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]open tmp file failed: `%1%`", tmp_path.string());
+                    remove_tmp_if_exists();
+                    return;
+                }
+
+                file.write(body.data(), static_cast<std::streamsize>(body.size()));
+                if (!file.good()) {
+                    BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]write tmp file failed: `%1%`", tmp_path.string());
+                    file.close();
+                    remove_tmp_if_exists();
+                    return;
+                }
+                file.close();
+
+                // On Windows, rename may fail if target already exists, remove it first.
+                if (fs::exists(target_path))
+                    fs::remove(target_path);
+
+                fs::rename(tmp_path, target_path);
+                res = true;
+            } catch (const std::exception &e) {
+                BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]save file failed: `%1%`, reason: %2%", target_path.string(), e.what());
+                remove_tmp_if_exists();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]save file failed: `%1%`, unknown exception", target_path.string());
+                remove_tmp_if_exists();
+            }
         })
         .perform_sync();
 

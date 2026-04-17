@@ -3,8 +3,8 @@
 set -e
 
 GIT_TOKEN=""
-LAN_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/v2.0.0/lan_service_web.zip"
-CLOUD_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/v2.0.0/cloud_service_web.zip"
+LAN_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260415/lan_service_web.zip"
+CLOUD_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260415/cloud_service_web.zip"
 LAN_WEB_NAME="lan_service_web"
 CLOUD_WEB_NAME="cloud_service_web"
 
@@ -18,39 +18,40 @@ else
 fi
 
 echo "Read env from $ENV_FILE"
-if [ ! -f "$ENV_FILE" ]; then
-    echo "ERROR: $ENV_FILE file not found. Exiting."
-    exit 1
+if [ -f "$ENV_FILE" ]; then
+    # Parse env file, skip empty lines and comments
+    # Add a newline to ensure the last line is processed
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip empty lines
+        [ -z "$line" ] && continue
+        # Skip comments
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        
+        # Remove inline comments
+        line=$(echo "$line" | cut -d'#' -f1)
+        
+        # Extract key and value using parameter expansion
+        if [[ "$line" == *"="* ]]; then
+            key="${line%%=*}"
+            value="${line#*=}"
+            
+            # Trim leading/trailing whitespace
+            key="${key#"${key%%[![:space:]]*}"}"
+            key="${key%"${key##*[![:space:]]}"}"
+            value="${value#"${value%%[![:space:]]*}"}"
+            value="${value%"${value##*[![:space:]]}"}"
+            
+            # Export variable
+            if [ -n "$key" ]; then
+                export "$key=$value"
+            fi
+        fi
+    done < "$ENV_FILE"
+else
+    echo "WARNING: $ENV_FILE not found, skipping env loading."
 fi
 
-# Parse env file, skip empty lines and comments
-# Add a newline to ensure the last line is processed
-while IFS= read -r line || [ -n "$line" ]; do
-    # Skip empty lines
-    [ -z "$line" ] && continue
-    # Skip comments
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    
-    # Remove inline comments
-    line=$(echo "$line" | cut -d'#' -f1)
-    
-    # Extract key and value using parameter expansion
-    if [[ "$line" == *"="* ]]; then
-        key="${line%%=*}"
-        value="${line#*=}"
-        
-        # Trim leading/trailing whitespace
-        key="${key#"${key%%[![:space:]]*}"}"
-        key="${key%"${key##*[![:space:]]}"}"
-        value="${value#"${value%%[![:space:]]*}"}"
-        value="${value%"${value##*[![:space:]]}"}"
-        
-        # Export variable
-        if [ -n "$key" ]; then
-            export "$key=$value"
-        fi
-    fi
-done < "$ENV_FILE"
+
 
 echo "Download web dependencies"
 LAN_WEB_PATH="resources/plugins/elegoolink/web/$LAN_WEB_NAME"

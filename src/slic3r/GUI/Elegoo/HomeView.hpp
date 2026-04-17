@@ -25,6 +25,7 @@ public:
     ~HomeView();
 
     void sendRecentList(int images);
+    void msw_rescale();
     void updateMode();
     void switchToPage(const wxString& pageName);
     void refreshUserInfo();

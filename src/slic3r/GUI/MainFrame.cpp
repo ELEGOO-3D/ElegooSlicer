@@ -2289,6 +2289,10 @@ void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
         m_multi_machine->msw_rescale();
     if(m_calibration)
         m_calibration->msw_rescale();
+    if(m_home_view)
+        m_home_view->msw_rescale();
+    if(m_printer_manager_view)
+        m_printer_manager_view->msw_rescale();
 
     // BBS
 #if 0

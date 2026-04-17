@@ -58,8 +58,38 @@ static std::mutex s_tabStateMutex;
 class TabArt : public wxAuiSimpleTabArt
 {
 private:
+    struct TabMetrics {
+        int maxWidth;
+        int minWidth;
+        int padding;
+        int iconTextSpacing;
+        int closeButtonSize;
+        int closeButtonMargin;
+        int separatorWidth;
+        int height;
+        int borderWidth;
+    };
+
     bool isDarkMode() const {
         return GUI_App::dark_mode();
+    }
+
+    int scale(wxWindow* wnd, int value) const {
+        return wnd ? wnd->FromDIP(value) : value;
+    }
+
+    TabMetrics getMetrics(wxWindow* wnd) const {
+        TabMetrics metrics;
+        metrics.maxWidth = scale(wnd, TAB_MAX_WIDTH);
+        metrics.minWidth = scale(wnd, TAB_MIN_WIDTH);
+        metrics.padding = scale(wnd, TAB_PADDING);
+        metrics.iconTextSpacing = scale(wnd, TAB_ICON_TEXT_SPACING);
+        metrics.closeButtonSize = scale(wnd, TAB_CLOSE_BUTTON_SIZE);
+        metrics.closeButtonMargin = scale(wnd, TAB_CLOSE_BUTTON_MARGIN);
+        metrics.separatorWidth = std::max(1, scale(wnd, TAB_SEPARATOR_WIDTH));
+        metrics.height = scale(wnd, TAB_HEIGHT);
+        metrics.borderWidth = std::max(1, 1);
+        return metrics;
     }
 
     wxAuiNotebook* getNotebookFrom(wxWindow* wnd) const {
@@ -74,48 +104,63 @@ private:
     }
 
     int calculateTabWidth(wxWindow* wnd, bool isFirstTab) const {
+        const TabMetrics metrics = getMetrics(wnd);
+
         if (isFirstTab) {
-            return TAB_MAX_WIDTH;
+            return metrics.maxWidth;
         }
         
         wxAuiNotebook* notebook = getNotebookFrom(wnd);
         if (!notebook) {
-            return TAB_MAX_WIDTH;
+            return metrics.maxWidth;
         }
         
         const int totalPages = notebook->GetPageCount();
         const int otherPages = totalPages - 1; // Exclude first tab
         
         if (otherPages <= 0) {
-            return TAB_MAX_WIDTH;
+            return metrics.maxWidth;
         }
         
         const int totalWidth = notebook->GetClientSize().x;
-        const int availableWidth = totalWidth - TAB_MAX_WIDTH;
+        const int availableWidth = totalWidth - metrics.maxWidth;
         
         if (availableWidth <= 0) {
-            return TAB_MIN_WIDTH;
+            return metrics.minWidth;
         }
         
         const int avgWidth = availableWidth / otherPages;
-        return std::max(TAB_MIN_WIDTH, std::min(TAB_MAX_WIDTH, avgWidth));
+        return std::max(metrics.minWidth, std::min(metrics.maxWidth, avgWidth));
     }
 
-    void drawTabContent(wxDC& dc, const wxRect& tab_rect, const wxBitmap& icon, 
-                       const wxString& text, const wxColour& text_colour, bool isFirstTab) const {
-        dc.SetTextForeground(text_colour);
-        wxSize icon_size = icon.IsOk() ? icon.GetSize() : wxSize(0, 0);
-        if (isFirstTab) {
-            icon_size = wxSize(16, 16);
-        } else {
-            icon_size = wxSize(22, 12);
+    wxBitmap getTabIcon(const wxString& caption, wxWindow* wnd) const {
+        if (caption == FIRST_TAB_NAME) {
+            return create_scaled_bitmap("printer_manager", wnd, 16);
         }
-       
+
+        return create_scaled_bitmap("elegoo_tab", wnd, 12);
+    }
+
+    void drawTabContent(wxDC& dc,
+                        wxWindow* wnd,
+                        const wxRect& tab_rect,
+                        const wxBitmap& icon,
+                        const wxString& text,
+                        const wxColour& text_colour,
+                        bool isFirstTab) const {
+        const TabMetrics metrics = getMetrics(wnd);
+
+        if (wnd) {
+            dc.SetFont(wnd->GetFont());
+        }
+
+        dc.SetTextForeground(text_colour);
+        const wxSize icon_size = icon.IsOk() ? icon.GetSize() : wxSize(0, 0);
         const wxSize text_size = dc.GetTextExtent(text);
         
         // Calculate positions
-        const int icon_x = tab_rect.x + TAB_PADDING;
-        const int text_x = icon_x + icon_size.x + (icon.IsOk() ? TAB_ICON_TEXT_SPACING : 0);
+        const int icon_x = tab_rect.x + metrics.padding;
+        const int text_x = icon_x + icon_size.x + (icon.IsOk() ? metrics.iconTextSpacing : 0);
         const int icon_y = tab_rect.y + (tab_rect.height - icon_size.y) / 2;
         const int text_y = tab_rect.y + (tab_rect.height - text_size.y) / 2;
         
@@ -125,7 +170,7 @@ private:
         }
         
         // Draw text with clipping (no ellipsis)
-        const int close_button_space = isFirstTab ? 0 : (TAB_CLOSE_BUTTON_SIZE + TAB_CLOSE_BUTTON_MARGIN);
+        const int close_button_space = isFirstTab ? metrics.padding : (metrics.closeButtonSize + metrics.closeButtonMargin * 2);
         const int text_max_width = tab_rect.x + tab_rect.width - text_x - close_button_space;
         
         if (text_max_width > 0) {
@@ -136,21 +181,25 @@ private:
         }
     }
 
-    void drawCloseButton(wxDC& dc, const wxRect& tab_rect, int tabWidth, 
-                        int close_button_state, wxRect* out_button_rect) const {
+    void drawCloseButton(wxDC& dc,
+                         wxWindow* wnd,
+                         const wxRect& tab_rect,
+                         int close_button_state,
+                         wxRect* out_button_rect) const {
+        const TabMetrics metrics = getMetrics(wnd);
         wxRect close_rect(
-            tab_rect.x + tabWidth - TAB_CLOSE_BUTTON_SIZE - TAB_CLOSE_BUTTON_MARGIN,
-            tab_rect.y + (tab_rect.height - TAB_CLOSE_BUTTON_SIZE) / 2,
-            TAB_CLOSE_BUTTON_SIZE,
-            TAB_CLOSE_BUTTON_SIZE
+            tab_rect.x + tab_rect.width - metrics.closeButtonSize - metrics.closeButtonMargin,
+            tab_rect.y + (tab_rect.height - metrics.closeButtonSize) / 2,
+            metrics.closeButtonSize,
+            metrics.closeButtonSize
         );
         
         if (out_button_rect) *out_button_rect = close_rect;
         
         // Simple SVG with color modification
-        wxBitmap close_icon = create_scaled_bitmap("topbar_close", nullptr, TAB_CLOSE_BUTTON_SIZE);
+        wxBitmap close_icon = create_scaled_bitmap("topbar_close", wnd, TAB_CLOSE_BUTTON_SIZE);
         if (close_icon.IsOk()) {
-            auto close_icon_ = wxBitmap(close_icon.ConvertToImage().Rescale(TAB_CLOSE_BUTTON_SIZE, TAB_CLOSE_BUTTON_SIZE));
+            auto close_icon_ = wxBitmap(close_icon.ConvertToImage().Rescale(metrics.closeButtonSize, metrics.closeButtonSize));
             // Change color based on state
             if (close_button_state == wxAUI_BUTTON_STATE_HOVER || close_button_state == wxAUI_BUTTON_STATE_PRESSED) {
                 wxImage img = close_icon_.ConvertToImage();
@@ -201,21 +250,10 @@ private:
         }
     }
 
-    // Get icon for tab based on caption
-    wxBitmap getTabIcon(const wxString& caption) const {
-        if (caption == FIRST_TAB_NAME) {
-            return create_scaled_bitmap("printer_manager", nullptr, 16);  
-        } else {
-            return create_scaled_bitmap("elegoo_tab", nullptr, 12);  
-        }
-        return wxBitmap();
-    }
-
 public:
     TabArt() {
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
         getColorScheme(activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator);
-
         SetColour(inactiveTab);        // inactive tab background color
         SetActiveColour(activeTab);    // active tab background color
     }
@@ -233,6 +271,7 @@ public:
     {
         const bool isFirstTab = (page.caption == FIRST_TAB_NAME);
         const bool isActive = page.active;
+        const TabMetrics metrics = getMetrics(wnd);
 
         // Get color scheme
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
@@ -242,15 +281,12 @@ public:
         int tabWidth = calculateTabWidth(wnd, isFirstTab);
   
         wxRect tab_rect = in_rect;
-        tab_rect.y = in_rect.y + TAB_BORDER_WIDTH;
-        tab_rect.width = tabWidth - TAB_SEPARATOR_WIDTH;   
-        tab_rect.height = tab_rect.height - 1 - TAB_BORDER_WIDTH;
+        tab_rect.y = in_rect.y + metrics.borderWidth;
+        tab_rect.width = std::max(0, tabWidth - metrics.separatorWidth);
+        tab_rect.height = std::max(0, tab_rect.height - metrics.borderWidth);
         // Get icon and text
-        wxBitmap icon = getTabIcon(page.caption);
+        wxBitmap icon = getTabIcon(page.caption, wnd);
         wxString text = page.caption;
-        wxSize text_size = dc.GetTextExtent(text);
-        wxSize icon_size = icon.IsOk() ? icon.GetSize() : wxSize(0, 0);
-        
 
         // Check if mouse is over this tab
         wxPoint mousePos = wnd->ScreenToClient(wxGetMousePosition());
@@ -271,20 +307,21 @@ public:
         // Draw tab background for active tab or hovered tab except first tab is active
         dc.SetBrush(wxBrush(tab_colour));
         dc.SetPen(wxPen(tab_colour, 0)); 
+
         if ((!isFirstTab && isActive) || (mouseOverTab && !isActive)) {
             dc.DrawRectangle(tab_rect);
         }
         
         // Draw icon and text
-        drawTabContent(dc, tab_rect, icon, text, text_colour, isFirstTab);
+        drawTabContent(dc, wnd, tab_rect, icon, text, text_colour, isFirstTab);
 
         // Draw close button for non-first tabs when mouse is over the tab or tab is active
         if (!isFirstTab && (isActive || mouseOverTab)) {
-            drawCloseButton(dc, tab_rect, tabWidth, close_button_state, out_button_rect);
+            drawCloseButton(dc, wnd, tab_rect, close_button_state, out_button_rect);
         }
         
         // Draw separator
-        DrawTabSeparator(dc, tab_rect.x + tab_rect.width, tab_rect.y, tab_rect.height);
+        DrawTabSeparator(dc, wnd, tab_rect.x + tab_rect.width, tab_rect.y, tab_rect.height);
              
         // Set output parameters
         if (out_tab_rect) *out_tab_rect = tab_rect;
@@ -293,19 +330,20 @@ public:
     
     void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) override
     {
+        const TabMetrics metrics = getMetrics(wnd);
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
         getColorScheme(activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator);
 
         // Draw header background
         auto headerRect = rect;
-        headerRect.y = rect.y + TAB_BORDER_WIDTH;
+        headerRect.y = rect.y + metrics.borderWidth;
         dc.SetPen(wxPen(tabHeaderBackground, 0));
         dc.SetBrush(wxBrush(tabHeaderBackground));
         dc.DrawRectangle(headerRect);
 
         // Draw header bottom border
-        dc.SetPen(wxPen(border, TAB_BORDER_WIDTH));
-        dc.DrawLine(rect.x, rect.y + rect.height - TAB_BORDER_WIDTH, rect.x + rect.width, rect.y + rect.height - TAB_BORDER_WIDTH);
+        dc.SetPen(wxPen(border, metrics.borderWidth));
+        dc.DrawLine(rect.x, rect.y + rect.height - metrics.borderWidth, rect.x + rect.width, rect.y + rect.height - metrics.borderWidth);
     }
 
     int GetBorderWidth(wxWindow* wnd) override {
@@ -313,13 +351,19 @@ public:
     }
 
     wxSize GetTabSize(wxDC& dc, wxWindow* wnd, const wxString& caption, const wxBitmap& bitmap, bool active, int close_button_state, int* x_extent) override {
+        const TabMetrics metrics = getMetrics(wnd);
         // Get the default tab size
-        wxSize default_size = wxAuiSimpleTabArt::GetTabSize(dc, wnd, caption, bitmap, active, close_button_state, x_extent);  
+        wxAuiSimpleTabArt::GetTabSize(dc, wnd, caption, bitmap, active, close_button_state, x_extent);
+        const int tab_width = calculateTabWidth(wnd, caption == FIRST_TAB_NAME);
+        if (x_extent) {
+            *x_extent = tab_width;
+        }
         // Return custom size with modified height
-        return wxSize(default_size.x, TAB_HEIGHT);
+        return wxSize(tab_width, metrics.height);
     }
     void DrawBorder(wxDC& dc, wxWindow* wnd, const wxRect& rect) override
     {
+        const TabMetrics metrics = getMetrics(wnd);
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
         getColorScheme(activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator);
 
@@ -329,22 +373,23 @@ public:
         dc.DrawRectangle(rect);
 
         auto headerRect = rect;
-        headerRect.height = TAB_HEIGHT + TAB_BORDER_WIDTH;
+        headerRect.height = metrics.height + metrics.borderWidth;
         if(headerRect.height <= rect.height) {
             dc.SetPen(wxPen(tabHeaderBackground, 0));
             dc.SetBrush(wxBrush(tabHeaderBackground));
             dc.DrawRectangle(headerRect);
         }
         // Draw header top border
-        dc.SetPen(wxPen(border, TAB_BORDER_WIDTH));
+        dc.SetPen(wxPen(border, metrics.borderWidth));
         dc.DrawLine(headerRect.x, headerRect.y, headerRect.x + headerRect.width, headerRect.y);
     }
 
     // Draw separator between tabs
-    void DrawTabSeparator(wxDC& dc, int x, int y, int height) const
+    void DrawTabSeparator(wxDC& dc, wxWindow* wnd, int x, int y, int height) const
     {
+        const TabMetrics metrics = getMetrics(wnd);
         wxColour separator_color = isDarkMode() ? wxColour(80, 80, 80) : wxColour(120, 120, 120);
-        dc.SetPen(wxPen(separator_color, TAB_SEPARATOR_WIDTH));
+        dc.SetPen(wxPen(separator_color, metrics.separatorWidth));
         dc.DrawLine(x, y, x, y + height);
     }
 };
@@ -363,7 +408,6 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     SetSizer(mainSizer);
     wxAuiManager *m = (wxAuiManager*)&mTabBar->GetAuiManager();
     m->GetArtProvider()->SetMetric(wxAUI_DOCKART_PANE_BORDER_SIZE, 0);
-
     // Delay creating and loading WebView until window is shown
     // This fixes macOS multi-display rendering issue where WKWebView fails to render
     // on extended displays if loaded before the window is fully displayed
@@ -378,6 +422,22 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     mTabBar->Bind(wxEVT_AUINOTEBOOK_END_DRAG, &PrinterManagerView::onTabEndDrag, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &PrinterManagerView::onTabChanged, this);
     BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: constructed (WebView deferred)";
+}
+
+void PrinterManagerView::msw_rescale()
+{
+    if (!mTabBar) {
+        return;
+    }
+
+    mTabBar->SetArtProvider(new TabArt());
+    mTabBar->InvalidateBestSize();
+    mTabBar->Layout();
+    mTabBar->Refresh();
+    mTabBar->Update();
+
+    Layout();
+    Refresh();
 }
 
 void PrinterManagerView::initializeWebView()
@@ -503,7 +563,7 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
     }
     PrinterWebView* view = new PrinterWebView(mTabBar);
 
-    if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2" || printerInfo.printerModel == "Elegoo Centauri 2")) 
+    if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2")) 
     {
         std::string accessCode = printerInfo.accessCode;
         url = url + wxString("?id=") + from_u8(printerInfo.printerId) + "&ip=" + printerInfo.host +"&sn=" + from_u8(printerInfo.serialNumber) + "&access_code=" + accessCode;
@@ -1052,7 +1112,7 @@ IPCResult PrinterManagerView::updatePrinterHost(const std::string& printerId, co
     
     if(result.code == 0 && !printerInfo.host.empty() && printerInfo.host != host) {     
         wxString url = printerInfo.webUrl;
-        if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2" || printerInfo.printerModel == "Elegoo Centauri 2")) 
+        if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2")) 
         {
             std::string accessCode = printerInfo.accessCode;
             url = url + wxString("?id=") + from_u8(printerInfo.printerId) + "&ip=" + printerInfo.host +"&sn=" + from_u8(printerInfo.serialNumber) + "&access_code=" + accessCode;

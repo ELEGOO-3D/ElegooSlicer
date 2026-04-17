@@ -2,8 +2,8 @@
 setlocal enabledelayedexpansion
 
 set GIT_TOKEN=
-set LAN_WEB_URL=https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/v2.0.0/lan_service_web.zip
-set CLOUD_WEB_URL=https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/v2.0.0/cloud_service_web.zip
+set LAN_WEB_URL=https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260415/lan_service_web.zip
+set CLOUD_WEB_URL=https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260415/cloud_service_web.zip
 set LAN_WEB_NAME=lan_service_web
 set CLOUD_WEB_NAME=cloud_service_web
 
@@ -17,22 +17,21 @@ if /i "%1"=="test" (
 )
 
 echo read env from %ENV_FILE%
-if not exist "%ENV_FILE%" (
-    echo ERROR: %ENV_FILE% file not found. Exiting.
-    exit /b 1
-)
-
-REM Parse env file, skip empty lines and comments
-for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
-    REM Skip lines starting with # comments
-    set "line=%%a"
-    if not "!line!"=="" (
-        if not "!line:~0,1!"=="#" (
-            REM Remove inline comments from value
-            set "value=%%b"
-            for /f "tokens=1 delims=#" %%c in ("!value!") do set "%%a=%%c"
+if exist "%ENV_FILE%" (
+    REM Parse env file, skip empty lines and comments
+    for /f "usebackq tokens=1,* delims==" %%a in ("%ENV_FILE%") do (
+        REM Skip lines starting with # comments
+        set "line=%%a"
+        if not "!line!"=="" (
+            if not "!line:~0,1!"=="#" (
+                REM Remove inline comments from value
+                set "value=%%b"
+                for /f "tokens=1 delims=#" %%c in ("!value!") do set "%%a=%%c"
+            )
         )
     )
+) else (
+    echo WARNING: %ENV_FILE% not found, using default values.
 )
 
 echo download web dependencies
