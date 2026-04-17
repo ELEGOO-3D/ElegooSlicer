@@ -30,6 +30,7 @@ public:
     void onClose(wxCloseEvent& evt);
     void openPrinterTab(const std::string& printerId, bool saveState = true);
     void refreshUserInfo();
+    void msw_rescale();
     
     // Initialize WebView after window is shown (fixes macOS multi-display rendering issue)
     void initializeWebView();

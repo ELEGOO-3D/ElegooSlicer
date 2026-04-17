@@ -18,6 +18,10 @@
 #include <boost/format.hpp>
 namespace Slic3r { namespace GUI {
 
+namespace {
+constexpr int HOME_NAVIGATION_WIDTH_DIP = 240;
+}
+
 wxBEGIN_EVENT_TABLE(HomeView, wxPanel) EVT_WEBVIEW_LOADED(wxID_ANY, HomeView::onWebViewLoaded)
     EVT_WEBVIEW_ERROR(wxID_ANY, HomeView::onWebViewError) 
     EVT_WEBVIEW_NAVIGATING(wxID_ANY, HomeView::OnNavigationRequest) 
@@ -76,7 +80,7 @@ void HomeView::initUI()
     mMainSizer->Add(mContentPanel, 1, wxEXPAND, 0);
 
     // Set minimum size for navigation browser
-    mNavigationBrowser->SetMinSize(wxSize(240, -1));
+    mNavigationBrowser->SetMinSize(wxSize(FromDIP(HOME_NAVIGATION_WIDTH_DIP), -1));
     SetSizer(mMainSizer);
 
     // Initialize IPC for navigation
@@ -92,6 +96,31 @@ void HomeView::initUI()
     
     // Hide WebView temporarily to avoid rendering issues on extended displays
     mNavigationBrowser->Hide();
+}
+
+void HomeView::msw_rescale()
+{
+    if (!mNavigationBrowser) {
+        return;
+    }
+
+    mNavigationBrowser->SetMinSize(wxSize(FromDIP(HOME_NAVIGATION_WIDTH_DIP), -1));
+    mNavigationBrowser->InvalidateBestSize();
+
+    if (mContentPanel) {
+        mContentPanel->Layout();
+        mContentPanel->Refresh();
+    }
+
+    for (auto& pair : mHomepageViews) {
+        if (pair.second) {
+            pair.second->Layout();
+            pair.second->Refresh();
+        }
+    }
+
+    Layout();
+    Refresh();
 }
 
 void HomeView::createHomepageViews()
