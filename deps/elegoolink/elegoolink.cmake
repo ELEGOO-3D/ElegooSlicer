@@ -37,7 +37,7 @@ endif()
 elegooslicer_add_cmake_project(elegoolink
 
     GIT_REPOSITORY      ${ELEGOOLINK_GIT_REPOSITORY}
-    GIT_TAG             v1.0.3
+    GIT_TAG             origin/main
     
     DEPENDS 
         dep_ixwebsocket 
