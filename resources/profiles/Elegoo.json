@@ -1533,6 +1533,27 @@
             "sub_path": "filament/ECC2/Elegoo PETG Translucent @ECC2.json"
         },
         {
+            "name": "Elegoo ASA-CF @ECC2",
+            "sub_path": "filament/ECC2/Elegoo ASA-CF @ECC2.json"
+
+        },
+        {
+            "name": "Elegoo PET-CF @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PET-CF @ECC2.json"
+        },
+        {
+            "name": "Elegoo PETG HF @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PETG HF @ECC2.json"
+        },
+        {
+            "name": "Elegoo PLA Glow @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PLA Glow @ECC2.json"
+        },
+        {
+            "name": "Elegoo PLA Translucent2 @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PLA Translucent2 @ECC2.json"
+        },
+        {
             "name": "Elegoo RAPID TPU 95A @ECC2",
             "sub_path": "filament/ECC2/Elegoo RAPID TPU 95A @ECC2.json"
         },     
