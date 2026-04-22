@@ -63,6 +63,7 @@ public:
     UserNetworkInfo                                       getUserInfo();
     void                                                  login(const UserNetworkInfo& userInfo);
     void                                                  logout();
+    void                                                  reportTelemetryEvent(const std::string& eventName, const nlohmann::json& content, const std::string& pageName);
     PrinterNetworkResult<bool>                            checkUserNeedReLogin();
     UserNetworkInfo                                       refreshToken(const UserNetworkInfo& userInfo);
     PrinterNetworkResult<UserNetworkInfo>                 getRtcToken();

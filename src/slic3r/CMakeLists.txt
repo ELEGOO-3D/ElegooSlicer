@@ -662,6 +662,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/Elegoo/PrinterNetworkEvent.hpp
     Utils/Elegoo/ElegooNetworkHelper.cpp
     Utils/Elegoo/ElegooNetworkHelper.hpp
+    Utils/Elegoo/ElegooUtils.cpp
+    Utils/Elegoo/ElegooUtils.hpp
     Utils/Elegoo/ElegooLink.cpp
     Utils/Elegoo/ElegooLink.hpp
     Utils/Elegoo/ElegooPrinterNetwork.cpp
@@ -670,6 +672,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/Elegoo/ElegooUserNetwork.cpp
     Utils/Elegoo/ElegooPluginNetwork.hpp
     Utils/Elegoo/ElegooPluginNetwork.cpp
+    Utils/Elegoo/TelemetryReporter.hpp
+    Utils/Elegoo/TelemetryReporter.cpp
     Utils/Elegoo/MultiInstanceCoordinator.cpp
     Utils/Elegoo/MultiInstanceCoordinator.hpp
     GUI/Elegoo/PrintSendDialogEx.cpp

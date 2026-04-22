@@ -69,6 +69,7 @@
 #include "DailyTips.hpp"
 #include "PrinterWebView.hpp"
 #include "Elegoo/PrinterManagerView.hpp"
+#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
 
 
 #ifdef _WIN32
@@ -292,6 +293,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     } else {
         IPCClient::getInstance()->start();
     }
+    TelemetryReporter::getInstance()->init();
     // Register callback for role changes (slave <-> master)
     MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([](bool isMaster) {
         if (isMaster) {
@@ -301,6 +303,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
                 IPCClient::getInstance()->stop(); 
                 IPCServer::getInstance()->start();
                 PrinterManager::getInstance()->init();
+                TelemetryReporter::getInstance()->init();
             });
         } 
     });
@@ -1064,6 +1067,7 @@ void MainFrame::shutdown()
     // stop IPC and PrinterManager (joins monitor / async connects) before GUI_App::shutdown()'s
     // WebView::CleanupAll, so background connect work does not overlap global WebView teardown.
     Slic3r::disconnectAllPrinterNetworkEvents();
+    TelemetryReporter::getInstance()->stop();
 
     if (m_printer_manager_view) {
         // Remove from tabpanel before deletion to prevent Layout() crash

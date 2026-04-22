@@ -815,6 +815,20 @@ void IPCClient::login(const UserNetworkInfo& userInfo)
 
 void IPCClient::logout() { sendRequest("user.logout", nlohmann::json::object()); }
 
+void IPCClient::reportTelemetryEvent(const std::string& eventName, const nlohmann::json& content, const std::string& pageName)
+{
+    nlohmann::json params;
+    params["event_name"] = eventName;
+    params["content"]    = content;
+    params["page_name"]  = pageName;
+
+    IPCResponse response = sendRequest("telemetry.reportEvent", params);
+    if (response.code != 0) {
+        BOOST_LOG_TRIVIAL(warning) << "IPCClient::reportTelemetryEvent failed, code=" << response.code
+                                   << ", message=" << response.message;
+    }
+}
+
 PrinterNetworkResult<bool> IPCClient::checkUserNeedReLogin()
 {
     IPCResponse response = sendRequest("user.checkUserNeedReLogin", nlohmann::json::object());

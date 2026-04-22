@@ -20,6 +20,7 @@ public:
     std::string getPluginUpdateUrl() override;
     std::string getUserAgent() override;
     std::string getIotUrl() override;
+    std::string getTelemetryUrl() override;
 
 
 };

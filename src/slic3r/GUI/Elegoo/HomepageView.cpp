@@ -13,10 +13,22 @@
 #include <slic3r/GUI/Elegoo/UserLoginView.hpp>
 #include <slic3r/Utils/Elegoo/UserNetworkManager.hpp>
 #include <slic3r/Utils/Elegoo/ElegooNetworkHelper.hpp>
+#include <slic3r/Utils/Elegoo/ElegooUtils.hpp>
 #include "slic3r/Utils/JsonUtils.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
 namespace Slic3r { namespace GUI {
+
+namespace {
+
+nlohmann::json makeDeviceIdEventData()
+{
+    nlohmann::json data = nlohmann::json::object();
+    data["deviceId"] = Slic3r::ElegooUtils::getDeviceId();
+    return data;
+}
+
+}
 
 // ============================================================================
 // HomepageView Base Class Implementation
@@ -447,6 +459,10 @@ IPCResult OnlineModelsHomepageView::handleReady()
 {
     lock_guard<mutex> lock(mUserInfoMutex);
     mIsReady = true;
+    if (mIpc) {
+        mIpc->sendEvent("client.setDeviceId", makeDeviceIdEventData(), mIpc->generateRequestId());
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": OnlineModelsHomepageView sent device id to WebView";
+    }
     if (mIpc && !mRefreshUserInfo.userId.empty()) {
         nlohmann::json data = generateUserInfoData(mRefreshUserInfo);
         mIpc->sendEvent("client.onUserInfoUpdated", data, mIpc->generateRequestId());

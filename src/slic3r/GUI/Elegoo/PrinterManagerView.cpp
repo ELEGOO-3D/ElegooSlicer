@@ -37,6 +37,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
+#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
 
 #define FIRST_TAB_NAME _L("Connected Printer")
 #define TAB_MAX_WIDTH 200
@@ -1314,6 +1315,7 @@ IPCResult PrinterManagerView::handleCheckLoginStatus()
     if (result.isSuccess()) {
         bool needReLogin = result.data.value();
         if (needReLogin) {
+            TelemetryReporter::getInstance()->reportEvent("login_click");
             // need re-login
             auto evt = new wxCommandEvent(EVT_USER_LOGIN);
             wxQueueEvent(wxGetApp().mainframe, evt);

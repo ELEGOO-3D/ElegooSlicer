@@ -129,6 +129,7 @@ public:
     virtual std::string getPluginUpdateUrl()  = 0;
     virtual std::string getUserAgent()        = 0;
     virtual std::string getIotUrl()           = 0;
+    virtual std::string getTelemetryUrl() = 0;
 
     PrintHostType getHostType() const { return mHostType; }
 

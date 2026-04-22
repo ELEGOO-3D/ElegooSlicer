@@ -2,6 +2,7 @@
 #include "IPCCommon.hpp"
 #include "PrinterManager.hpp"
 #include "PrinterUploadManager.hpp"
+#include "TelemetryReporter.hpp"
 #include "UserNetworkManager.hpp"
 #include "PrinterNetworkEvent.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
@@ -676,6 +677,18 @@ IPCResponse IPCServer::handleRequest(const IPCRequest& request)
                 UserNetworkInfo         requestUserInfo = convertJsonToUserNetworkInfo(request.params["requestUserInfo"]);
                 PrinterNetworkErrorCode errorCode       = static_cast<PrinterNetworkErrorCode>(request.params["errorCode"].get<int>());
                 UserNetworkManager::getInstance()->checkUserAuthStatus(requestUserInfo, errorCode);
+                response.code = static_cast<int>(PrinterNetworkErrorCode::SUCCESS);
+                response.data = true;
+            } else {
+                response.code    = static_cast<int>(PrinterNetworkErrorCode::OPERATION_NOT_IMPLEMENTED);
+                response.message = "unknown method: " + request.method;
+            }
+        } else if (namesp == "telemetry") {
+            if (actualMethod == "reportEvent") {
+                const std::string eventName = request.params.value("event_name", "");
+                const std::string pageName  = request.params.value("page_name", "");
+                const nlohmann::json content = request.params.contains("content") ? request.params["content"] : nlohmann::json();
+                TelemetryReporter::getInstance()->reportEvent(eventName, content, pageName);
                 response.code = static_cast<int>(PrinterNetworkErrorCode::SUCCESS);
                 response.data = true;
             } else {

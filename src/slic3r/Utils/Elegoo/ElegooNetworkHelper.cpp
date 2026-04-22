@@ -1,7 +1,7 @@
 #include "ElegooNetworkHelper.hpp"
-#include "libslic3r/Utils.hpp"
+#include "slic3r/Utils/Elegoo/ElegooUtils.hpp"
+#include "libslic3r_version.h"
 #include "slic3r/GUI/GUI_App.hpp"
-#include "slic3r/GUI/MainFrame.hpp"
 
 namespace Slic3r {
 
@@ -20,7 +20,10 @@ std::string getTestEnvUrl(const nlohmann::json& testEnvJson, const char* key, co
     return value.empty() ? fallback : value;
 }
 
-std::string buildUrl(const std::string& base, const std::string& language, const std::string& region)
+std::string buildUrl(const std::string& base,
+                     const std::string& language,
+                     const std::string& region,
+                     const std::string& deviceId)
 {
     std::string parameters;
     if(!language.empty()) {
@@ -32,12 +35,18 @@ std::string buildUrl(const std::string& base, const std::string& language, const
         }
         parameters += "region=" + region;
     }
-    std::string theme = wxGetApp().dark_mode() ? "dark" : "light";
+    std::string theme = GUI::wxGetApp().dark_mode() ? "dark" : "light";
     if(!theme.empty()) {
         if(!parameters.empty()) {
             parameters += "&";
         }
         parameters += "theme=" + theme;
+    }
+    if(!deviceId.empty()) {
+        if(!parameters.empty()) {
+            parameters += "&";
+        }
+        parameters += "deviceId=" + deviceId;
     }
 
     return base + (parameters.empty() ? "" : "?" + parameters);
@@ -49,25 +58,27 @@ std::string ElegooNetworkHelper::getOnlineModelsUrl()
 {
     std::string    region          = getRegion();
     std::string    language        = getLanguage();
+    std::string    deviceId        = ElegooUtils::getDeviceId();
     nlohmann::json testEnvJson     = INetworkHelper::testEnvJson;
     const bool      isChina        = region == "CN";
     std::string     onlineModelsUrl =
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_online_model_url" : "elegoo_global_online_model_url",
                       isChina ? ELEGOO_CHINA_ONLINE_MODEL_URL : ELEGOO_GLOBAL_ONLINE_MODEL_URL);
-    return buildUrl(onlineModelsUrl, language, region);
+    return buildUrl(onlineModelsUrl, language, region, deviceId);
 }
 
 std::string ElegooNetworkHelper::getLoginUrl() {
     std::string region = getRegion();
     std::string language = getLanguage();
+    std::string deviceId = ElegooUtils::getDeviceId();
     nlohmann::json testEnvJson = INetworkHelper::testEnvJson;
     const bool     isChina     = region == "CN";
     std::string    loginUrl =
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_login_url" : "elegoo_global_login_url",
                       isChina ? ELEGOO_CHINA_LOGIN_URL : ELEGOO_GLOBAL_LOGIN_URL);
-    return buildUrl(loginUrl, language, region);
+    return buildUrl(loginUrl, language, region, deviceId);
 }
 
 std::string ElegooNetworkHelper::getProfileUpdateUrl() {
@@ -141,9 +152,21 @@ std::string ElegooNetworkHelper::getIotUrl() {
     return iotUrl;
 }
 
+std::string ElegooNetworkHelper::getTelemetryUrl()
+{
+    std::string region = getRegion();
+    nlohmann::json testEnvJson = INetworkHelper::testEnvJson;
+    const bool     isChina     = region == "CN";
+    std::string    telemetryUrl =
+        getTestEnvUrl(testEnvJson,
+                      isChina ? "elegoo_china_telemetry_url" : "elegoo_global_telemetry_url",
+                      isChina ? ELEGOO_CHINA_TELEMETRY_URL : ELEGOO_GLOBAL_TELEMETRY_URL);
+    return telemetryUrl;
+}
+
 std::string ElegooNetworkHelper::getUserAgent() {
     std::string userAgent = "";
-    std::string theme = wxGetApp().dark_mode() ? "dark" : "light";
+    std::string theme = GUI::wxGetApp().dark_mode() ? "dark" : "light";
     std::string version = std::string(SLIC3R_VERSION);
     
     #ifdef __WIN32__

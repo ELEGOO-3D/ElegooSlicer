@@ -3,6 +3,8 @@
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/Utils/JsonUtils.hpp"
+#include "slic3r/Utils/Elegoo/ElegooUtils.hpp"
+#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
 #include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
 #include "slic3r/Utils/Elegoo/ElegooNetworkHelper.hpp"
 
@@ -11,6 +13,17 @@
 #include <thread>
 
 namespace Slic3r { namespace GUI {
+
+namespace {
+
+nlohmann::json makeDeviceIdEventData()
+{
+    nlohmann::json data = nlohmann::json::object();
+    data["deviceId"] = Slic3r::ElegooUtils::getDeviceId();
+    return data;
+}
+
+}
 
 std::atomic<bool> UserLoginView::s_isShown{false};
 
@@ -24,7 +37,6 @@ void UserLoginView::ShowLoginDialog()
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": UserLoginView already shown, ignore duplicate request";
         return;
     }
-    
     UserLoginView* dialog = new UserLoginView(nullptr);
     dialog->ShowModal();
     delete dialog;
@@ -119,6 +131,12 @@ void UserLoginView::setupIPCHandlers()
         wxGetApp().CallAfter([url]() {
             wxLaunchDefaultBrowser(url);
         });
+        return IPCResult::success();
+    });
+
+    getIpc()->onRequest("report.ready", [this](const IPCRequest& request) {
+        getIpc()->sendEvent("client.setDeviceId", makeDeviceIdEventData(), getIpc()->generateRequestId());
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": UserLoginView sent device id to WebView";
         return IPCResult::success();
     });
 
