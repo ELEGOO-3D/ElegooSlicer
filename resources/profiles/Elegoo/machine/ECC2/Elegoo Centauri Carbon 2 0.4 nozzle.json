@@ -73,6 +73,26 @@
     "20",
     "9"
   ],
+  "machine_max_acceleration_extruding": [
+    "5000",
+    "5000"
+  ],
+  "machine_max_acceleration_z": [
+      "200",
+      "200"
+  ],
+  "machine_max_jerk_e": [
+    "1",
+    "1"
+  ],
+  "machine_max_jerk_x": [
+      "9",
+      "9"
+  ],
+  "machine_max_jerk_y": [
+      "9",
+      "9"
+  ],
   "change_filament_gcode": "\n;==========CC2_CHANGE_FILAMENT_GCODE==========\n;===== date: 2026-01-16-001 =====================\nM106 S0\nM106 P2 S0\nG1 Z{min(max_layer_z+3, printable_height+0.5)} F1200\nM6211 T[next_extruder] L[flush_length] M{old_filament_e_feedrate} N{new_filament_e_feedrate} Q[old_filament_temp] R[nozzle_temperature_range_high] S[new_filament_temp]\nT[next_extruder]\n",
   "layer_change_gcode": "M73 L{layer_num+1}\n;LAYER:{layer_num+1}\n",
   "machine_end_gcode": ";===== CC2_END_GCODE ================\n;===== date: 2026-01-16-001 =====================\n\n\nM140 S0 ;Turn-off bed\nM83\nG92 E0 ; zero the extruder\nG1 E-1.5 F1800\nG2 I0 J1 Z{max_layer_z+0.5} F3000 ; lower z a little\nM106 S0\nM106 P2 S0\nG90\n{if max_layer_z > 75}G1 Z{min(max_layer_z+5, printable_height+0.5)} F20000{else}G1 Z80 F20000 {endif}; Move print head up \nG180 S9\nM104 S0\nM84\n",
