@@ -111,7 +111,7 @@ const langMessages = {
       "cancel": "Cancel",
       "info": "Notification",
       "ok": "OK",
-      "retry": "Retry",
+      "retry": "Retry"
     },
     "addPrinterDialog": {
       "addPrinter": "Add Printer",
@@ -258,7 +258,8 @@ const langMessages = {
       "printerNotConnected": "Printer is not connected",
       "print": "Print",
       "printerBusyWarning": "The printer may not be able to start transmission/printing. Please select the printer again or refresh its status.",
-      "printCompleteWarning": "Please make sure the printer has been cleared out to avoid crashes or damage when starting a new print."
+      "printCompleteWarning": "Please make sure the printer has been cleared out to avoid crashes or damage when starting a new print.",
+      "filamentError":"Failed to retrieve filament information. Please restart the software and the printer, then try again. If the issue persists, please contact customer support."
     }
   },
   zh_CN: {
@@ -522,7 +523,8 @@ const langMessages = {
       "printerNotConnected": "打印机未连接",
       "print": "打印",
       "printerBusyWarning": "当前打印机可能无法发起任务传输/打印，建议重新选择打印机或者刷新状态",
-      "printCompleteWarning": "请检查打印机是否已经清理干净，避免发起新打印时导致撞击或损坏"
+      "printCompleteWarning": "请检查打印机是否已经清理干净，避免发起新打印时导致撞击或损坏",
+      "filamentError":"获取耗材信息失败，请重启软件和打印机后再次尝试，如未解决问题请寻求客服支持。"
     }
   }
 };

@@ -467,7 +467,7 @@ const PrintSendApp = {
             }
             //Validate filament mapping if MMS is present
             if (this.printInfo.uploadAndPrint && this.curPrinter.systemCapabilities.supportsMultiFilament && this.mmsInfo === null) {
-                this.showStatusTip(this.$t('printSend.printerNotConnected'));
+                this.showStatusTip(this.$t('printSend.filamentError'));
                 return;
             }             
             // Update task with current UI state
