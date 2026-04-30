@@ -43,6 +43,8 @@ const float GLGizmosManager::Default_Icons_Size = 40;
 const float GLGizmosManager::Default_Icons_Size = 64;
 #endif
 
+std::map<int, void*> GLGizmosManager::icon_list = {};
+
 GLGizmosManager::GLGizmosManager(GLCanvas3D& parent)
     : m_parent(parent)
     , m_enabled(false)
@@ -244,6 +246,9 @@ bool GLGizmosManager::init()
 
 bool GLGizmosManager::init_icon_textures()
 {
+    if (!icon_list.empty())
+        return true;
+
     ImTextureID texture_id;
 
     icon_list.clear();
