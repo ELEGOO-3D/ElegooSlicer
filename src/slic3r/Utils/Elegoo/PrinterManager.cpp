@@ -1174,24 +1174,28 @@ PrinterNetworkResult<bool> PrinterManager::connectToPrinter(PrinterNetworkInfo& 
     }
     // get the printer attributes
     PrinterNetworkResult<PrinterNetworkInfo> attributes;
-    for (int i = 0; i < 3; i++) {
+    constexpr int maxAttributeAttempts = 3;
+    for (int i = 0; i < maxAttributeAttempts; i++) {
         attributes = network->getPrinterAttributes();
-        if (!attributes.isSuccess()) {
-            BOOST_LOG_TRIVIAL(error)
-                << __FUNCTION__
-                << boost::format(": connect to printer failed, failed to get printer attributes for printer: %s %s %s, error: %s") %
-                       printer.host % printer.printerName % printer.printerModel % attributes.message;
-
-        } else if (!attributes.hasData()) {
-            BOOST_LOG_TRIVIAL(error)
-                << __FUNCTION__
-                << boost::format(
-                       ": connect to printer failed, failed to get printer attributes for printer: %s %s %s attribute data is empty") %
-                       printer.host % printer.printerName % printer.printerModel;
-        } else {
+        if (attributes.isSuccess() && attributes.hasData()) {
             break;
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        if (i == maxAttributeAttempts - 1) {
+            if (!attributes.isSuccess()) {
+                BOOST_LOG_TRIVIAL(error)
+                    << __FUNCTION__
+                    << boost::format(": connect to printer failed, failed to get printer attributes for printer: %s %s %s, error: %s") %
+                           printer.host % printer.printerName % printer.printerModel % attributes.message;
+            } else {
+                BOOST_LOG_TRIVIAL(error)
+                    << __FUNCTION__
+                    << boost::format(": connect to printer failed, failed to get printer attributes for printer: %s %s %s attribute data is empty") %
+                           printer.host % printer.printerName % printer.printerModel;
+            }
+        } else {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+        }
     }
     if (!attributes.isSuccess() || !attributes.hasData()) {
         network->disconnectFromPrinter();
