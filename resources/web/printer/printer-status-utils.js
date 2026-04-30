@@ -13,6 +13,15 @@ const PrinterStatusUtils = {
     },
 
     /**
+     * printer is offline if connectStatus is 0 or printerStatus is -1
+     * @param {number} printerStatus - Printer status code
+     * @param {number} connectStatus - Connection status (0=offline, 1=online)
+     */
+    isPrinterOffline(printerStatus, connectStatus) {
+        return connectStatus === 0 || printerStatus === -1;
+    },
+
+    /**
      * Get printer status text
      * @param {number} printerStatus - Printer status code
      * @param {number} connectStatus - Connection status

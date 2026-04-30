@@ -108,6 +108,9 @@ const PrinterManager = {
             if (!printer || !Array.isArray(printer.exceptions)) {
                 return 0;
             }
+            if(PrinterStatusUtils.isPrinterOffline(printer.printerStatus, printer.connectStatus)) {
+                return 0;
+            }
             return printer.exceptions.length;
         },
 
