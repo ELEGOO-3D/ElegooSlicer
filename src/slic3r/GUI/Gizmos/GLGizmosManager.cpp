@@ -277,6 +277,16 @@ bool GLGizmosManager::init_icon_textures()
     else
         return false;
 
+    if (IMTexture::load_from_svg_file(Slic3r::resources_dir() + "/images/reset_zoom.svg", 72, 72, texture_id))
+        icon_list.insert(std::make_pair((int)IC_RESET_ZOOM, texture_id));
+    else
+        return false;
+
+    if (IMTexture::load_from_svg_file(Slic3r::resources_dir() + "/images/reset_zoom_click.svg", 72, 72, texture_id))
+        icon_list.insert(std::make_pair((int)IC_RESET_ZOOM_HOVER, texture_id));
+    else
+        return false;
+
     return true;
 }
 

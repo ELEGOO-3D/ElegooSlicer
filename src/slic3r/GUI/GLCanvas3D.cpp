@@ -5900,8 +5900,8 @@ void GLCanvas3D::_render_3d_navigator()
                                                  0x00101010);
 
     const float focus_button_margin = 8.0f * sc;
-    const float focus_button_size = 32.0f;
-    const float focus_button_safe_padding = 2.0f;
+    const float focus_button_size = std::round(32.0f * sc);
+    const float focus_button_safe_padding = std::round(2.0f * sc);
     const float focus_button_window_size = focus_button_size + 2.0f * focus_button_safe_padding;
     const float focus_button_bottom_offset = 12.0f * sc;
     ImGui::SetNextWindowPos(ImVec2(viewManipulateLeft + size + focus_button_margin, viewManipulateTop - focus_button_window_size - focus_button_bottom_offset), ImGuiCond_Always);
@@ -5911,17 +5911,9 @@ void GLCanvas3D::_render_3d_navigator()
     if (ImGui::Begin("##focus_selection_or_bed", nullptr,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
         ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBackground)) {
-        static GLTexture reset_zoom_icon;
-        static GLTexture reset_zoom_click_icon;
-        if (reset_zoom_icon.get_id() == 0 || reset_zoom_click_icon.get_id() == 0) {
-            const std::string path = resources_dir() + "/images/";
-            reset_zoom_icon.load_from_svg_file(path + "reset_zoom.svg", true, false, true, 512);
-            reset_zoom_click_icon.load_from_svg_file(path + "reset_zoom_click.svg", true, false, true, 512);
-        }
-
         bool pressed = false;
-        const ImTextureID normal_id = (ImTextureID)(intptr_t)reset_zoom_icon.get_id();
-        const ImTextureID hover_id  = (ImTextureID)(intptr_t)reset_zoom_click_icon.get_id();
+        const ImTextureID normal_id = m_gizmos.get_icon_texture_id(GLGizmosManager::MENU_ICON_NAME::IC_RESET_ZOOM);
+        const ImTextureID hover_id  = m_gizmos.get_icon_texture_id(GLGizmosManager::MENU_ICON_NAME::IC_RESET_ZOOM_HOVER);
         ImGui::SetCursorPos(ImVec2(focus_button_safe_padding, focus_button_safe_padding));
         if (normal_id != nullptr && hover_id != nullptr) {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);

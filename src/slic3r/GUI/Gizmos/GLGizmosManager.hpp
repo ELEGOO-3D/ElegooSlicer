@@ -169,6 +169,8 @@ public:
         IC_TOOLBAR_RESET_ZERO_HOVER,
         IC_TOOLBAR_TOOLTIP,
         IC_TOOLBAR_TOOLTIP_HOVER,
+        IC_RESET_ZOOM,
+        IC_RESET_ZOOM_HOVER,
         IC_NAME_COUNT,
     };
 
