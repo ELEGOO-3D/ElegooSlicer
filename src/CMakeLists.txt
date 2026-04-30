@@ -326,7 +326,9 @@ if (WIN32)
         install(TARGETS ElegooSlicer_app_gui RUNTIME DESTINATION ".")
     endif ()
     install(FILES ${output_dlls_${build_type}} DESTINATION ".")
-    # Install crashpad_handler
+    if (Crashpad_FOUND)
+        elegooslicer_install_crashpad_handler()
+    endif ()
 else ()
     install(TARGETS ElegooSlicer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR})
     
