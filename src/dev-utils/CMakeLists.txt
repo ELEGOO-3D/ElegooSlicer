@@ -102,25 +102,47 @@ endfunction()
 # Function to add install commands for crashpad_handler
 function(elegooslicer_install_crashpad_handler)
     if (WIN32)
-        # Install crashpad_handler.exe to crashpad subdirectory
-        install(FILES "${CMAKE_PREFIX_PATH}/bin/crashpad/handler.exe"
-            DESTINATION "crashpad"
-            RENAME "crashpad_handler.exe"
-        )
-    else ()
-        # macOS / Linux
-        if (CMAKE_MACOSX_BUNDLE)
-            # For macOS bundle, install to MacOS/crashpad
-            install(FILES "${CMAKE_PREFIX_PATH}/bin/crashpad/handler"
-                DESTINATION "ElegooSlicer.app/Contents/MacOS/crashpad"
-                RENAME "crashpad_handler"
-            )
-        else ()
-            # For Linux and non-bundle macOS, install to bin/crashpad
-            install(FILES "${CMAKE_PREFIX_PATH}/bin/crashpad/handler"
-                DESTINATION "${CMAKE_INSTALL_BINDIR}/crashpad"
-                RENAME "crashpad_handler"
-            )
+        # Use CMake-style paths (forward slashes): backslashes in FILES paths break
+        # generated cmake_install.cmake on Windows (\E is interpreted as escape).
+        set(_crashpad_handler_src "")
+        foreach (_p IN LISTS CMAKE_PREFIX_PATH)
+            if (NOT _crashpad_handler_src)
+                file(TO_CMAKE_PATH "${_p}" _norm_prefix)
+                set(_candidate "${_norm_prefix}/bin/crashpad/handler.exe")
+                if (EXISTS "${_candidate}")
+                    set(_crashpad_handler_src "${_candidate}")
+                endif ()
+            endif ()
+        endforeach ()
+        if (_crashpad_handler_src)
+            install(FILES "${_crashpad_handler_src}" DESTINATION "crashpad" RENAME "crashpad_handler.exe")
         endif ()
+        unset(_crashpad_handler_src)
+    else ()
+        # macOS / Linux — same rationale for consistency on odd path formats
+        set(_crashpad_handler_src "")
+        foreach (_p IN LISTS CMAKE_PREFIX_PATH)
+            if (NOT _crashpad_handler_src)
+                file(TO_CMAKE_PATH "${_p}" _norm_prefix)
+                set(_candidate "${_norm_prefix}/bin/crashpad/handler")
+                if (EXISTS "${_candidate}")
+                    set(_crashpad_handler_src "${_candidate}")
+                endif ()
+            endif ()
+        endforeach ()
+        if (_crashpad_handler_src)
+            if (CMAKE_MACOSX_BUNDLE)
+                install(FILES "${_crashpad_handler_src}"
+                    DESTINATION "ElegooSlicer.app/Contents/MacOS/crashpad"
+                    RENAME "crashpad_handler"
+                )
+            else ()
+                install(FILES "${_crashpad_handler_src}"
+                    DESTINATION "${CMAKE_INSTALL_BINDIR}/crashpad"
+                    RENAME "crashpad_handler"
+                )
+            endif ()
+        endif ()
+        unset(_crashpad_handler_src)
     endif ()
 endfunction()
