@@ -28,7 +28,7 @@ public:
     PrinterManagerView(wxWindow *parent);
     virtual ~PrinterManagerView();
     void onClose(wxCloseEvent& evt);
-    void openPrinterTab(const std::string& printerId, bool saveState = true);
+    void openPrinterTab(const std::string& printerId, bool saveState = true, bool openDeviceAssistant = false);
     void refreshUserInfo();
     void msw_rescale();
     

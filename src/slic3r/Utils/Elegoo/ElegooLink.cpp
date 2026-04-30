@@ -287,7 +287,14 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
     // print status and print task changed event
     elink::ElegooLink::getInstance().subscribeEvent<elink::PrinterStatusEvent>([&](const std::shared_ptr<elink::PrinterStatusEvent>& event) {
         PrinterStatus status = parseElegooStatus(event->status.printerStatus.state, event->status.printerStatus.subState);
-        PrinterNetworkEvent::getInstance()->statusChanged.emit(PrinterStatusEvent(event->status.printerId, status));
+        std::vector<PrinterExceptionDetail> exceptions;
+        exceptions.reserve(event->status.exceptions.size());
+        for (const auto& exceptionDetail : event->status.exceptions) {
+            PrinterExceptionDetail detail;
+            detail.code  = exceptionDetail.code;
+            exceptions.push_back(detail);
+        }
+        PrinterNetworkEvent::getInstance()->statusChanged.emit(PrinterStatusEvent(event->status.printerId, status, exceptions));
 
         PrinterPrintTask task;
         task.taskId        = event->status.printStatus.taskId;
@@ -806,6 +813,11 @@ PrinterNetworkResult<PrinterNetworkInfo> ElegooLink::getPrinterStatus(const std:
                 task.estimatedTime               = status.printStatus.estimatedTime;
                 task.progress                    = status.printStatus.progress;
                 printerNetworkInfo.printerStatus = s;
+                for (const auto& exceptionDetail : status.exceptions) {
+                    PrinterExceptionDetail detail;
+                    detail.code  = exceptionDetail.code;
+                    printerNetworkInfo.exceptions.push_back(detail);
+                }
                 printerNetworkInfo.printTask     = task;
 
                 // PrinterNetworkEvent::getInstance()->printTaskChanged.emit(PrinterPrintTaskEvent(event->status.printerId, task, NETWORK_TYPE_LAN));

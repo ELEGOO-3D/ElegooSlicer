@@ -54,6 +54,7 @@ public:
     void onRtmMessage(const nlohmann::json& data);
     void onConnectionStatus(const nlohmann::json& data);
     void onPrinterEventRaw(const nlohmann::json& data);
+    void onOpenDeviceAssistant(const nlohmann::json& data);
 
     bool Show(bool show = true) override;
 private:

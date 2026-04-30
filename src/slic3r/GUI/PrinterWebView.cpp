@@ -650,4 +650,8 @@ void PrinterWebView::onConnectionStatus(const nlohmann::json& data){
 void PrinterWebView::onPrinterEventRaw(const nlohmann::json& data){
     mIpc->sendEvent("onPrinterEventRaw", data, mIpc->generateRequestId());
 }
+
+void PrinterWebView::onOpenDeviceAssistant(const nlohmann::json& data){
+    mIpc->sendEvent("onOpenDeviceAssistant", data, mIpc->generateRequestId());
+}
 }} // namespace Slic3r::GUI

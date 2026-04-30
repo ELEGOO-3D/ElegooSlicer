@@ -389,9 +389,12 @@ const usePrinterStore = defineStore('printer', {
       }
     },
 
-    async showPrinterDetail(printerId) {
+    async showPrinterDetail(printerId, options = {}) {
       try {
-        const response = await this.ipcRequest('request_printer_detail', { printerId });
+        const response = await this.ipcRequest('request_printer_detail', {
+          printerId,
+          openDeviceAssistant: options.openDeviceAssistant === true
+        });
         return response;
       } catch (error) {
         console.error('Failed to get printer detail:', error);

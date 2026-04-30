@@ -34,6 +34,11 @@ PrinterNetworkInfo convertJsonToPrinterNetworkInfo(const nlohmann::json& json)
         printerNetworkInfo.lastActiveTime = JsonUtils::safeGet<uint64_t>(json, "lastActiveTime", 0);
         printerNetworkInfo.connectStatus = static_cast<PrinterConnectStatus>(JsonUtils::safeGetInt(json, "connectStatus", 0));
         printerNetworkInfo.printerStatus = static_cast<PrinterStatus>(JsonUtils::safeGetInt(json, "printerStatus", 0));
+        if (json.contains("exceptions") && json["exceptions"].is_array()) {
+            for (const auto& exceptionJson : json["exceptions"]) {
+                printerNetworkInfo.exceptions.push_back(convertJsonToPrinterExceptionDetail(exceptionJson));
+            }
+        }
         printerNetworkInfo.isAdded = JsonUtils::safeGetBool(json, "isAdded", false);
         
         if (json.contains("extraInfo")) {
@@ -116,6 +121,11 @@ nlohmann::json convertPrinterNetworkInfoToJson(const PrinterNetworkInfo& printer
     json["lastActiveTime"]    = printerNetworkInfo.lastActiveTime;
     json["connectStatus"]     = printerNetworkInfo.connectStatus;
     json["printerStatus"]     = printerNetworkInfo.printerStatus;
+    nlohmann::json exceptionsJson = nlohmann::json::array();
+    for (const auto& exception : printerNetworkInfo.exceptions) {
+        exceptionsJson.push_back(convertPrinterExceptionDetailToJson(exception));
+    }
+    json["exceptions"]        = exceptionsJson;
     nlohmann::json printTaskJson;
     printTaskJson["taskId"]        = printerNetworkInfo.printTask.taskId;
     printTaskJson["fileName"]      = printerNetworkInfo.printTask.fileName;

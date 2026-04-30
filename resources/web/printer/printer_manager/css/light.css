@@ -215,8 +215,9 @@ body {
   background: var(--bg-quaternary);
   /* border: 1px solid #eee; */
   margin-right: 16px;
-  overflow: hidden;
+  /* overflow: hidden; */
   flex-shrink: 0;
+  position: relative;
 }
 
 .printer-img img {
@@ -225,6 +226,24 @@ body {
   object-fit: contain;
   background: var(--bg-quaternary);
   -webkit-user-drag: none;
+}
+
+.printer-exception-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: #EE5433;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  z-index: 1;
 }
 
 .printer-header-info {

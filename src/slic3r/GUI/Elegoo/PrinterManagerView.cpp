@@ -534,13 +534,24 @@ PrinterManagerView::~PrinterManagerView() {
     mPrinterViews.clear();
 }
 
-void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveState)
+void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveState, bool openDeviceAssistant)
 {
+    const auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
     PrinterWebView* existingView = findPrinterView(printerId);
     if (existingView) {
         int idx = mTabBar->GetPageIndex(existingView);
         if (idx != wxNOT_FOUND) {
             mTabBar->SetSelection(idx);
+            if (openDeviceAssistant) {
+                nlohmann::json data;
+                data["printerId"] = printerId;
+                data["openDeviceAssistant"] = true;
+                data["timestamp"] = nowMs;
+                existingView->onOpenDeviceAssistant(data);
+            }
             Layout();
             return;
         }
@@ -562,6 +573,15 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
     if(url.IsEmpty()) {
         return;
     }
+
+    auto appendUrlParam = [&url](const std::string& key, const std::string& value) {
+        if (url.Contains("?")) {
+            url += "&" + key + "=" + from_u8(value);
+        } else {
+            url += "?" + key + "=" + from_u8(value);
+        }
+    };
+
     PrinterWebView* view = new PrinterWebView(mTabBar);
 
     if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2")) 
@@ -575,34 +595,23 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
     if (!region.empty()) {
         // Convert region value to URL encoded format
         std::string region_encoded = wxGetApp().url_encode(region);
-        
-        // Check if the URL already contains parameters
-        if (url.Contains("?")) {
-            url += "&region=" + from_u8(region_encoded);
-        } else {
-            url += "?region=" + from_u8(region_encoded);
-        }
+
+        appendUrlParam("region", region_encoded);
     }
 
     // Add current language parameter
     wxString lang = wxGetApp().current_language_code_safe();
     if (!lang.empty()) {
-        if (url.Contains("?")) {
-            url += "&lang=" + lang;
-        } else {
-            url += "?lang=" + lang;
-        }
+        appendUrlParam("lang", lang.ToStdString());
     }
 
     if(wxGetApp().app_config->get_bool("developer_mode")){
-        if(!url.Contains("?"))
-        {
-            url = url + "?dev=true";
-        }
-        else
-        {
-            url = url + "&dev=true";
-        }
+        appendUrlParam("dev", "true");
+    }
+
+    if (openDeviceAssistant) {
+        appendUrlParam("openDeviceAssistant", "true");
+        appendUrlParam("timestamp", std::to_string(nowMs));
     }  
 
     view->load_url(url);
@@ -727,9 +736,10 @@ void PrinterManagerView::setupIPCHandlers()
     mIpc->onRequest("request_printer_detail", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
+        bool openDeviceAssistant = params.value("openDeviceAssistant", false);
         if (!printerId.empty()) {
-            wxGetApp().CallAfter([this, printerId]() {
-                openPrinterTab(printerId);
+            wxGetApp().CallAfter([this, printerId, openDeviceAssistant]() {
+                openPrinterTab(printerId, true, openDeviceAssistant);
             });
         }
         return IPCResult::success();

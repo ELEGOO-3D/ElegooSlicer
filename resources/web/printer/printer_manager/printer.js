@@ -104,6 +104,21 @@ const PrinterManager = {
             return PrinterStatusUtils.getPrinterRemainingTime(printer);
         },
 
+        getPrinterExceptionCount(printer) {
+            if (!printer || !Array.isArray(printer.exceptions)) {
+                return 0;
+            }
+            return printer.exceptions.length;
+        },
+
+        getPrinterExceptionBadgeText(printer) {
+            const count = this.getPrinterExceptionCount(printer);
+            if (count <= 0) {
+                return '';
+            }
+            return String(count);
+        },
+
         hasLicenseError(printer) {
             if (!printer || !printer.serialNumber || printer.networkType !== 1) {
                 return false;
@@ -231,6 +246,13 @@ const PrinterManager = {
                 return; // License renewal in progress, don't show details
             }
             this.printerStore.showPrinterDetail(printer.printerId);
+        },
+
+        async openDeviceAssistant(printer) {
+            if (!printer || !printer.printerId) {
+                return;
+            }
+            await this.printerStore.showPrinterDetail(printer.printerId, { openDeviceAssistant: true });
         },
 
         async checkAndRenewLicense(printer) {
