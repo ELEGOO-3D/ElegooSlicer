@@ -184,7 +184,31 @@ const PrinterManager = {
             }
         },
 
-        showAddPrinterModal() {
+        async showAddPrinterModal() {
+            // because the ipc is created after the page is loaded, and the model list is not loaded yet, so we need to check if the model list is loaded
+            // Check if printer model list is loaded
+            const hasPrinterModels = () => {
+                const list = this.printerStore.printerModelList;
+                return list && Array.isArray(list) && list.length > 0;
+            };
+            if (!hasPrinterModels()) {
+                const loading = ElLoading.service({
+                    lock: true,
+                });
+                try {
+                    for (let attempt = 1; attempt <= 3; attempt++) {
+                        await this.printerStore.requestPrinterModelList();
+                        if (hasPrinterModels()) {
+                            break;
+                        }
+                        if (attempt < 3) {
+                            await new Promise(resolve => setTimeout(resolve, Math.min(3000, 500 * attempt)));
+                        }
+                    }
+                } finally {
+                    loading.close();
+                }
+            }
             this.showAddPrinter = true;
         },
 
