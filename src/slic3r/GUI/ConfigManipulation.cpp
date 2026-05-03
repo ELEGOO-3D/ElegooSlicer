@@ -570,6 +570,9 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig *config, co
                                                   pattern == ipCubic || pattern == ipStars || pattern == ipAlignedRectilinear || pattern == ipLightning || pattern == ip3DHoneycomb || pattern == ipAdaptiveCubic || pattern == ipSupportCubic;
     toggle_line("fill_multiline", have_multiline_infill_pattern);
 
+    // gyroid_optimized only applies when the sparse infill pattern is gyroid; hide otherwise.
+    toggle_line("gyroid_optimized", have_infill && pattern == ipGyroid);
+
     // If the infill pattern does not support multiline infill, set fill_multiline to 1.
     if (!have_multiline_infill_pattern) {
         DynamicPrintConfig new_conf = *config;
