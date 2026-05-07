@@ -9761,7 +9761,7 @@ void Plater::_calib_pa_pattern(const Calib_Params& params)
         accels.assign({accel});
         const auto msg{_L("INFO:") + "\n" +
                        _L("No accelerations provided for calibration. Use default acceleration value ") + std::to_string(long(accel)) + wxString::FromUTF8("mm/s²")};
-        get_notification_manager()->push_notification(msg.ToStdString());
+        get_notification_manager()->push_notification(msg.utf8_string());
     } else {
         // set max acceleration in case of batch mode to get correct test pattern size
         accel = *std::max_element(accels.begin(), accels.end());
@@ -9824,7 +9824,7 @@ void Plater::_calib_pa_pattern(const Calib_Params& params)
         speeds.assign({speed});
         const auto msg{_L("INFO:") + "\n" +
                        _L("No speeds provided for calibration. Use default optimal speed ") + std::to_string(long(speed)) + "mm/s"};
-        get_notification_manager()->push_notification(msg.ToStdString());
+        get_notification_manager()->push_notification(msg.utf8_string());
     } else if (speeds.size() == 1) {
         // If we have single value provided, set speed using global configuration.
         // per-object config is not set in this case
