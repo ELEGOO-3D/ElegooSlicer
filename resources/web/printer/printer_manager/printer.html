@@ -81,8 +81,6 @@
                         <div class="printer-card-header">
                             <div class="printer-img">
                                 <img :src="printer.printerImg || ''" alt="Printer" />
-                                <div v-if="getPrinterExceptionCount(printer) > 0" class="printer-exception-badge" @click.stop="openDeviceAssistant(printer)">{{
-                                    getPrinterExceptionBadgeText(printer) }}</div>
                             </div>
                             <div class="printer-header-info">
                                 <div class="printer-title" :title="printer.printerName">{{ printer.printerName }}</div>
@@ -92,14 +90,23 @@
                                 <button class="printer-detail-btn" @click="showPrinterDetail(printer)">{{
                                     $t("printerManager.details") }}</button>
                             </div>
-                            <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                                <div class="card-menu icon-button" :title="$t('printerManager.more')"
-                                    @click="showPrinterSettings(printer)">
-                                    &#8942;
+                            <div class="printer-card-actions">
+                                <div class="printer-card-action-row">
+                                    <div class="printer-assistant-button" @click.stop="openDeviceAssistant(printer)">
+                                        <span class="printer-assistant-icon"
+                                            :class="getPrinterExceptionCount(printer) > 0 ? 'is-error' : 'is-normal'"
+                                            aria-hidden="true"></span>
+                                        <div v-if="getPrinterExceptionCount(printer) > 0" class="printer-exception-badge">{{
+                                            getPrinterExceptionBadgeText(printer) }}</div>
+                                    </div>
+                                    <div class="card-menu icon-button" :title="$t('printerManager.more')"
+                                        @click="showPrinterSettings(printer)">
+                                        &#8942;
+                                    </div>
                                 </div>
                                 <el-tooltip v-if="hasLicenseError(printer)" :content="getLicenseErrorTooltip(printer)"
                                     placement="top">
-                                    <div class="license-error-icon" style="margin-right: 4px; margin-top: 16px;">
+                                    <div class="license-error-icon printer-license-error-icon">
                                         <img src="./img/cloud-error.svg" alt="License Error" width="20" height="20" />
                                     </div>
                                 </el-tooltip>
@@ -152,9 +159,6 @@
                         <div class="printer-card-header">
                             <div class="printer-img">
                                 <img :src="printer.printerImg || ''" alt="Printer" />
-                                <div v-if="getPrinterExceptionCount(printer) > 0" class="printer-exception-badge" @click.stop="openDeviceAssistant(printer)">{{
-                                    getPrinterExceptionBadgeText(printer) }}
-                                </div>
                             </div>
                             <div class="printer-header-info">
                                 <div class="printer-title" :title="printer.printerName">{{ printer.printerName }}</div>

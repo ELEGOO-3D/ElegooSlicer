@@ -183,7 +183,7 @@ body {
 }
 
 .printer-card {
-  width: 400px;
+  width: 440px;
   height: 192px;
   box-sizing: border-box;
   border-radius: 8px;
@@ -230,20 +230,79 @@ body {
 
 .printer-exception-badge {
   position: absolute;
-  top: -8px;
-  left: -8px;
-  width: 22px;
-  height: 22px;
-  border-radius: 11px;
+  top: -6px;
+  right: -6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 7px;
   background: #EE5433;
   color: #FFFFFF;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
   line-height: 1;
-  z-index: 1;
+  z-index: 2;
+  box-shadow: 0 0 0 2px var(--bg-primary);
+}
+
+.printer-card-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.printer-card-action-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: -4px;
+}
+
+.printer-assistant-button {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.printer-assistant-button:hover {
+  background: var(--color-primary-light);
+  border-color: var(--border-secondary);
+}
+
+.printer-assistant-button:active {
+  background: var(--bg-quaternary);
+}
+
+.printer-assistant-icon {
+  width: 22px;
+  height: 14px;
+  display: block;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.printer-assistant-icon.is-normal {
+  background-image: url("../img/assistant.svg");
+}
+
+.printer-assistant-icon.is-error {
+  background-image: url("../img/assistant-error.svg");
+}
+
+.printer-license-error-icon {
+  margin-right: 4px;
 }
 
 .printer-header-info {
@@ -305,8 +364,14 @@ body {
   font-size: 22px;
   color: var(--text-tertiary);
   cursor: pointer;
+  width: 24px;
+  height: 24px;
   margin-right: -8px;
-  margin-top: -4px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .card-menu:hover {
