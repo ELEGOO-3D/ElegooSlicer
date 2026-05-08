@@ -895,10 +895,11 @@ void GUI_App::post_init()
             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << "Found glcontext not ready, postpone the init";
         }
 //#endif
-        if (is_editor())
+        if (is_editor()) {
             mainframe->select_tab(size_t(0));
-        if (app_config->get("default_page") == "1")
-            mainframe->select_tab(size_t(1));
+            if (app_config->get("default_page") == "1")
+                mainframe->select_tab(size_t(1));
+        }
         mainframe->Thaw();
         plater_->trigger_restore_project(1);
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", end load_gl_resources";
@@ -6461,7 +6462,18 @@ void GUI_App::MacOpenURL(const wxString& url)
 {
     if (url.empty())
         return;
-    start_download(into_u8(url));
+    const std::string u = into_u8(url);
+#ifdef __APPLE__
+    // Browser/custom-scheme opens typically deliver the URL here, not via argv (cf. GUI_Run wxEntry argc==1).
+    // Feed the same path as Windows: post_init() sees protocol in init_params->input_files → switch_to_3d,
+    // so we skip the GL block's home tab + trigger_restore_project (which could clear a finished import).
+    if (!m_post_initialized && init_params != nullptr && is_supported_open_protocol(u)) {
+        init_params->input_files.assign(1, u);
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": queued protocol URL for post_init: " << u;
+        return;
+    }
+#endif
+    start_download(u);
 }
 
 // wxWidgets override to get an event on open files.
