@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:22+0800\n"
+"POT-Creation-Date: 2026-05-08 17:55+0800\n"
 "PO-Revision-Date: 2024-06-30 23:05+0300\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -705,6 +705,9 @@ msgstr "Повернути текст"
 msgid "Text shape"
 msgstr "Форма тексту"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "Поворот тексту"
@@ -764,6 +767,11 @@ msgstr ""
 msgid "Embossed text cannot contain only white spaces."
 msgstr "Рельєфний текст не може містити лише пробіли."
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr ""
 "Текст містить символ у вигляді гліфа (представлений символом '?'), шрифт "
@@ -786,6 +794,12 @@ msgstr "Занадто малий, збільшіть висоту шрифту 
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "Текст не показує поточне вирівнювання по горизонталі."
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr "Редагувати текст"
 
 msgid "Revert font changes."
 msgstr "Скасувати зміну шрифту."
@@ -3736,6 +3750,12 @@ msgstr ""
 "Надто маленька висота шару.\n"
 "Скинути на 0.2"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4471,6 +4491,12 @@ msgstr "Уникайте області калібрування екструз�
 msgid "Align to Y axis"
 msgstr "Вирівняти за осі Y"
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 msgid "Add plate"
 msgstr "Додати плату"
 
@@ -4732,6 +4758,12 @@ msgstr ""
 
 msgid "Open Network Test"
 msgstr "Відкритий мережевий тест"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -7062,12 +7094,6 @@ msgstr "Режим розробки"
 msgid "Skip AMS blacklist check"
 msgstr "Пропустити перевірку чорного списку AMS"
 
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
-msgstr ""
-
 msgid "Home page and daily tips"
 msgstr "Головна сторінка та щоденні поради"
 
@@ -8751,6 +8777,9 @@ msgstr "Перерахувати"
 msgid "Flushing volumes for filament change"
 msgstr "Обсяги промивання для зміни Філаменту"
 
+msgid "Simple"
+msgstr ""
+
 msgid ""
 "Elegoo would re-calculate your flushing volumes everytime the filaments "
 "color changed. You could disable the auto-calculate in ElegooSlicer > "
@@ -8774,14 +8803,14 @@ msgstr "Множина повинна знаходитися в діапазон
 msgid "Multiplier"
 msgstr "Множина"
 
+msgid "Filament #"
+msgstr "Філамент #"
+
 msgid "unloaded"
 msgstr "вивантажено"
 
 msgid "loaded"
 msgstr "завантажено"
-
-msgid "Filament #"
-msgstr "Філамент #"
 
 msgid "From"
 msgstr "Від"
@@ -18385,6 +18414,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -18493,6 +18525,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -18545,6 +18580,41 @@ msgstr ""
 
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]
@@ -23173,9 +23243,6 @@ msgstr ""
 #~ "No one part is selected for keep after cut"
 #~ msgstr ""
 #~ "Неприпустимий стан. Жодна деталь не вибрана для збереження після вирізання"
-
-#~ msgid "Edit Text"
-#~ msgstr "Редагувати текст"
 
 #~ msgid "Error! Unable to create thread!"
 #~ msgstr "Помилка! Неможливо створити тему!"

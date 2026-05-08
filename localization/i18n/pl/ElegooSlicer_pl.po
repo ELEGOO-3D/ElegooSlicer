@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer 2.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:22+0800\n"
+"POT-Creation-Date: 2026-05-08 17:55+0800\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Krzysztof Morga <tlumaczeniebs@gmail.com>\n"
 "Language-Team: \n"
@@ -704,6 +704,9 @@ msgstr "Obróć tekst"
 msgid "Text shape"
 msgstr "Kształt tekstu"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "Obróć tekst"
@@ -764,6 +767,11 @@ msgstr ""
 msgid "Embossed text cannot contain only white spaces."
 msgstr "Pole do wprowadzania tekstu nie może być puste."
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr ""
 "Tekst zawiera znak znaków (reprezentowany przez '?') nieznany dla czcionki."
@@ -787,6 +795,12 @@ msgstr ""
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "Tekst nie pokazuje aktualnego wyrównania poziomego."
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr ""
 
 msgid "Revert font changes."
 msgstr "Przywróć zmiany czcionki."
@@ -3740,6 +3754,12 @@ msgstr ""
 "Zbyt mała wysokość warstwy.\n"
 "Zresetowano do 0,2"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4476,6 +4496,12 @@ msgstr "Unikaj obszaru kalibracji ekstruzji"
 msgid "Align to Y axis"
 msgstr "Wyrównaj do osi Y"
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 msgid "Add plate"
 msgstr "Dodaj płytę"
 
@@ -4738,6 +4764,12 @@ msgstr ""
 
 msgid "Open Network Test"
 msgstr "Otwórz Test Sieci"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -7068,12 +7100,6 @@ msgstr "Tryb deweloperski"
 msgid "Skip AMS blacklist check"
 msgstr "Pomiń sprawdzanie czarnej listy AMS"
 
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
-msgstr ""
-
 msgid "Home page and daily tips"
 msgstr "Strona główna i porada dnia"
 
@@ -8758,6 +8784,9 @@ msgstr "Przelicz ponownie"
 msgid "Flushing volumes for filament change"
 msgstr "Objętości płukania przy zmianie filamentu"
 
+msgid "Simple"
+msgstr ""
+
 msgid ""
 "Elegoo would re-calculate your flushing volumes everytime the filaments "
 "color changed. You could disable the auto-calculate in ElegooSlicer > "
@@ -8781,14 +8810,14 @@ msgstr "Mnożnik powinien być w zakresie [%.2f, %.2f]."
 msgid "Multiplier"
 msgstr "Mnożnik"
 
+msgid "Filament #"
+msgstr "Filament #"
+
 msgid "unloaded"
 msgstr "rozładowywanie"
 
 msgid "loaded"
 msgstr "załadowany"
-
-msgid "Filament #"
-msgstr "Filament #"
 
 msgid "From"
 msgstr "Od"
@@ -18457,6 +18486,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -18565,6 +18597,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -18617,6 +18652,41 @@ msgstr ""
 
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]

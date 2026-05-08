@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:22+0800\n"
+"POT-Creation-Date: 2026-05-08 17:55+0800\n"
 "PO-Revision-Date: 2023-11-06 14:37+0800\n"
 "Last-Translator: ablegods <ablegods@gmail.com>\n"
 "Language-Team: \n"
@@ -718,6 +718,9 @@ msgstr "旋轉文字"
 msgid "Text shape"
 msgstr "新增文字"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "文字旋轉"
@@ -776,6 +779,11 @@ msgstr "文字與字型不相容，請選擇其他的字型。"
 msgid "Embossed text cannot contain only white spaces."
 msgstr "浮雕文字不能僅包含空白字元。"
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr "文字包含字型無法識別的字形（以 '?' 表示）。"
 
@@ -796,6 +804,12 @@ msgstr "太小，已增大文字輸入框內的字體高度。"
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "文字未呈現目前的水平對齊狀態。"
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr "編輯文字"
 
 msgid "Revert font changes."
 msgstr "還原字體設定變更。"
@@ -3683,6 +3697,12 @@ msgstr ""
 "層高過小。\n"
 "將重設為 0.2"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4434,6 +4454,12 @@ msgstr "避開擠出校準區域"
 msgid "Align to Y axis"
 msgstr "與 Y 軸對齊"
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 #, fuzzy
 msgid "Add plate"
 msgstr "新增列印板"
@@ -4706,6 +4732,12 @@ msgstr ""
 
 msgid "Open Network Test"
 msgstr "打開網路測試"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -6960,12 +6992,6 @@ msgstr "開發者模式"
 msgid "Skip AMS blacklist check"
 msgstr "跳過 AMS 黑名單檢查"
 
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
-msgstr ""
-
 #, fuzzy
 msgid "Home page and daily tips"
 msgstr "首頁和每日小提示"
@@ -8635,6 +8661,9 @@ msgstr "重新計算"
 msgid "Flushing volumes for filament change"
 msgstr "線材更換時產生的廢料體積"
 
+msgid "Simple"
+msgstr "簡單"
+
 msgid ""
 "Elegoo would re-calculate your flushing volumes everytime the filaments "
 "color changed. You could disable the auto-calculate in ElegooSlicer > "
@@ -8656,14 +8685,14 @@ msgstr "倍數的數值範圍是[%.2f, %.2f]"
 msgid "Multiplier"
 msgstr "倍數"
 
+msgid "Filament #"
+msgstr "線材#"
+
 msgid "unloaded"
 msgstr "退料"
 
 msgid "loaded"
 msgstr "進料"
-
-msgid "Filament #"
-msgstr "線材#"
 
 msgid "From"
 msgstr "從"
@@ -17522,6 +17551,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -17630,6 +17662,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -17682,6 +17717,41 @@ msgstr ""
 
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]
@@ -20737,9 +20807,6 @@ msgstr ""
 #~ msgstr ""
 #~ "無效狀態。\n"
 #~ "切割後沒有選取要保留的部分"
-
-#~ msgid "Edit Text"
-#~ msgstr "編輯文字"
 
 #~ msgid "Error! Unable to create thread!"
 #~ msgstr "發生錯誤，無法建立執行緒。"

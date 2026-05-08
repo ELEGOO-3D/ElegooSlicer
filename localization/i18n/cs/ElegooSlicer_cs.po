@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:22+0800\n"
+"POT-Creation-Date: 2026-05-08 17:55+0800\n"
 "PO-Revision-Date: 2023-09-30 15:15+0200\n"
 "Last-Translator: René Mošner <Renemosner@seznam.cz>\n"
 "Language-Team: \n"
@@ -704,6 +704,9 @@ msgstr "Otočit text"
 msgid "Text shape"
 msgstr "Tvar textu"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "Otáčení textu"
@@ -762,6 +765,11 @@ msgstr "Text nelze napsat zvoleným typem písma. Zkuste vybrat jiné písmo."
 msgid "Embossed text cannot contain only white spaces."
 msgstr "Reliéfní text nesmí obsahovat pouze bílé znaky."
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr ""
 "Text obsahuje znakový glyf (reprezentovaný znakem \"?\"), který písmo nezná."
@@ -783,6 +791,12 @@ msgstr "Příliš malé, zvěte výšku písma uvnitř textového vstupu."
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "Text nezobrazuje aktuální vodorovné zarovnání."
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr "Upravit text"
 
 msgid "Revert font changes."
 msgstr "Vrátit změny písma."
@@ -3690,6 +3704,12 @@ msgstr ""
 "Příliš malá výška vrstvy.\n"
 "Obnovit na 0,2"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4415,6 +4435,12 @@ msgstr "Vyhněte se oblasti kalibrace extruze"
 msgid "Align to Y axis"
 msgstr "Zarovnat podle osy Y"
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 msgid "Add plate"
 msgstr "Přidat Podložku"
 
@@ -4676,6 +4702,12 @@ msgstr ""
 
 msgid "Open Network Test"
 msgstr "Otevřít test sítě"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -6928,12 +6960,6 @@ msgstr "Režim vývojáře"
 msgid "Skip AMS blacklist check"
 msgstr "Přeskočit kontrolu černé listiny AMS"
 
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
-msgstr ""
-
 msgid "Home page and daily tips"
 msgstr "Domovská stránka a denní tipy"
 
@@ -8560,6 +8586,9 @@ msgstr ""
 msgid "Flushing volumes for filament change"
 msgstr "Čistící objemy pro výměnu filamentu"
 
+msgid "Simple"
+msgstr ""
+
 msgid ""
 "Elegoo would re-calculate your flushing volumes everytime the filaments "
 "color changed. You could disable the auto-calculate in ElegooSlicer > "
@@ -8580,14 +8609,14 @@ msgstr "Násobitel by měl být v rozsahu [%.2f, %.2f]."
 msgid "Multiplier"
 msgstr "Multiplikátor"
 
+msgid "Filament #"
+msgstr "Filament #"
+
 msgid "unloaded"
 msgstr "vyjmuto"
 
 msgid "loaded"
 msgstr "zaváděn"
-
-msgid "Filament #"
-msgstr "Filament #"
 
 msgid "From"
 msgstr "Z"
@@ -17239,6 +17268,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -17347,6 +17379,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -17399,6 +17434,41 @@ msgstr ""
 
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]
@@ -20721,9 +20791,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Neplatný stav. \n"
 #~ "Není vybrána žádná část pro zachování po řezu"
-
-#~ msgid "Edit Text"
-#~ msgstr "Upravit text"
 
 #~ msgid "Error! Unable to create thread!"
 #~ msgstr "Chyba! Nelze vytvořit vlákno!"

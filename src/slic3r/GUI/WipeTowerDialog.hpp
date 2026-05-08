@@ -9,6 +9,7 @@
 #include <wx/textctrl.h>
 #include <wx/checkbox.h>
 #include <wx/msgdlg.h>
+#include <wx/scrolwin.h>
 
 #include "Widgets/SpinInput.hpp"
 
@@ -65,6 +66,8 @@ public:
 
         return wxAtof(m_flush_multiplier_ebox->GetValue());
     }
+
+    bool is_advanced_mode() const { return m_advanced; }
 
 private:
     void fill_in_matrix();
@@ -123,8 +126,15 @@ public:
 
     void on_dpi_changed(const wxRect &suggested_rect) override;
 
+    /** Recompute scrollable virtual size after layout / DPI / show (fixes missing vertical scroll for many extruders). */
+    void sync_wiping_scroll_area();
+
+    /** Size the scroll client to min(content, screen); scrollbars appear only when content exceeds that. */
+    void apply_wiping_scroll_viewport_limits();
+
 private:
-    WipingPanel*  m_panel_wiping  = nullptr;
+    WipingPanel*       m_panel_wiping = nullptr;
+    wxScrolledWindow*  m_scroll_body  = nullptr;
     std::vector<float> m_output_matrix;
     std::vector<float> m_output_extruders;
     std::unordered_map<int, Button *> m_button_list;

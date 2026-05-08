@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-16 15:22+0800\n"
+"POT-Creation-Date: 2026-05-08 17:55+0800\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -691,6 +691,9 @@ msgstr "Rotate text"
 msgid "Text shape"
 msgstr "文字形状"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "テキストの回転"
@@ -751,6 +754,11 @@ msgstr ""
 msgid "Embossed text cannot contain only white spaces."
 msgstr "エンボス加工されたテキストは、空白部分のみを含むことはできません。"
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr "テキストにフォントで不明な文字記号（ '?'で表される）が含まれている。"
 
@@ -771,6 +779,12 @@ msgstr "小さすぎます、テキスト入力時のフォント高さを大き
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "テキストが現在の水平アライメントを示さない。"
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr "Edit Text"
 
 msgid "Revert font changes."
 msgstr "フォント変更を元に戻す"
@@ -3603,6 +3617,12 @@ msgid ""
 "Reset to 0.2."
 msgstr "積層ピッチが小さすぎます、0.2にリセットされました"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4310,6 +4330,12 @@ msgstr "押出しキャリブレーション領域を避ける"
 msgid "Align to Y axis"
 msgstr "Align to Y axis"
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 msgid "Add plate"
 msgstr "プレートを追加"
 
@@ -4569,6 +4595,12 @@ msgstr ""
 
 msgid "Open Network Test"
 msgstr "ネットワークテストを開く"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -6775,12 +6807,6 @@ msgstr "開発者モード"
 msgid "Skip AMS blacklist check"
 msgstr "Skip AMS blacklist check"
 
-msgid "ELEGOO Seed Lab"
-msgstr ""
-
-msgid "ELEGOO AI"
-msgstr ""
-
 msgid "Home page and daily tips"
 msgstr "ホームページとヒント"
 
@@ -8360,6 +8386,9 @@ msgstr "Re-calculate"
 msgid "Flushing volumes for filament change"
 msgstr "フィラメントを入替える為のフラッシュ量"
 
+msgid "Simple"
+msgstr ""
+
 msgid ""
 "Elegoo would re-calculate your flushing volumes everytime the filaments "
 "color changed. You could disable the auto-calculate in ElegooSlicer > "
@@ -8380,14 +8409,14 @@ msgstr "マルチプライヤーの有効範囲は [%.2f, %.2f] です。"
 msgid "Multiplier"
 msgstr "マルチプライヤ"
 
+msgid "Filament #"
+msgstr "フィラメント#"
+
 msgid "unloaded"
 msgstr "アンロードしました"
 
 msgid "loaded"
 msgstr "ロード済み"
-
-msgid "Filament #"
-msgstr "フィラメント#"
 
 msgid "From"
 msgstr "From"
@@ -16778,6 +16807,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -16886,6 +16918,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -16938,6 +16973,41 @@ msgstr ""
 
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]
@@ -20247,9 +20317,6 @@ msgstr ""
 #~ msgstr ""
 #~ "Invalid state. \n"
 #~ "No one part is selected to keep after cut"
-
-#~ msgid "Edit Text"
-#~ msgstr "Edit Text"
 
 #~ msgid "Error! Unable to create thread!"
 #~ msgstr "エラー：スレッドを作成できません"
