@@ -36,7 +36,9 @@ public:
 
     int GetLastError() const { return m_error; }
 
-    static constexpr wxMediaState MEDIASTATE_BUFFERING = (wxMediaState) 6;
+    // Custom state id (not in wxMediaState); cannot use constexpr wxMediaState with
+    // out-of-range values on newer Clang (error: must be initialized by constant expression).
+    static constexpr int MEDIASTATE_BUFFERING = 6;
 
 protected:
     void DoSetSize(int x, int y, int width, int height, int sizeFlags) override;
