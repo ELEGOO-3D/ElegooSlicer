@@ -9,7 +9,6 @@
 #include "slic3r/Utils/Elegoo/ElegooNetworkHelper.hpp"
 
 #include <boost/log/trivial.hpp>
-#include <boost/format.hpp>
 #include <thread>
 
 namespace Slic3r { namespace GUI {
@@ -81,8 +80,7 @@ void UserLoginView::setupIPCHandlers()
         return;
 
     getIpc()->onRequest("report.userInfo", [this](const IPCRequest& request) {
-        auto        data     = request.params;
-        std::string     xxx  = data.dump();
+        auto data = request.params;
         UserNetworkInfo userNetworkInfo;
         userNetworkInfo.userId = JsonUtils::safeGetString(data, "userId", "");
         userNetworkInfo.token = JsonUtils::safeGetString(data, "accessToken", "");
@@ -109,12 +107,17 @@ void UserLoginView::setupIPCHandlers()
         auto now = std::chrono::system_clock::now();
         userNetworkInfo.lastTokenRefreshTime = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
         userNetworkInfo.loginTime = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
-        if(!userNetworkInfo.userId.empty() && !userNetworkInfo.token.empty()) {
-            userNetworkInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
-        } else {
+        if (userNetworkInfo.userId.empty() || userNetworkInfo.token.empty()) {
+            BOOST_LOG_TRIVIAL(warning) << "UserLoginView report.userInfo login failed, nickname="
+                                       << userNetworkInfo.nickname << ", email=" << userNetworkInfo.email
+                                       << ", phone=" << userNetworkInfo.phone << ", region=" << mRegion
+                                       << ", language=" << mLanguage;
             return IPCResult::error();
         }
-   
+        userNetworkInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
+        BOOST_LOG_TRIVIAL(info) << "UserLoginView report.userInfo login ok, nickname=" << userNetworkInfo.nickname
+                                << ", email=" << userNetworkInfo.email << ", phone=" << userNetworkInfo.phone
+                                << ", region=" << mRegion << ", language=" << mLanguage;
         UserNetworkManager::getInstance()->login(userNetworkInfo);
 
         CallAfter([this]() {

@@ -345,18 +345,6 @@ void UserNetworkManager::login(const UserNetworkInfo& userInfo)
     mUserInfo = userInfo;
     mUserInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
     
-    // 打印token到日志，方便在接口工具中测试
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
-                            << boost::format(": User login success, userId: %s, token: %s, refreshToken: %s")
-                                   % userInfo.userId % userInfo.token % userInfo.refreshToken;
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
-                            << boost::format(": ========== TOKEN FOR API TEST ==========");
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
-                            << boost::format(": Access Token: %s") % userInfo.token;
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
-                            << boost::format(": Refresh Token: %s") % userInfo.refreshToken;
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ 
-                            << boost::format(": ==========================================");
     
     saveUserInfo(mUserInfo);
     notifyUserInfoUpdated();

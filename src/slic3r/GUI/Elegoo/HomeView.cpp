@@ -233,9 +233,11 @@ IPCResult HomeView::handleNavigateToPage(const nlohmann::json& data)
 IPCResult HomeView::handleGetUserInfo()
 {
     // Get user network info
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": handleGetUserInfo called";
     UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();   
     nlohmann::json data; 
     data = convertUserNetworkInfoToJson(userNetworkInfo);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": handleGetUserInfo returned user info: " << data.dump();
     return IPCResult::success(data);
 }
 

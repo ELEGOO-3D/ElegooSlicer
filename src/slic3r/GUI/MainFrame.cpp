@@ -283,31 +283,9 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     // Load the icon either from the exe, or from the ico file.
     SetIcon(main_frame_icon(wxGetApp().get_app_mode()));
 
-    // Initialize multi-instance coordinator first
+    // Know master/slave before building the rest of the UI; defer printer/network/IPC until after this
+    // frame is registered on GUI_App (see CallAfter after m_loaded) so notifyUserInfoUpdated sees mainframe.
     MultiInstanceCoordinator::getInstance()->init();
-    PrinterManager::getInstance()->init();
-
-    // Initialize IPC server if master
-    if (MultiInstanceCoordinator::getInstance()->isMaster()) {
-        IPCServer::getInstance()->start();
-    } else {
-        IPCClient::getInstance()->start();
-    }
-    TelemetryReporter::getInstance()->init();
-    // Register callback for role changes (slave <-> master)
-    MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([](bool isMaster) {
-        if (isMaster) {
-            // Promoted to master
-            BOOST_LOG_TRIVIAL(info) << "Role change: slave promoted to master";
-            wxGetApp().CallAfter([]() {
-                IPCClient::getInstance()->stop(); 
-                IPCServer::getInstance()->start();
-                PrinterManager::getInstance()->init();
-                TelemetryReporter::getInstance()->init();
-            });
-        } 
-    });
-    
 
 
     // initialize tabpanel and menubar
@@ -469,6 +447,27 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     wxToolTip::SetAutoPop(32767);
 
     m_loaded = true;
+
+    wxGetApp().CallAfter([]() {
+        MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([](bool isMaster) {
+            if (isMaster) {
+                BOOST_LOG_TRIVIAL(info) << "Role change: slave promoted to master";
+                wxGetApp().CallAfter([]() {
+                    IPCClient::getInstance()->stop();
+                    IPCServer::getInstance()->start();
+                    PrinterManager::getInstance()->init();
+                    TelemetryReporter::getInstance()->init();
+                });
+            }
+        });
+        PrinterManager::getInstance()->init();
+        if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+            IPCServer::getInstance()->start();
+        } else {
+            IPCClient::getInstance()->start();
+        }
+        TelemetryReporter::getInstance()->init();
+    });
 
     // initialize layout
     m_main_sizer = new wxBoxSizer(wxVERTICAL);
