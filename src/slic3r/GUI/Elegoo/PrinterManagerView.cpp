@@ -142,6 +142,15 @@ private:
         return create_scaled_bitmap("elegoo_tab", wnd, 12);
     }
 
+    wxSize getBitmapDrawSize(const wxBitmap& bitmap) const {
+        if (!bitmap.IsOk()) {
+            return wxSize(0, 0);
+        }
+
+        return wxSize(static_cast<int>(bitmap.GetScaledWidth()),
+                      static_cast<int>(bitmap.GetScaledHeight()));
+    }
+
     void drawTabContent(wxDC& dc,
                         wxWindow* wnd,
                         const wxRect& tab_rect,
@@ -156,7 +165,7 @@ private:
         }
 
         dc.SetTextForeground(text_colour);
-        const wxSize icon_size = icon.IsOk() ? icon.GetSize() : wxSize(0, 0);
+        const wxSize icon_size = getBitmapDrawSize(icon);
         const wxSize text_size = dc.GetTextExtent(text);
         
         // Calculate positions
@@ -167,7 +176,7 @@ private:
         
         // Draw icon
         if (icon.IsOk()) {
-            dc.DrawBitmap(icon, icon_x, icon_y);
+            dc.DrawBitmap(icon, icon_x, icon_y, true);
         }
         
         // Draw text with clipping (no ellipsis)
@@ -216,10 +225,11 @@ private:
                 }
                 close_icon_ = wxBitmap(img);
             }
-            
-            const int icon_x = close_rect.x + (close_rect.width - close_icon_.GetWidth()) / 2;
-            const int icon_y = close_rect.y + (close_rect.height - close_icon_.GetHeight()) / 2;
-            dc.DrawBitmap(close_icon_, icon_x, icon_y);
+
+            const wxSize close_icon_size = getBitmapDrawSize(close_icon_);
+            const int icon_x = close_rect.x + (close_rect.width - close_icon_size.x) / 2;
+            const int icon_y = close_rect.y + (close_rect.height - close_icon_size.y) / 2;
+            dc.DrawBitmap(close_icon_, icon_x, icon_y, true);
         }
     }
 
