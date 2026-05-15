@@ -16,6 +16,7 @@
 #include "slic3r/Utils/ColorSpaceConvert.hpp"
 #include "MainFrame.hpp"
 #include "libslic3r/Config.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "Widgets/Label.hpp"
 #include <wx/choice.h>
 #include <wx/display.h>
@@ -770,7 +771,12 @@ int WipingPanel::calc_flushing_volume(const wxColour& from_, const wxColour& to_
 {
     Slic3r::FlushVolCalculator calculator(min_flush_volume, m_max_flush_volume);
 
-    return calculator.calc_flush_vol(from_.Alpha(), from_.Red(), from_.Green(), from_.Blue(), to_.Alpha(), to_.Red(), to_.Green(), to_.Blue());
+    const Slic3r::DynamicPrintConfig preset_config =
+        Slic3r::GUI::wxGetApp().preset_bundle->full_config();
+
+    return calculator.calc_flush_vol(from_.Alpha(), from_.Red(), from_.Green(), from_.Blue(),
+                                     to_.Alpha(),   to_.Red(),   to_.Green(),   to_.Blue(),
+                                     &preset_config);
 }
 
 void WipingPanel::update_warning_texts()
