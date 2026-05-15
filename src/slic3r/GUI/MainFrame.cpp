@@ -7,7 +7,9 @@
 #include <wx/icon.h>
 #include <wx/sizer.h>
 #include <wx/menu.h>
+#include <wx/filedlg.h>
 #include <wx/progdlg.h>
+#include <wx/stdpaths.h>
 #include <wx/tooltip.h>
 //#include <wx/glcanvas.h>
 #include <wx/filename.h>
@@ -15,6 +17,7 @@
 #include <wx/utils.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -23,6 +26,7 @@
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/SLAPrint.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/Zipper.hpp"
 
 #include "Tab.hpp"
 #include "ProgressStatusBar.hpp"
@@ -2385,6 +2389,101 @@ static const wxString sep = " - ";
 static const wxString sep = "\t";
 #endif
 
+static void export_logs_archive(wxWindow* parent)
+{
+    namespace fs = boost::filesystem;
+
+    auto show_export_error = [parent](const wxString& message) {
+        MessageDialog dlg(parent, message, _L("Export Logs"), wxOK | wxICON_ERROR);
+        dlg.ShowModal();
+    };
+
+    const fs::path log_dir = fs::path(Slic3r::data_dir()) / "log";
+    if (!fs::exists(log_dir) || !fs::is_directory(log_dir)) {
+        show_export_error(_L("The log directory does not exist."));
+        return;
+    }
+
+    bool has_log_files = false;
+    for (fs::recursive_directory_iterator it(log_dir), end; it != end; ++it) {
+        if (fs::is_regular_file(it->path())) {
+            has_log_files = true;
+            break;
+        }
+    }
+
+    if (!has_log_files) {
+        show_export_error(_L("No log files were found to export."));
+        return;
+    }
+
+    const wxString default_name = wxString::Format(
+        "ElegooSlicer_logs_%s.zip",
+        wxDateTime::Now().Format("%Y%m%d_%H%M%S"));
+
+    wxString default_dir = wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
+    if (default_dir.empty() || !wxFileName::DirExists(default_dir))
+        default_dir = from_u8(log_dir.parent_path().string());
+
+    wxFileDialog dlg(
+        parent,
+        _L("Export Logs"),
+        default_dir,
+        default_name,
+        "Zip files (*.zip)|*.zip",
+        wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+
+    wxFileName archive_name(dlg.GetPath());
+    if (!archive_name.GetExt().IsSameAs("zip", false))
+        archive_name.SetExt("zip");
+
+    const fs::path archive_path = fs::path(into_u8(archive_name.GetFullPath()));
+    const std::string archive_path_str = fs::absolute(archive_path).generic_string();
+
+    try {
+        wxBusyCursor busy;
+
+        if (fs::exists(archive_path))
+            fs::remove(archive_path);
+
+        Zipper zipper(archive_path.string());
+        for (fs::recursive_directory_iterator it(log_dir), end; it != end; ++it) {
+            const fs::path file_path = it->path();
+            if (!fs::is_regular_file(file_path))
+                continue;
+
+            if (fs::absolute(file_path).generic_string() == archive_path_str)
+                continue;
+
+            std::string entry_name = file_path.generic_string();
+            const std::string log_dir_prefix = log_dir.generic_string() + "/";
+            if (entry_name.rfind(log_dir_prefix, 0) == 0)
+                entry_name.erase(0, log_dir_prefix.size());
+
+            std::ifstream input(file_path.string(), std::ios::binary);
+            if (!input)
+                throw Slic3r::FileIOError("Failed to read log file: " + file_path.string());
+
+            std::vector<char> buffer((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+            zipper.add_entry(entry_name, buffer.empty() ? "" : buffer.data(), buffer.size());
+        }
+        zipper.finalize();
+
+        MessageDialog success(
+            parent,
+            wxString::Format(_L("Logs were exported to:\n%s"), archive_name.GetFullPath()),
+            _L("Export Logs"),
+            wxOK | wxICON_INFORMATION);
+        success.ShowModal();
+    }
+    catch (const std::exception& ex) {
+        show_export_error(from_u8(ex.what()));
+    }
+}
+
 static wxMenu* generate_help_menu()
 {
     wxMenu* helpMenu = new wxMenu();
@@ -2400,6 +2499,8 @@ static wxMenu* generate_help_menu()
     // Open Config Folder
     append_menu_item(helpMenu, wxID_ANY, _L("Show Configuration Folder"), _L("Show Configuration Folder"),
         [](wxCommandEvent&) { Slic3r::GUI::desktop_open_datadir_folder(); });
+    append_menu_item(helpMenu, wxID_ANY, _L("Export Logs"), _L("Export logs to a zip file"),
+        [](wxCommandEvent&) { export_logs_archive(wxGetApp().mainframe); });
 
 #if 0  // Temporarily disable Show Tip of the Day
     append_menu_item(helpMenu, wxID_ANY, _L("Show Tip of the Day"), _L("Show Tip of the Day"), [](wxCommandEvent&) {

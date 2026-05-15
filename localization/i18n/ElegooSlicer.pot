@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 17:55+0800\n"
+"POT-Creation-Date: 2026-05-15 10:41+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -4439,6 +4439,21 @@ msgstr ""
 msgid "Send all"
 msgstr ""
 
+msgid "Export Logs"
+msgstr ""
+
+msgid "The log directory does not exist."
+msgstr ""
+
+msgid "No log files were found to export."
+msgstr ""
+
+#, possible-c-format, possible-boost-format
+msgid ""
+"Logs were exported to:\n"
+"%s"
+msgstr ""
+
 msgid "Beginner Guide"
 msgstr ""
 
@@ -4452,6 +4467,9 @@ msgid "Setup Wizard"
 msgstr ""
 
 msgid "Show Configuration Folder"
+msgstr ""
+
+msgid "Export logs to a zip file"
 msgstr ""
 
 msgid "Show Tip of the Day"
