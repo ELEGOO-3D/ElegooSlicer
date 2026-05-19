@@ -39,6 +39,7 @@ PrinterNetworkInfo convertJsonToPrinterNetworkInfo(const nlohmann::json& json)
                 printerNetworkInfo.exceptions.push_back(convertJsonToPrinterExceptionDetail(exceptionJson));
             }
         }
+        printerNetworkInfo.deviceAssistantStatus = JsonUtils::safeGetInt(json, "deviceAssistantStatus", 0);
         printerNetworkInfo.isAdded = JsonUtils::safeGetBool(json, "isAdded", false);
         
         if (json.contains("extraInfo")) {
@@ -126,6 +127,7 @@ nlohmann::json convertPrinterNetworkInfoToJson(const PrinterNetworkInfo& printer
         exceptionsJson.push_back(convertPrinterExceptionDetailToJson(exception));
     }
     json["exceptions"]        = exceptionsJson;
+    json["deviceAssistantStatus"] = printerNetworkInfo.deviceAssistantStatus;
     nlohmann::json printTaskJson;
     printTaskJson["taskId"]        = printerNetworkInfo.printTask.taskId;
     printTaskJson["fileName"]      = printerNetworkInfo.printTask.fileName;

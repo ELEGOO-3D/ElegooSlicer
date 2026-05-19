@@ -75,7 +75,10 @@ void PrinterManager::init()
 
     // printer status changed event
     mStatusChangedHandlerId = PrinterNetworkEvent::getInstance()->statusChanged.connect(
-        [](const PrinterStatusEvent& event) { PrinterCache::getInstance()->updatePrinterStatus(event.printerId, event.status, event.exceptions); });
+        [](const PrinterStatusEvent& event) {
+            PrinterCache::getInstance()->updatePrinterStatus(event.printerId, event.status, event.exceptions,
+                                                             event.deviceAssistantStatus);
+        });
 
     // printer print task changed event
     mPrintTaskChangedHandlerId = PrinterNetworkEvent::getInstance()->printTaskChanged.connect([](const PrinterPrintTaskEvent& event) {

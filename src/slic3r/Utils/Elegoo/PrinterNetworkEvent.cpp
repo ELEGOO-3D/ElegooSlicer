@@ -97,8 +97,10 @@ PrinterConnectStatusEvent::PrinterConnectStatusEvent(const std::string& id, cons
     : printerId(id), status(s), timestamp(std::chrono::system_clock::now())
 {}
 
-PrinterStatusEvent::PrinterStatusEvent(const std::string& id, const PrinterStatus& s, const std::vector<PrinterExceptionDetail>& exceptionList)
-    : printerId(id), status(s), exceptions(exceptionList), timestamp(std::chrono::system_clock::now())
+PrinterStatusEvent::PrinterStatusEvent(const std::string& id, const PrinterStatus& s,
+                                                                             const std::vector<PrinterExceptionDetail>& exceptionList, int assistantStatus)
+        : printerId(id), status(s), exceptions(exceptionList), deviceAssistantStatus(assistantStatus),
+            timestamp(std::chrono::system_clock::now())
 {}
 
 PrinterPrintTaskEvent::PrinterPrintTaskEvent(const std::string& id, const PrinterPrintTask& t)

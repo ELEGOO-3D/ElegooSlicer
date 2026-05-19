@@ -92,7 +92,7 @@
                             </div>
                             <div class="printer-card-actions">
                                 <div class="printer-card-action-row">
-                                    <div class="printer-assistant-button" @click.stop="openDeviceAssistant(printer)">
+                                    <div v-if="shouldShowDeviceAssistant(printer)" class="printer-assistant-button" @click.stop="openDeviceAssistant(printer)">
                                         <span class="printer-assistant-icon"
                                             :class="getPrinterExceptionCount(printer) > 0 ? 'is-error' : 'is-normal'"
                                             aria-hidden="true"></span>

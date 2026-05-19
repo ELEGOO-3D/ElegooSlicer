@@ -122,6 +122,10 @@ const PrinterManager = {
             return String(count);
         },
 
+        shouldShowDeviceAssistant(printer) {
+            return Number(printer?.deviceAssistantStatus) === 1;
+        },
+
         hasLicenseError(printer) {
             if (!printer || !printer.serialNumber || printer.networkType !== 1) {
                 return false;

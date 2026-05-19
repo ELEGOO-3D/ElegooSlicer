@@ -25,8 +25,10 @@ struct PrinterStatusEvent {
     std::string                             printerId;
     PrinterStatus                           status;
     std::vector<PrinterExceptionDetail>     exceptions;
+    int                                     deviceAssistantStatus{0};
     std::chrono::system_clock::time_point   timestamp;
-    PrinterStatusEvent(const std::string& id, const PrinterStatus& s, const std::vector<PrinterExceptionDetail>& exceptionList = {});
+    PrinterStatusEvent(const std::string& id, const PrinterStatus& s, const std::vector<PrinterExceptionDetail>& exceptionList = {},
+                       int assistantStatus = 0);
 };
 
 struct PrinterPrintTaskEvent {

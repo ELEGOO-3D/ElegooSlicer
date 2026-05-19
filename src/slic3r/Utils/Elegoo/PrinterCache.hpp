@@ -85,7 +85,7 @@ public:
      * @brief Update printer status
      */
     void updatePrinterStatus(const std::string& printerId, const PrinterStatus& status,
-                             const std::vector<PrinterExceptionDetail>& exceptions = {});
+                             const std::vector<PrinterExceptionDetail>& exceptions = {}, int deviceAssistantStatus = 0);
     /**
      * @brief Update printer print task
      */

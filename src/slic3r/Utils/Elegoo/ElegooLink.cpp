@@ -261,15 +261,16 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
     cfg.cloud.rtmLogPath = data_dir() + "/log/rtm.log";
 
     cfg.cloud.userAgent = build_cloud_user_agent();
-    
+    cfg.cloud.region = region;
+    cfg.cloud.baseApiUrl = iotUrl;
     if (!elink::ElegooLink::getInstance().initialize(cfg)) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": error initializing ElegooLink";
     }
-    elink::SetRegionParams setRegionParams;
-    setRegionParams.region = region;
-    setRegionParams.baseUrl = iotUrl;
-    setRegionParams.caCertPath = cfg.cloud.caCertPath;
-    elink::ElegooLink::getInstance().setRegion(setRegionParams);
+    // elink::SetRegionParams setRegionParams;
+    // setRegionParams.region = region;
+    // setRegionParams.baseUrl = iotUrl;
+    // setRegionParams.caCertPath = cfg.cloud.caCertPath;
+    // elink::ElegooLink::getInstance().setRegion(setRegionParams);
 
     std::string version = elink::ElegooLink::getInstance().getVersion();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": version: %s") % version;
@@ -287,6 +288,7 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
     // print status and print task changed event
     elink::ElegooLink::getInstance().subscribeEvent<elink::PrinterStatusEvent>([&](const std::shared_ptr<elink::PrinterStatusEvent>& event) {
         PrinterStatus status = parseElegooStatus(event->status.printerStatus.state, event->status.printerStatus.subState);
+        int deviceAssistantStatus = event->status.deviceAssistantStatus;
         std::vector<PrinterExceptionDetail> exceptions;
         exceptions.reserve(event->status.exceptions.size());
         for (const auto& exceptionDetail : event->status.exceptions) {
@@ -294,7 +296,8 @@ void ElegooLink::init(const std::string& region, std::string& iotUrl, const std:
             detail.code  = exceptionDetail.code;
             exceptions.push_back(detail);
         }
-        PrinterNetworkEvent::getInstance()->statusChanged.emit(PrinterStatusEvent(event->status.printerId, status, exceptions));
+        PrinterNetworkEvent::getInstance()->statusChanged.emit(
+            Slic3r::PrinterStatusEvent(event->status.printerId, status, exceptions, deviceAssistantStatus));
 
         PrinterPrintTask task;
         task.taskId        = event->status.printStatus.taskId;
@@ -818,6 +821,7 @@ PrinterNetworkResult<PrinterNetworkInfo> ElegooLink::getPrinterStatus(const std:
                     detail.code  = exceptionDetail.code;
                     printerNetworkInfo.exceptions.push_back(detail);
                 }
+                printerNetworkInfo.deviceAssistantStatus = status.deviceAssistantStatus;
                 printerNetworkInfo.printTask     = task;
 
                 // PrinterNetworkEvent::getInstance()->printTaskChanged.emit(PrinterPrintTaskEvent(event->status.printerId, task, NETWORK_TYPE_LAN));

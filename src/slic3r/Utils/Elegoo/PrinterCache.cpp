@@ -63,6 +63,7 @@ bool PrinterCache::savePrinterList() {
         printerJson.erase("connectStatus");
         printerJson.erase("printerStatus");
         printerJson.erase("exceptions");
+        printerJson.erase("deviceAssistantStatus");
         printerJson.erase("printTask");
         
         jsonData[printerId] = printerJson;
@@ -153,12 +154,13 @@ bool PrinterCache::updatePrinterConnectStatus(const std::string& printerId, cons
 }
 
 void PrinterCache::updatePrinterStatus(const std::string& printerId, const PrinterStatus& status,
-                                       const std::vector<PrinterExceptionDetail>& exceptions) {
+                                       const std::vector<PrinterExceptionDetail>& exceptions, int deviceAssistantStatus) {
     std::lock_guard<std::mutex> lock(mCacheMutex);
     auto it = mPrinters.find(printerId);
     if (it != mPrinters.end()) {
         it->second.printerStatus = status;
         it->second.exceptions = exceptions;
+        it->second.deviceAssistantStatus = deviceAssistantStatus;
         uint64_t now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         it->second.lastActiveTime = now;
         if(status != PrinterStatus::PRINTER_STATUS_PRINTING && status != PrinterStatus::PRINTER_STATUS_PAUSED && status != PrinterStatus::PRINTER_STATUS_PAUSING) {
