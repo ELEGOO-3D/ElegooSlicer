@@ -1,10 +1,10 @@
 {
 	"type": "machine",
-	"name": "EXO65 Stage 2 (0.6 nozzle)",
-	"inherits": "fdm_volumic_common",
-	"from": "system",
 	"setting_id": "GM001",
+	"name": "EXO65 Stage 2 (0.6 nozzle)",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_volumic_common",
 	"printer_model": "EXO65 Stage 2",
 	"default_print_profile": "Normal speed (Stage 2) - 0.20mm",
 	"host_type": "octoprint",

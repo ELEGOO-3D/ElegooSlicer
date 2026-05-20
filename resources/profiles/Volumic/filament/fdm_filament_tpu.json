@@ -1,9 +1,9 @@
 {
 	"type": "filament",
 	"name": "fdm_filament_tpu",
-	"inherits": "fdm_filament_common",
 	"from": "system",
 	"instantiation": "false",
+	"inherits": "fdm_filament_common",
 	"cool_plate_temp": [
 		"45"
 	],
@@ -32,7 +32,7 @@
 		"100"
 	],
 	"filament_max_volumetric_speed": [
-		"5"
+		"15"
 	],
 	"filament_type": [
 		"TPU"

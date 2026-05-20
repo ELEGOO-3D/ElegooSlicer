@@ -1,10 +1,10 @@
 {
 	"type": "machine",
-	"name": "VS30MK3 (0.4 nozzle)",
-	"inherits": "fdm_volumic_common",
-	"from": "system",
 	"setting_id": "GM001",
+	"name": "VS30MK3 (0.4 nozzle)",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_volumic_common",
 	"printer_model": "VS30MK3",
 	"default_print_profile": "Normal speed - 0.15mm",
 	"host_type": "esp3d",

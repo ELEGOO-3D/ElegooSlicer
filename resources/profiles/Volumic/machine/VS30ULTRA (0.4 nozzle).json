@@ -1,10 +1,10 @@
 {
 	"type": "machine",
-	"name": "VS30ULTRA (0.4 nozzle)",
-	"inherits": "fdm_volumic_common",
-	"from": "system",
 	"setting_id": "GM001",
+	"name": "VS30ULTRA (0.4 nozzle)",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_volumic_common",
 	"printer_model": "VS30ULTRA",
 	"default_print_profile": "Normal speed - 0.15mm",
 	"nozzle_diameter": [

@@ -1,11 +1,14 @@
 {
 	"type": "filament",
-	"name": "Volumic UNIVERSAL Ultra (Performance)",
-	"inherits": "fdm_filament_pla",
-	"from": "system",
-	"setting_id": "GFSL99",
 	"filament_id": "GFL99",
+	"setting_id": "GFSL99",
+	"name": "Volumic UNIVERSAL Ultra (Performance)",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_filament_pla",
+	"filament_type": [
+		"UNIV"
+	],
 	"filament_flow_ratio": [
 		"1.00"
 	],
@@ -25,7 +28,7 @@
 		"100"
 	],
 	"filament_max_volumetric_speed": [
-		"50"
+		"36"
 	],
 	"compatible_printers": [
 		"EXO42 Performance (0.4 nozzle)",
@@ -41,6 +44,7 @@
 		"EXO65 IDRE MIRROR MODE (0.4 nozzle)",
 		"SH65 IDRE (0.4 nozzle)",
 		"SH65 IDRE COPY MODE (0.4 nozzle)",
-		"SH65 IDRE MIRROR MODE (0.4 nozzle)"
+		"SH65 IDRE MIRROR MODE (0.4 nozzle)",
+		"VS30SC2 Performance (0.4 nozzle)"
 	]
 }

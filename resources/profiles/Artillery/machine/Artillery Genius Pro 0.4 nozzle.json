@@ -1,10 +1,10 @@
 {
 	"type": "machine",
-	"name": "Artillery Genius Pro 0.4 nozzle",
-	"inherits": "fdm_machine_common",
-	"from": "system",
 	"setting_id": "GM003",
+	"name": "Artillery Genius Pro 0.4 nozzle",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_machine_common",
 	"printer_model": "Artillery Genius Pro",
 	"default_print_profile": "0.20mm Standard @Artillery Genius Pro",
 	"nozzle_diameter": [
@@ -77,6 +77,10 @@
 	"machine_max_jerk_z": [
 		"0.2",
 		"0.4"
+	],
+	"machine_max_junction_deviation": [
+		"0.032",
+		"0"
 	],
 	"max_layer_height": [
 		"0.32"

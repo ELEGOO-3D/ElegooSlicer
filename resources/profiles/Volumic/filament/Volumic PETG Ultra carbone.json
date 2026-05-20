@@ -1,11 +1,11 @@
 {
 	"type": "filament",
-	"name": "Volumic PETG Ultra carbone",
-	"inherits": "fdm_filament_pet",
-	"from": "system",
-	"setting_id": "GFSG50",
 	"filament_id": "GFG98",
+	"setting_id": "GFSG50",
+	"name": "Volumic PETG Ultra carbone",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_filament_pet",
 	"filament_flow_ratio": [
 		"1.00"
 	],
@@ -22,7 +22,7 @@
 		"60"
 	],
 	"filament_max_volumetric_speed": [
-		"22"
+		"20"
 	],
 	"compatible_printers": [
 		"EXO42 (0.4 nozzle)",

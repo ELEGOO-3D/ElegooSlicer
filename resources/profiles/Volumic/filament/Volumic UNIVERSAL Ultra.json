@@ -1,11 +1,14 @@
 {
 	"type": "filament",
-	"name": "Volumic UNIVERSAL Ultra",
-	"inherits": "fdm_filament_pla",
-	"from": "system",
-	"setting_id": "GFSL99",
 	"filament_id": "GFL99",
+	"setting_id": "GFSL99",
+	"name": "Volumic UNIVERSAL Ultra",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_filament_pla",
+	"filament_type": [
+		"UNIV"
+	],
 	"filament_flow_ratio": [
 		"1.00"
 	],

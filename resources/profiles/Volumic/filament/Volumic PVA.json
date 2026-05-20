@@ -1,11 +1,11 @@
 {
 	"type": "filament",
-	"name": "Volumic PVA",
-	"inherits": "fdm_filament_pva",
-	"from": "system",
-	"setting_id": "GFSS99",
 	"filament_id": "GFS99",
+	"setting_id": "GFSS99",
+	"name": "Volumic PVA",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_filament_pva",
 	"filament_flow_ratio": [
 		"1.00"
 	],
@@ -22,7 +22,7 @@
 		"40"
 	],
 	"filament_max_volumetric_speed": [
-		"22"
+		"20"
 	],
 	"compatible_printers": [
 		"EXO42 (0.4 nozzle)",

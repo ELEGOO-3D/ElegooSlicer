@@ -1,11 +1,11 @@
 {
 	"type": "filament",
-	"name": "Désactivé",
-	"inherits": "fdm_filament_pla",
-	"from": "system",
-	"setting_id": "DFSL99",
 	"filament_id": "DFL99",
+	"setting_id": "DFSL99",
+	"name": "Désactivé",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_filament_pla",
 	"filament_flow_ratio": [
 		"0.1"
 	],

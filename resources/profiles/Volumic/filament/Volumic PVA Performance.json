@@ -1,11 +1,11 @@
 {
 	"type": "filament",
-	"name": "Volumic PVA-BVOH (Performance)",
-	"inherits": "fdm_filament_pva",
-	"from": "system",
-	"setting_id": "GFSS99",
 	"filament_id": "GFS99",
+	"setting_id": "GFSS99",
+	"name": "Volumic PVA-BVOH (Performance)",
+	"from": "system",
 	"instantiation": "true",
+	"inherits": "fdm_filament_pva",
 	"filament_flow_ratio": [
 		"1.00"
 	],
@@ -25,7 +25,7 @@
 		"40"
 	],
 	"filament_max_volumetric_speed": [
-		"40"
+		"20"
 	],
 	"compatible_printers": [
 		"EXO42 Performance (0.4 nozzle)",
@@ -41,6 +41,7 @@
 		"EXO65 IDRE MIRROR MODE (0.4 nozzle)",
 		"SH65 IDRE (0.4 nozzle)",
 		"SH65 IDRE COPY MODE (0.4 nozzle)",
-		"SH65 IDRE MIRROR MODE (0.4 nozzle)"
+		"SH65 IDRE MIRROR MODE (0.4 nozzle)",
+		"VS30SC2 Performance (0.4 nozzle)"
 	]
 }

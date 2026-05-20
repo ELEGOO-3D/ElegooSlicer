@@ -1,9 +1,9 @@
 {
 	"type": "filament",
 	"name": "fdm_filament_pva",
-	"inherits": "fdm_filament_common",
 	"from": "system",
 	"instantiation": "false",
+	"inherits": "fdm_filament_common",
 	"cool_plate_temp": [
 		"60"
 	],
@@ -32,7 +32,7 @@
 		"100"
 	],
 	"filament_max_volumetric_speed": [
-		"15"
+		"22"
 	],
 	"filament_soluble": [
 		"1"
