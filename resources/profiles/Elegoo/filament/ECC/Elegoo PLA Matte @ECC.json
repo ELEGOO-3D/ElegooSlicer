@@ -35,9 +35,6 @@
 	"pressure_advance": [
 		"0.024"
 	],
-	"filament_cost": [
-		"0"
-	],
 	"filament_density": [
 		"1.25"
 	],

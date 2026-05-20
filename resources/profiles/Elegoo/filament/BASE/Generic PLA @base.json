@@ -5,9 +5,6 @@
 	"from": "system",
 	"filament_id": "GPLAB00",
 	"instantiation": "false",
-	"filament_cost": [
-		"0"
-	],
 	"filament_density": [
 		"1.25"
 	],
