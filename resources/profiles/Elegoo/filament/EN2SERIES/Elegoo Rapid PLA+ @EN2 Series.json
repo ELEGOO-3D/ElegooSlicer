@@ -1,27 +1,52 @@
 {
 	"type": "filament",
-	"name": "Elegoo RAPID PETG @EN2 Series",
-	"inherits": "Elegoo PETG @base",
+	"name": "Elegoo Rapid PLA+ @EN2 Series",
+	"renamed_from": "Elegoo RAPID PLA+ @EN2 Series",
+	"inherits": "Elegoo PLA @base",
 	"from": "system",
-	"setting_id": "ERPETGEN2",
+	"setting_id": "ERPLAPLUSEN2",
 	"instantiation": "true",
-	"filament_max_volumetric_speed": [
-		"10"
-	],
-	"nozzle_temperature": [
-		"230"
-	],
-	"nozzle_temperature_initial_layer": [
-		"230"
+	"fan_cooling_layer_time": [
+		"80"
 	],
 	"fan_max_speed": [
 		"100"
 	],
+	"filament_max_volumetric_speed": [
+		"12"
+	],
+	"hot_plate_temp": [
+		"60"
+	],
+	"hot_plate_temp_initial_layer": [
+		"60"
+	],
+	"slow_down_layer_time": [
+		"6"
+	],
+	"textured_plate_temp": [
+		"60"
+	],
+	"textured_plate_temp_initial_layer": [
+		"60"
+	],
 	"fan_min_speed": [
-		"50"
+		"80"
+	],
+	"nozzle_temperature": [
+		"210"
+	],
+	"nozzle_temperature_initial_layer": [
+		"210"
+	],
+	"overhang_fan_threshold": [
+		"75%"
+	],
+	"slow_down_min_speed": [
+		"10"
 	],
 	"filament_density": [
-		"1.26"
+		"1.25"
 	],
 	"compatible_printers": [
 		"Elegoo Neptune 0.4 nozzle",

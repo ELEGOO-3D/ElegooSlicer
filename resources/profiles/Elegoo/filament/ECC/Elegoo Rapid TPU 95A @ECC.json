@@ -1,9 +1,10 @@
 {
 	"type": "filament",
-	"name": "Elegoo RAPID TPU 95A @EC",
+	"name": "Elegoo Rapid TPU 95A @ECC",
+	"renamed_from": "Elegoo RAPID TPU 95A @ECC",
 	"inherits": "Elegoo TPU @base",
 	"from": "system",
-	"setting_id": "ERTPU95AEC",
+	"setting_id": "ERTPU95AECC",
 	"instantiation": "true",
 	"pressure_advance": [
 		"0.024"
@@ -21,8 +22,9 @@
 		"12"
 	],
 	"compatible_printers": [
-		"Elegoo Centauri 0.4 nozzle",
-		"Elegoo Centauri 0.6 nozzle",
-		"Elegoo Centauri 0.8 nozzle"
+		"Elegoo Centauri Carbon 0.2 nozzle",
+		"Elegoo Centauri Carbon 0.4 nozzle",
+		"Elegoo Centauri Carbon 0.6 nozzle",
+		"Elegoo Centauri Carbon 0.8 nozzle"
 	]
 }

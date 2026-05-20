@@ -1,6 +1,7 @@
 {
 	"type": "filament",
-	"name": "Elegoo RAPID PETG @0.2 nozzle",
+	"name": "Elegoo Rapid PETG @0.2 nozzle",
+	"renamed_from": "Elegoo RAPID PETG @0.2 nozzle",
 	"inherits": "Elegoo PETG @base",
 	"from": "system",
 	"setting_id": "ERPETG00020",
@@ -24,9 +25,6 @@
 		"250"
 	],
 	"compatible_printers": [
-		"Elegoo Centauri 0.2 nozzle",
-		"Elegoo Centauri Carbon 0.2 nozzle",
-		"Elegoo Centauri Carbon 2 0.2 nozzle",
 		"Elegoo Neptune 4 0.2 nozzle",
 		"Elegoo Neptune 4 Pro 0.2 nozzle",
 		"Elegoo Neptune 4 Plus 0.2 nozzle",

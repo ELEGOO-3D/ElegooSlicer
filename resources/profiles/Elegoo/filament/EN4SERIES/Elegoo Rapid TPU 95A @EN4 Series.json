@@ -1,27 +1,25 @@
 {
 	"type": "filament",
-	"name": "Elegoo RAPID PETG @EN4 Series",
-	"inherits": "Elegoo PETG @base",
+	"name": "Elegoo Rapid TPU 95A @EN4 Series",
+	"renamed_from": "Elegoo RAPID TPU 95A @EN4 Series",
+	"inherits": "Elegoo TPU @base",
 	"from": "system",
-	"setting_id": "ERPETGEN4",
+	"setting_id": "ERTPU95AEN4",
 	"instantiation": "true",
-	"fan_max_speed": [
-		"80"
-	],
-	"fan_min_speed": [
-		"30"
-	],
-	"filament_density": [
-		"1.26"
-	],
-	"filament_max_volumetric_speed": [
-		"18"
+	"pressure_advance": [
+		"0.024"
 	],
 	"nozzle_temperature": [
-		"250"
+		"230"
 	],
 	"nozzle_temperature_initial_layer": [
-		"250"
+		"230"
+	],
+	"nozzle_temperature_range_high": [
+		"230"
+	],
+	"filament_max_volumetric_speed": [
+		"12"
 	],
 	"compatible_printers": [
 		"Elegoo Neptune 4 0.4 nozzle",

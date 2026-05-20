@@ -1,36 +1,31 @@
 {
 	"type": "filament",
-	"name": "Elegoo RAPID PETG @EOS Giga",
-	"inherits": "Elegoo PETG @base",
+	"name": "Elegoo Rapid PLA+ @EOS Giga",
+	"renamed_from": "Elegoo RAPID PLA+ @EOS Giga",
+	"inherits": "Elegoo PLA @base",
 	"from": "system",
-	"setting_id": "ERPETGEOSG00",
+	"setting_id": "ERPLAEOSG00",
 	"instantiation": "true",
-	"enable_pressure_advance": [
-		"1"
-	],
-	"fan_max_speed": [
-		"60"
-	],
-	"fan_min_speed": [
+	"filament_max_volumetric_speed": [
 		"30"
 	],
-	"filament_flow_ratio": [
-		"1.17"
+	"fan_min_speed": [
+		"100"
 	],
-	"filament_max_volumetric_speed": [
-		"34"
+	"filament_flow_ratio": [
+		"1.12"
 	],
 	"nozzle_temperature": [
-		"235"
+		"210"
 	],
 	"nozzle_temperature_initial_layer": [
-		"235"
+		"210"
 	],
-	"pressure_advance": [
-		"0.035"
+	"overhang_fan_threshold": [
+		"25%"
 	],
 	"filament_density": [
-		"1.26"
+		"1.25"
 	],
 	"compatible_printers": [
 		"Elegoo OrangeStorm Giga 0.4 nozzle",
