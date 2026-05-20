@@ -99,7 +99,7 @@
 			"sub_path": "process/fdm_process_elegoo_08040.json"
 		},
 		{
-			"name": "fdm_process_elegoo_1004050",
+			"name": "fdm_process_elegoo_10050",
 			"sub_path": "process/fdm_process_elegoo_10050.json"
 		},
 		{
@@ -1450,7 +1450,7 @@
 		},
 		{
 			"name": "Elegoo RAPID PLA+ @ECC2",
-			"sub_path": "filament/ECC2/Elegoo RAPID PLA+ @ECC2.json"
+			"sub_path": "filament/ECC2/Elegoo Rapid PLA+ @ECC2.json"
 		},
 		{
 			"name": "Elegoo PLA Silk @ECC2",
@@ -1474,7 +1474,7 @@
 		},
 		{
 			"name": "Elegoo RAPID PETG @ECC2",
-			"sub_path": "filament/ECC2/Elegoo RAPID PETG @ECC2.json"
+			"sub_path": "filament/ECC2/Elegoo Rapid PETG @ECC2.json"
 		},
 		{
 			"name": "Elegoo TPU 95A @ECC2",
@@ -1554,7 +1554,7 @@
 		},
 		{
 			"name": "Elegoo RAPID TPU 95A @ECC2",
-			"sub_path": "filament/ECC2/Elegoo RAPID TPU 95A @ECC2.json"
+			"sub_path": "filament/ECC2/Elegoo Rapid TPU 95A @ECC2.json"
 		},
 		{
 			"name": "Elegoo PLA @EN4 Series",
