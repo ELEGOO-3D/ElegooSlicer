@@ -18,6 +18,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -2398,7 +2399,7 @@ static void export_logs_archive(wxWindow* parent)
         dlg.ShowModal();
     };
 
-    const fs::path log_dir = fs::path(Slic3r::data_dir()) / "log";
+    const fs::path log_dir = into_path(from_u8(Slic3r::data_dir())) / "log";
     if (!fs::exists(log_dir) || !fs::is_directory(log_dir)) {
         show_export_error(_L("The log directory does not exist."));
         return;
@@ -2423,7 +2424,7 @@ static void export_logs_archive(wxWindow* parent)
 
     wxString default_dir = wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
     if (default_dir.empty() || !wxFileName::DirExists(default_dir))
-        default_dir = from_u8(log_dir.parent_path().string());
+        default_dir = from_path(log_dir.parent_path());
 
     wxFileDialog dlg(
         parent,
@@ -2440,8 +2441,9 @@ static void export_logs_archive(wxWindow* parent)
     if (!archive_name.GetExt().IsSameAs("zip", false))
         archive_name.SetExt("zip");
 
-    const fs::path archive_path = fs::path(into_u8(archive_name.GetFullPath()));
-    const std::string archive_path_str = fs::absolute(archive_path).generic_string();
+    const wxString archive_full_path = archive_name.GetFullPath();
+    const fs::path archive_path = into_path(archive_full_path);
+    const std::string archive_path_utf8 = into_u8(archive_full_path);
 
     try {
         wxBusyCursor busy;
@@ -2449,23 +2451,20 @@ static void export_logs_archive(wxWindow* parent)
         if (fs::exists(archive_path))
             fs::remove(archive_path);
 
-        Zipper zipper(archive_path.string());
+        Zipper zipper(archive_path_utf8);
         for (fs::recursive_directory_iterator it(log_dir), end; it != end; ++it) {
             const fs::path file_path = it->path();
             if (!fs::is_regular_file(file_path))
                 continue;
 
-            if (fs::absolute(file_path).generic_string() == archive_path_str)
+            if (fs::absolute(file_path) == fs::absolute(archive_path))
                 continue;
 
-            std::string entry_name = file_path.generic_string();
-            const std::string log_dir_prefix = log_dir.generic_string() + "/";
-            if (entry_name.rfind(log_dir_prefix, 0) == 0)
-                entry_name.erase(0, log_dir_prefix.size());
+            std::string entry_name = fs::relative(file_path, log_dir).generic_string();
 
-            std::ifstream input(file_path.string(), std::ios::binary);
+            boost::filesystem::ifstream input(file_path, std::ios::binary);
             if (!input)
-                throw Slic3r::FileIOError("Failed to read log file: " + file_path.string());
+                throw Slic3r::FileIOError("Failed to read log file: " + into_u8(from_path(file_path)));
 
             std::vector<char> buffer((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
             zipper.add_entry(entry_name, buffer.empty() ? "" : buffer.data(), buffer.size());
