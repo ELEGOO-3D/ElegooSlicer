@@ -397,6 +397,7 @@ void HomeView::refreshUserInfo()
 void HomeView::onRegionChanged()
 {
     //logout user
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": onRegionChanged called, logout user";
     UserNetworkManager::getInstance()->logout();
     if (mIpc && mIsReady) {
         mIpc->sendEvent("onRegionChanged", nlohmann::json::object(), mIpc->generateRequestId());

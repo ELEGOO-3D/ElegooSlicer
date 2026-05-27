@@ -2675,7 +2675,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
     PresetsConfigSubstitutions substitutions;
 
     //BBS: add config related logs
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(" enter, path %1%, compatibility_rule %2%")%path.c_str()%compatibility_rule;
+    BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << boost::format(" enter, path %1%, compatibility_rule %2%")%path.c_str()%compatibility_rule;
     if (flags.has(LoadConfigBundleAttribute::ResetUserProfile) || flags.has(LoadConfigBundleAttribute::LoadSystem))
         // Reset this bundle, delete user profile files if SaveImported.
         this->reset(flags.has(LoadConfigBundleAttribute::SaveImported));
@@ -2740,7 +2740,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_vendor_configs_
             }
             else if (boost::iequals(it.key(), BBL_JSON_KEY_DESCRIPTION)) {
                 //get description
-                BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": parse "<<root_file<<", got description:  " << it.value();
+                BOOST_LOG_TRIVIAL(debug) << __FUNCTION__<< ": parse "<<root_file<<", got description:  " << it.value();
             }
             else if (boost::iequals(it.key(), BBL_JSON_KEY_NAME)) {
                 //get name

@@ -36,6 +36,16 @@ void UserLoginView::ShowLoginDialog()
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": UserLoginView already shown, ignore duplicate request";
         return;
     }
+    UserNetworkInfo userInfo = UserNetworkManager::getInstance()->getUserInfo();
+    if (!userInfo.userId.empty()) {
+        BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << ": a user is already logged in, logout first before opening login"
+                                   << " userId=" << userInfo.userId << ", username=" << userInfo.username
+                                   << ", nickname=" << userInfo.nickname << ", email=" << userInfo.email
+                                   << ", phone=" << userInfo.phone << ", region=" << userInfo.region
+                                   << ", language=" << userInfo.language << ", loginStatus=" << userInfo.loginStatus;
+        UserNetworkManager::getInstance()->logout();
+    }
+
     UserLoginView* dialog = new UserLoginView(nullptr);
     dialog->ShowModal();
     delete dialog;

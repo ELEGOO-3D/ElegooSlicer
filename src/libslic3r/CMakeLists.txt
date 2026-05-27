@@ -180,6 +180,10 @@ set(lisbslic3r_sources
     Flow.hpp
     FlushVolCalc.cpp
     FlushVolCalc.hpp
+    FlushVolumeRules.cpp
+    FlushVolumeRules.hpp
+    StandardColorMatcher.cpp
+    StandardColorMatcher.hpp
     Format/3mf.cpp
     Format/3mf.hpp
     Format/AMF.cpp

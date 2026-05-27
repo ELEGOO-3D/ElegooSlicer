@@ -1,8 +1,11 @@
 #include <cmath>
+#include <cstdio>
 #include <assert.h>
 #include "slic3r/Utils/ColorSpaceConvert.hpp"
 
 #include "FlushVolCalc.hpp"
+#include "FlushVolumeRules.hpp"
+#include "PrintConfig.hpp"
 
 
 namespace Slic3r {
@@ -45,7 +48,8 @@ FlushVolCalculator::FlushVolCalculator(int min, int max, float multiplier)
 }
 
 int FlushVolCalculator::calc_flush_vol(unsigned char src_a, unsigned char src_r, unsigned char src_g, unsigned char src_b,
-    unsigned char dst_a, unsigned char dst_r, unsigned char dst_g, unsigned char dst_b)
+    unsigned char dst_a, unsigned char dst_r, unsigned char dst_g, unsigned char dst_b,
+    const DynamicPrintConfig* preset_config)
 {
     // BBS: Transparent materials are treated as white materials
     if (src_a == 0) {
@@ -53,6 +57,20 @@ int FlushVolCalculator::calc_flush_vol(unsigned char src_a, unsigned char src_r,
     }
     if (dst_a == 0) {
         dst_r = dst_g = dst_b = 255;
+    }
+
+    // Consult the per-printer override table. Additional preset fields may
+    // be pulled here when the flush_volumes.json schema grows.
+    if (preset_config != nullptr) {
+        const std::string printer_name = preset_config->opt_string("printer_settings_id");
+        if (!printer_name.empty()) {
+            char from_buf[8];
+            char to_buf[8];
+            std::snprintf(from_buf, sizeof(from_buf), "#%02X%02X%02X", src_r, src_g, src_b);
+            std::snprintf(to_buf,   sizeof(to_buf),   "#%02X%02X%02X", dst_r, dst_g, dst_b);
+            if (auto v = FlushVolumeRules::instance().lookup(printer_name, from_buf, to_buf))
+                return *v;
+        }
     }
 
     float src_r_f, src_g_f, src_b_f, dst_r_f, dst_g_f, dst_b_f;

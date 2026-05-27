@@ -2202,7 +2202,9 @@ void Sidebar::auto_calc_flushing_volumes(const int modify_id)
                         const wxColour& from = multi_colours[from_idx][j];
                         for (int k = 0; k < multi_colours[modify_id].size(); ++k) {
                             const wxColour& to = multi_colours[modify_id][k];
-                            int volume = calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(), to.Alpha(), to.Red(), to.Green(), to.Blue());
+                            int volume = calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(),
+                                                                   to.Alpha(),   to.Red(),   to.Green(),   to.Blue(),
+                                                                   &full_config);
                             flushing_volume = std::max(flushing_volume, volume);
                         }
                     }
@@ -2227,7 +2229,9 @@ void Sidebar::auto_calc_flushing_volumes(const int modify_id)
                         const wxColour& from = multi_colours[modify_id][j];
                         for (int k = 0; k < multi_colours[to_idx].size(); ++k) {
                             const wxColour& to = multi_colours[to_idx][k];
-                            int volume = calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(), to.Alpha(), to.Red(), to.Green(), to.Blue());
+                            int volume = calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(),
+                                                                   to.Alpha(),   to.Red(),   to.Green(),   to.Blue(),
+                                                                   &full_config);
                             flushing_volume = std::max(flushing_volume, volume);
                         }
                     }

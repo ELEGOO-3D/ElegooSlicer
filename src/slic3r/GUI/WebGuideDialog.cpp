@@ -26,6 +26,9 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 
+#include <set>
+#include <sstream>
+
 #include "MainFrame.hpp"
 #include <boost/dll.hpp>
 #include <slic3r/GUI/Widgets/WebView.hpp>
@@ -441,6 +444,32 @@ void GuideFrame::OnScriptMessage(wxWebViewEvent &evt)
                         break;
                     }
                 }
+            }
+
+            // Auto-select default filaments based on default_materials of selected models
+            // Reset all filament selections
+            for (auto it = m_ProfileJson["filament"].begin(); it != m_ProfileJson["filament"].end(); ++it)
+                m_ProfileJson["filament"][it.key()]["selected"] = 0;
+
+            // Collect default_materials from selected models
+            std::set<std::string> default_materials_set;
+            for (int m = 0; m < nModel; m++) {
+                if (!m_ProfileJson["model"][m]["nozzle_selected"].get<std::string>().empty()) {
+                    std::string materials_str = m_ProfileJson["model"][m]["materials"].get<std::string>();
+                    std::istringstream iss(materials_str);
+                    std::string token;
+                    while (std::getline(iss, token, ';')) {
+                        boost::trim(token);
+                        if (!token.empty())
+                            default_materials_set.insert(token);
+                    }
+                }
+            }
+
+            // Mark matching filaments as selected
+            for (auto it = m_ProfileJson["filament"].begin(); it != m_ProfileJson["filament"].end(); ++it) {
+                if (default_materials_set.find(it.key()) != default_materials_set.end())
+                    m_ProfileJson["filament"][it.key()]["selected"] = 1;
             }
         }
         else if (strCmd == "save_userguide_filaments") {
@@ -921,13 +950,13 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
     try {
         std::string contents;
         LoadFile(filepath, contents);
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": Json Contents: " << contents;
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ": Json Contents: " << contents;
         json jLocal = json::parse(contents);
 
         if (sVendor == "") {
             if (jLocal.contains("filament_vendor"))
                 sVendor = jLocal["filament_vendor"][0];
-            else {
+            else if (!jLocal.contains("inherits")) {
                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath << " - Not Contains filament_vendor";
             }
         }
@@ -935,7 +964,7 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
         if (sType == "") {
             if (jLocal.contains("filament_type"))
                 sType = jLocal["filament_type"][0];
-            else {
+            else if (!jLocal.contains("inherits")) {
                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << filepath << " - Not Contains filament_type";
             }
         }
@@ -970,9 +999,10 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
                     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "sType is Empty";
                     return -1;
                 }
-                else
+                else {
                     sVendor = "Generic";
                     return 0;
+                }
             }
         }
         else
@@ -1068,7 +1098,10 @@ int GuideFrame::LoadProfileData()
         //sync to web
         std::string strAll = m_ProfileJson.dump(-1, ' ', false, json::error_handler_t::ignore);
 
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", finished, json contents: " << std::endl << strAll;
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", finished; system_preset_dir=" << vendor_dir.string()
+                                << ", resources_profiles=" << rsrc_vendor_dir.string() << ", orca_filament_lib=" << m_OrcaFilaLibPath
+                                << ", vendors_loaded=" << loaded_vendors.size() << ", profile_json_bytes=" << strAll.size();
+        BOOST_LOG_TRIVIAL(debug) << __FUNCTION__ << ", json contents: " << std::endl << strAll;
         json m_Res           = json::object();
         m_Res["command"]     = "userguide_profile_load_finish";
         m_Res["sequence_id"] = "10001";

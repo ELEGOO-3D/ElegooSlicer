@@ -66,7 +66,6 @@ private:
     bool checkNeedRefreshToken(const UserNetworkInfo& userInfo);
     bool checkTokenTimeInvalid(const UserNetworkInfo& userInfo);
 
-private:
     mutable std::recursive_mutex mInitMutex;
     std::atomic<bool> mIsInitialized{false};
     

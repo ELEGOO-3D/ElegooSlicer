@@ -2858,7 +2858,9 @@ int CLI::run(int argc, char **argv)
 
                             Slic3r::FlushVolCalculator calculator(min_flush_volumes[from_idx], Slic3r::g_max_flush_volume);
 
-                            flushing_volume = calculator.calc_flush_vol(from_rgb[3], from_rgb[0], from_rgb[1], from_rgb[2], to_rgb[3], to_rgb[0], to_rgb[1], to_rgb[2]);
+                            flushing_volume = calculator.calc_flush_vol(from_rgb[3], from_rgb[0], from_rgb[1], from_rgb[2],
+                                                                        to_rgb[3],   to_rgb[0],   to_rgb[1],   to_rgb[2],
+                                                                        &m_print_config);
                             if (is_from_support) {
                                 flushing_volume = std::max(Slic3r::g_min_flush_volume_from_support, flushing_volume);
                             }

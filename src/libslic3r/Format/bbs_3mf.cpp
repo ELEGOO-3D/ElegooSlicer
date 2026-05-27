@@ -8305,7 +8305,7 @@ private:
     }
 
     void process_ui_task(Task& t, bool canceled = false) {
-        BOOST_LOG_TRIVIAL(info) << "process_ui_task" << t.to_string() << " and interval = " << m_interval;
+        BOOST_LOG_TRIVIAL(debug) << "process_ui_task" << t.to_string() << " and interval = " << m_interval;
         switch (t.type) {
             case Backup: {
                 if (canceled)
@@ -8349,7 +8349,7 @@ private:
     }
 
     void process_task(Task& t) {
-        BOOST_LOG_TRIVIAL(info) << "process_task" << t.to_string() << " and interval = " << m_interval;
+        BOOST_LOG_TRIVIAL(debug) << "process_task" << t.to_string() << " and interval = " << m_interval;
         switch (t.type) {
             case Backup:
                 // do it in response

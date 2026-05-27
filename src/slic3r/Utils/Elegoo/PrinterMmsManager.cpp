@@ -1,5 +1,6 @@
 #include "PrinterMmsManager.hpp"
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
+#include "libslic3r/StandardColorMatcher.hpp"
 #include <nlohmann/json.hpp>
 #include <wx/colour.h>
 #include "slic3r/GUI/MainFrame.hpp"
@@ -10,287 +11,25 @@
 #include <boost/nowide/fstream.hpp>
 #include <boost/filesystem.hpp>
 #include <mutex>
-#include <cmath>
 #include <algorithm>
 #include <limits>
 
 namespace Slic3r {
 
+// Legacy field names kept so JSON mapping keys and log lines elsewhere in
+// this file remain stable.
 struct StandardColor
 {
     std::string colorName;
     std::string colorHex;
 };
 
-
-struct LabColor {
-    double l, a, b;
-    LabColor(double lVal = 0, double aVal = 0, double bVal = 0) : l(lVal), a(aVal), b(bVal) {}
-};
-
-
-struct XyzColor {
-    double x, y, z;
-    XyzColor(double xVal = 0, double yVal = 0, double zVal = 0) : x(xVal), y(yVal), z(zVal) {}
-};
-
-
-static LabColor xyzToLab(const XyzColor& xyz)
-{
-    // D65 illuminant
-    const double xn = 95.047;
-    const double yn = 100.000;
-    const double zn = 108.883;
-    
-    double fx = (xyz.x / xn > 0.008856) ? pow(xyz.x / xn, 1.0/3.0) : (7.787 * xyz.x / xn + 16.0/116.0);
-    double fy = (xyz.y / yn > 0.008856) ? pow(xyz.y / yn, 1.0/3.0) : (7.787 * xyz.y / yn + 16.0/116.0);
-    double fz = (xyz.z / zn > 0.008856) ? pow(xyz.z / zn, 1.0/3.0) : (7.787 * xyz.z / zn + 16.0/116.0);
-    
-    double l = 116 * fy - 16;
-    double a = 500 * (fx - fy);
-    double b = 200 * (fy - fz);
-    
-    return LabColor(l, a, b);
-}
-struct StandardColorLab
-{
-    StandardColor color;
-    LabColor lab;
-};
-
-struct RgbColor {
-    int r, g, b;
-    RgbColor(int red = 0, int green = 0, int blue = 0) : r(red), g(green), b(blue) {}
-};
-
-static bool isValidHex6(const std::string& h)
-{
-    if (h.length() != 6) {
-        return false;
-    }
-    for (char c : h) {
-        if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f'))) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static RgbColor hexToRgb(const std::string& hex)
-{
-    std::string h = hex;
-    if (!h.empty() && h[0] == '#') {
-        h = h.substr(1);
-    }
-    
-    if (isValidHex6(h)) {
-        try {
-            int r = std::stoi(h.substr(0, 2), nullptr, 16);
-            int g = std::stoi(h.substr(2, 2), nullptr, 16);
-            int b = std::stoi(h.substr(4, 2), nullptr, 16);
-            return RgbColor(r, g, b);
-        } catch (...) {
-            // Invalid hex format, return black as fallback
-            return RgbColor(0, 0, 0);
-        }
-    }
-    
-    // Invalid hex format, return black as fallback
-    return RgbColor(0, 0, 0);
-}
-
-static XyzColor rgbToXyz(const RgbColor& rgb)
-{
-    double rNorm = rgb.r / 255.0;
-    double gNorm = rgb.g / 255.0;
-    double bNorm = rgb.b / 255.0;
-    
-    // Apply gamma correction
-    rNorm = (rNorm > 0.04045) ? pow((rNorm + 0.055) / 1.055, 2.4) : rNorm / 12.92;
-    gNorm = (gNorm > 0.04045) ? pow((gNorm + 0.055) / 1.055, 2.4) : gNorm / 12.92;
-    bNorm = (bNorm > 0.04045) ? pow((bNorm + 0.055) / 1.055, 2.4) : bNorm / 12.92;
-    
-    // Convert to XYZ using sRGB matrix
-    double x = rNorm * 0.4124564 + gNorm * 0.3575761 + bNorm * 0.1804375;
-    double y = rNorm * 0.2126729 + gNorm * 0.7151522 + bNorm * 0.0721750;
-    double z = rNorm * 0.0193339 + gNorm * 0.1191920 + bNorm * 0.9503041;
-    
-    // Scale by 100
-    return XyzColor(x * 100, y * 100, z * 100);
-}
-
-// Delta E 2000 calculation
-static double deltaE2000(const LabColor& lab1, const LabColor& lab2)
-{
-    // Step 1: Calculate C1, C2
-    double c1 = std::sqrt(lab1.a * lab1.a + lab1.b * lab1.b);
-    double c2 = std::sqrt(lab2.a * lab2.a + lab2.b * lab2.b);
-    double cBar = (c1 + c2) / 2.0;
-
-    // Step 2: G factor
-    double cBar7 = std::pow(cBar, 7);
-    double g = 0.5 * (1.0 - std::sqrt(cBar7 / (cBar7 + std::pow(25.0, 7))));
-
-    // Step 3: a'1, a'2
-    double a1Prime = (1.0 + g) * lab1.a;
-    double a2Prime = (1.0 + g) * lab2.a;
-
-    // Step 4: C'1, C'2
-    double c1Prime = std::sqrt(a1Prime * a1Prime + lab1.b * lab1.b);
-    double c2Prime = std::sqrt(a2Prime * a2Prime + lab2.b * lab2.b);
-
-    // Step 5: h'1, h'2 (in degrees)
-    auto calcHuePrime = [](double a, double b) {
-        double h = std::atan2(b, a) * 180.0 / M_PI;
-        return (h < 0) ? (h + 360.0) : h;
-    };
-
-    double h1Prime = calcHuePrime(a1Prime, lab1.b);
-    double h2Prime = calcHuePrime(a2Prime, lab2.b);
-
-    // Step 6: ΔL', ΔC'
-    double deltaLPrime = lab2.l - lab1.l;
-    double deltaCPrime = c2Prime - c1Prime;
-
-    // Step 7: Δh'
-    double deltahPrime = 0.0;
-    double hDiff = h2Prime - h1Prime;
-    if (c1Prime * c2Prime == 0) {
-        deltahPrime = 0;
-    } else {
-        if (std::fabs(hDiff) <= 180.0) {
-            deltahPrime = hDiff;
-        } else if (hDiff > 180.0) {
-            deltahPrime = hDiff - 360.0;
-        } else {
-            deltahPrime = hDiff + 360.0;
-        }
-    }
-
-    // Step 8: ΔH'
-    double deltaHPrime = 2.0 * std::sqrt(c1Prime * c2Prime) *
-                         std::sin((deltahPrime * M_PI) / 360.0);
-
-    // Step 9: L', C', h' averages
-    double lBarPrime = (lab1.l + lab2.l) / 2.0;
-    double cBarPrime = (c1Prime + c2Prime) / 2.0;
-    double hBarPrime = 0.0;
-    if (c1Prime * c2Prime == 0) {
-        hBarPrime = h1Prime + h2Prime;
-    } else {
-        if (std::fabs(hDiff) <= 180.0) {
-            hBarPrime = (h1Prime + h2Prime) / 2.0;
-        } else {
-            hBarPrime = (h1Prime + h2Prime + 360.0) / 2.0;
-        }
-    }
-    if (hBarPrime >= 360.0) hBarPrime -= 360.0;
-
-    // Step 10: T
-    double T = 1.0 - 0.17 * std::cos((hBarPrime - 30.0) * M_PI / 180.0)
-                  + 0.24 * std::cos((2.0 * hBarPrime) * M_PI / 180.0)
-                  + 0.32 * std::cos((3.0 * hBarPrime + 6.0) * M_PI / 180.0)
-                  - 0.20 * std::cos((4.0 * hBarPrime - 63.0) * M_PI / 180.0);
-
-    // Step 11: Δθ
-    double deltaTheta = 30.0 * std::exp(-std::pow((hBarPrime - 275.0) / 25.0, 2.0));
-
-    // Step 12: R_C
-    double cBarPrime7 = std::pow(cBarPrime, 7);
-    double rC = 2.0 * std::sqrt(cBarPrime7 / (cBarPrime7 + std::pow(25.0, 7)));
-
-    // Step 13: S_L, S_C, S_H
-    double sL = 1.0 + (0.015 * std::pow(lBarPrime - 50.0, 2.0)) /
-                        std::sqrt(20.0 + std::pow(lBarPrime - 50.0, 2.0));
-    double sC = 1.0 + 0.045 * cBarPrime;
-    double sH = 1.0 + 0.015 * cBarPrime * T;
-
-    // Step 14: R_T
-    double rT = -std::sin((2.0 * deltaTheta) * M_PI / 180.0) * rC;
-
-    // Step 15: ΔE00
-    double kL = 1.0, kC = 1.0, kH = 1.0; // Standard observer
-    double deltaE = std::sqrt(
-        std::pow(deltaLPrime / (kL * sL), 2.0) +
-        std::pow(deltaCPrime / (kC * sC), 2.0) +
-        std::pow(deltaHPrime / (kH * sH), 2.0) +
-        rT * (deltaCPrime / (kC * sC)) * (deltaHPrime / (kH * sH))
-    );
-
-    return deltaE;
-}
-
-static const std::vector<StandardColor> standardColors = {{"white", "#FFFFFF"},
-                                                          {"yellow", "#FFF242"},
-                                                          {"light_yellow_green", "#DBF47A"},
-                                                          {"green", "#09CC3A"},
-                                                          {"dark_green", "#077747"},
-                                                          {"blue_green", "#0B6283"},
-                                                          {"cyan_green", "#0BE2A0"},
-                                                          {"sky_blue", "#74D9F3"},
-                                                          {"light_blue", "#48A7FA"},
-                                                          {"dark_blue", "#2850DF"},
-                                                          {"purple", "#433089"},
-                                                          {"light_purple", "#A03BF7"},
-                                                          {"pink_purple", "#F32FF8"},
-                                                          {"light_pink_purple", "#D4B1DD"},
-                                                          {"pink", "#F95D77"},
-                                                          {"red", "#F72221"},
-                                                          {"brown", "#7C4C00"},
-                                                          {"orange", "#F88D36"},
-                                                          {"beige", "#FCEBD7"},
-                                                          {"light_brown", "#D2C5A3"},
-                                                          {"dark_brown", "#AF7832"},
-                                                          {"dark_gray", "#898989"},
-                                                          {"light_gray", "#BCBCBC"},
-                                                          {"black", "#000000"}};
-
-// Pre-compute Lab values for all standard colors to improve performance
-static const std::vector<StandardColorLab> standardColorLabs = []() {
-    std::vector<StandardColorLab> v;
-    v.reserve(standardColors.size());
-    for (const auto& sc : standardColors) {
-        RgbColor rgb = hexToRgb(sc.colorHex);
-        LabColor lab = xyzToLab(rgbToXyz(rgb));
-        v.push_back({sc, lab});
-    }
-    return v;
-}();
-
-// ΔE2000 (CIEDE2000) color match
-// 0-1 barely noticeable to the human eye
-// 1-2 noticeable only when compared closely
-// 2-10 noticeable to the average person
-// 11-49 noticeably different
-// 50+ completely different colors
-
 static StandardColor getStandardColor(const std::string& hex)
 {
-    // Convert input to Lab
-    RgbColor rgb = hexToRgb(hex);
-    XyzColor xyz = rgbToXyz(rgb);
-    LabColor inputLab = xyzToLab(xyz);
-    
-    double minDeltaE = std::numeric_limits<double>::max();
-    const StandardColor* bestMatch = nullptr;
-    
-    // Iterate through pre-computed standard color Labs
-    for (const auto& sc : standardColorLabs) {
-        double dE = deltaE2000(inputLab, sc.lab);
-        
-        if (dE < minDeltaE) {
-            minDeltaE = dE;
-            bestMatch = &sc.color;
-        }
-    }
-    
-    // Always return the best match, regardless of ΔE value
-    // ΔE can be used as confidence indicator:
-    // - deltaE < 2: barely noticeable
-    // - deltaE < 10: noticeable to average person
-    // - deltaE >= 30: obviously different
-    // - deltaE >= 50: completely different
-    return bestMatch != nullptr ? *bestMatch : StandardColor{"", ""};
+    static const StandardColorMatcher matcher;
+    if (auto m = matcher.match(hex))
+        return {m->name, m->hex};
+    return {};
 }
 
 // standardize filament name for matching: remove vendor/generic prefixes, replace dashes with spaces

@@ -2,6 +2,7 @@
 #include "slic3r/Utils/Elegoo/ElegooUtils.hpp"
 #include "libslic3r_version.h"
 #include "slic3r/GUI/GUI_App.hpp"
+#include <boost/log/trivial.hpp>
 
 namespace Slic3r {
 
@@ -65,7 +66,9 @@ std::string ElegooNetworkHelper::getOnlineModelsUrl()
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_online_model_url" : "elegoo_global_online_model_url",
                       isChina ? ELEGOO_CHINA_ONLINE_MODEL_URL : ELEGOO_GLOBAL_ONLINE_MODEL_URL);
-    return buildUrl(onlineModelsUrl, language, region, deviceId);
+    std::string     url          = buildUrl(onlineModelsUrl, language, region, deviceId);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << url;
+    return url;
 }
 
 std::string ElegooNetworkHelper::getLoginUrl() {
@@ -78,7 +81,9 @@ std::string ElegooNetworkHelper::getLoginUrl() {
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_login_url" : "elegoo_global_login_url",
                       isChina ? ELEGOO_CHINA_LOGIN_URL : ELEGOO_GLOBAL_LOGIN_URL);
-    return buildUrl(loginUrl, language, region, deviceId);
+    std::string    url      = buildUrl(loginUrl, language, region, deviceId);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << url;
+    return url;
 }
 
 std::string ElegooNetworkHelper::getProfileUpdateUrl() {
@@ -100,6 +105,7 @@ std::string ElegooNetworkHelper::getProfileUpdateUrl() {
     } else {
         profileUpdateUrl += "&language=en";
     }
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << profileUpdateUrl;
     return profileUpdateUrl;
 }
 
@@ -126,7 +132,9 @@ std::string ElegooNetworkHelper::getAppUpdateUrl() {
 #endif // __x86_64__
 #endif //  WIN32
 
-    return appUpdateUrl + query_params;
+    std::string url = appUpdateUrl + query_params;
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << url;
+    return url;
 }
 
 std::string ElegooNetworkHelper::getPluginUpdateUrl() { 
@@ -138,6 +146,7 @@ std::string ElegooNetworkHelper::getPluginUpdateUrl() {
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_plugin_update_url" : "elegoo_global_plugin_update_url",
                       isChina ? ELEGOO_CHINA_PLUGIN_UPDATE_URL : ELEGOO_GLOBAL_PLUGIN_UPDATE_URL);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << pluginUpdateUrl;
     return pluginUpdateUrl;
 }
 
@@ -149,6 +158,7 @@ std::string ElegooNetworkHelper::getIotUrl() {
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_iot_url" : "elegoo_global_iot_url",
                       isChina ? ELEGOO_CHINA_IOT_URL : ELEGOO_GLOBAL_IOT_URL);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << iotUrl;
     return iotUrl;
 }
 
@@ -161,6 +171,7 @@ std::string ElegooNetworkHelper::getTelemetryUrl()
         getTestEnvUrl(testEnvJson,
                       isChina ? "elegoo_china_telemetry_url" : "elegoo_global_telemetry_url",
                       isChina ? ELEGOO_CHINA_TELEMETRY_URL : ELEGOO_GLOBAL_TELEMETRY_URL);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << telemetryUrl;
     return telemetryUrl;
 }
 
@@ -178,6 +189,7 @@ std::string ElegooNetworkHelper::getUserAgent() {
     #else
         userAgent = "ElegooSlicer/" + version + " (" + theme + ") Mozilla/5.0 (compatible; ElegooSlicer)";
     #endif 
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": " << userAgent;
     return userAgent;
 }
 
