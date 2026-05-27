@@ -798,6 +798,7 @@ function(elegooslicer_copy_dlls target config postfix output_dlls)
             ${CMAKE_PREFIX_PATH}/bin/freetype.dll
             ${CMAKE_PREFIX_PATH}/bin/agora_rtm_sdk.dll
             ${CMAKE_PREFIX_PATH}/bin/libaosl.dll
+            # ${CMAKE_PREFIX_PATH}/bin/elegoo-link-service.exe
 
          DESTINATION ${_out_dir})
 
@@ -836,6 +837,7 @@ function(elegooslicer_copy_dlls target config postfix output_dlls)
         ${_out_dir}/freetype.dll
         ${_out_dir}/agora_rtm_sdk.dll
         ${_out_dir}/libaosl.dll
+        # ${_out_dir}/elegoo-link-service.exe
         PARENT_SCOPE
     )
 

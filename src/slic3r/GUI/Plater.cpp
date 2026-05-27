@@ -4135,12 +4135,12 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ":" << __LINE__ << boost::format("%1%: %2%")%it->first %it->second;
                             //
                             NotificationManager *notify_manager = q->get_notification_manager();
-                            std::string error_message = L("Invalid values found in the 3mf:");
+                            std::string error_message = _L("Invalid values found in the 3mf:").utf8_string();
                             error_message += "\n";
                             for (std::map<std::string, std::string>::iterator it=validity.begin(); it!=validity.end(); ++it)
                                 error_message += "-" + it->first + ": " + it->second + "\n";
                             error_message += "\n";
-                            error_message += L("Please correct them in the param tabs");
+                            error_message += _L("Please correct them in the param tabs").utf8_string();
                             notify_manager->bbl_show_3mf_warn_notification(error_message);
                         }
                     }
@@ -9761,7 +9761,7 @@ void Plater::_calib_pa_pattern(const Calib_Params& params)
         accels.assign({accel});
         const auto msg{_L("INFO:") + "\n" +
                        _L("No accelerations provided for calibration. Use default acceleration value ") + std::to_string(long(accel)) + wxString::FromUTF8("mm/s²")};
-        get_notification_manager()->push_notification(msg.ToStdString());
+        get_notification_manager()->push_notification(msg.utf8_string());
     } else {
         // set max acceleration in case of batch mode to get correct test pattern size
         accel = *std::max_element(accels.begin(), accels.end());
@@ -9824,7 +9824,7 @@ void Plater::_calib_pa_pattern(const Calib_Params& params)
         speeds.assign({speed});
         const auto msg{_L("INFO:") + "\n" +
                        _L("No speeds provided for calibration. Use default optimal speed ") + std::to_string(long(speed)) + "mm/s"};
-        get_notification_manager()->push_notification(msg.ToStdString());
+        get_notification_manager()->push_notification(msg.utf8_string());
     } else if (speeds.size() == 1) {
         // If we have single value provided, set speed using global configuration.
         // per-object config is not set in this case

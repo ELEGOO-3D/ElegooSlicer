@@ -371,7 +371,7 @@ LONG WINAPI CBaseException::UnhandledExceptionFilter(PEXCEPTION_POINTERS pExcept
     g_dump_mutex.lock();
 	
 	// Create minidump first
-	create_minidump(pExceptionInfo);
+	//create_minidump(pExceptionInfo);
 	
 	// Then create text log
 	CBaseException base(GetCurrentProcess(), GetCurrentProcessId(), NULL, pExceptionInfo);
@@ -384,7 +384,7 @@ LONG WINAPI CBaseException::UnhandledExceptionFilter(PEXCEPTION_POINTERS pExcept
 LONG WINAPI CBaseException::UnhandledExceptionFilter2(PEXCEPTION_POINTERS pExceptionInfo )
 {
 	// Create minidump first
-	create_minidump(pExceptionInfo);
+	//create_minidump(pExceptionInfo);
 	
 	// Then create text log
 	CBaseException base(GetCurrentProcess(), GetCurrentProcessId(), NULL, pExceptionInfo);

@@ -42,6 +42,7 @@ bool PrinterCache::loadPrinterList() {
             PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printerJson);
             mPrinters[printerId] = printerInfo;
         }
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": loaded %1% printers") % mPrinters.size();
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": failed to load printer list from JSON: %s") % e.what();
     }
@@ -61,12 +62,15 @@ bool PrinterCache::savePrinterList() {
         // Remove runtime status fields that shouldn't be persisted
         printerJson.erase("connectStatus");
         printerJson.erase("printerStatus");
+        printerJson.erase("exceptions");
+        printerJson.erase("deviceAssistantStatus");
         printerJson.erase("printTask");
         
         jsonData[printerId] = printerJson;
     }
     boost::nowide::ofstream ofs(printerListPath.string());
     ofs << jsonData.dump(4);
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": saved %1% printers") % jsonData.size();
     return true;
 }
 
@@ -149,11 +153,14 @@ bool PrinterCache::updatePrinterConnectStatus(const std::string& printerId, cons
     return false;
 }
 
-void PrinterCache::updatePrinterStatus(const std::string& printerId, const PrinterStatus& status) {
+void PrinterCache::updatePrinterStatus(const std::string& printerId, const PrinterStatus& status,
+                                       const std::vector<PrinterExceptionDetail>& exceptions, int deviceAssistantStatus) {
     std::lock_guard<std::mutex> lock(mCacheMutex);
     auto it = mPrinters.find(printerId);
     if (it != mPrinters.end()) {
         it->second.printerStatus = status;
+        it->second.exceptions = exceptions;
+        it->second.deviceAssistantStatus = deviceAssistantStatus;
         uint64_t now = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         it->second.lastActiveTime = now;
         if(status != PrinterStatus::PRINTER_STATUS_PRINTING && status != PrinterStatus::PRINTER_STATUS_PAUSED && status != PrinterStatus::PRINTER_STATUS_PAUSING) {
@@ -217,6 +224,8 @@ void PrinterCache::updatePrinterAttributesByNotify(const std::string& printerId,
         it->second.lastActiveTime = now;
         it->second.firmwareVersion = printerInfo.firmwareVersion;
         it->second.printerName = printerInfo.printerName;
+        it->second.printCapabilities = printerInfo.printCapabilities;
+        it->second.systemCapabilities = printerInfo.systemCapabilities;
     }
 }
 

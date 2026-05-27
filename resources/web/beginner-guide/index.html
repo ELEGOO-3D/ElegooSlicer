@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/light.css">
+    <link rel="stylesheet" href="./css/dark.css">
+
+    <script src="../include/jquery-3.6.0.min.js"></script>
+    <script src="../thirdparty/vue/vue.global.prod.min.js"></script>
+    <script src="../thirdparty/vue/vue-i18n.global.prod.js"></script>
+    <script src="../thirdparty/element-plus/index.full.min.js"></script>
+    <script src="../include/json2.js"></script>
+    <script src="../include/globalapi.js"></script>
+    <script src="../data/text.js"></script>
+    <script src="../locales/index.js"></script>
+    <script type="text/javascript" src="../utils/util.js"></script>
+    <script src="../utils/ipc.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="guide-container">
+            <!-- 左侧教程导航 -->
+            <div class="guide-sidebar">
+                <div class="guide-header">
+                    <h1>Elegoo Slicer</h2>
+                        <h2>{{ $t('guide.title') }}</h2>
+                        <p>{{ $t('guide.subtitle') }}</p>
+                </div>
+
+                <div class="tutorial-nav">
+                    <div v-for="(tutorial, index) in tutorials" :key="index"
+                        :class="['tutorial-item', { active: currentTutorial === index }]"
+                        @click="switchTutorial(index)">
+                        <div class="tutorial-icon">
+                            <img :src="currentTutorial === index ? tutorial.iconActive : tutorial.icon"
+                                :alt="tutorial.title">
+                        </div>
+                        <div class="tutorial-info">
+                            <h3>{{ tutorial.title }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧教程内容 -->
+            <div class="guide-content">
+
+                <!-- 教程图片展示区 -->
+                <div class="tutorial-display">
+                    <div class="tutorial-image">
+                        <img :src="getCurrentImage()" alt="Tutorial">
+                    </div>
+                </div>
+
+                <!-- 底部导航栏 -->
+                <div class="guide-footer">
+                    <div class="footer-text">
+                        <span>{{ getCurrentStep().description }}</span>
+                    </div>
+
+                    <div class="footer-buttons">
+                        <button v-if="!isLastPage()" class="nav-btn skip-btn" @click="closeGuide">
+                            {{ $t('guide.skip') }}
+                        </button>
+
+                        <button class="nav-btn prev-btn" @click="prevPage" :disabled="!canGoPrev()">
+                            {{ $t('guide.prev') }}
+                        </button>
+
+                        <button class="nav-btn next-btn" @click="nextPage" :disabled="!canGoNext()">
+                            {{ isLastPage() ? $t('guide.finish') : $t('guide.next') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="./index.js"></script>
+</body>
+
+</html>

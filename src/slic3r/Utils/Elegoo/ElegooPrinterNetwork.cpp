@@ -2,6 +2,7 @@
 #include "ElegooLink.hpp"
 #include "libslic3r/PrinterNetworkResult.hpp"
 #include <wx/log.h>
+#include <boost/log/trivial.hpp>
 
 namespace Slic3r {
 
@@ -11,13 +12,15 @@ ElegooPrinterNetwork::~ElegooPrinterNetwork(){
 
 
 }
-void ElegooPrinterNetwork::init(const std::string& region, std::string& iotUrl)
+void ElegooPrinterNetwork::init(const std::string& region, std::string& iotUrl, const std::string& logLevel)
 {
-    ElegooLink::getInstance()->init(region, iotUrl);
+    BOOST_LOG_TRIVIAL(info) << "ElegooPrinterNetwork::init";
+    ElegooLink::getInstance()->init(region, iotUrl, logLevel);
 }
 
 void ElegooPrinterNetwork::uninit()
 {
+    BOOST_LOG_TRIVIAL(info) << "ElegooPrinterNetwork::uninit";
     ElegooLink::getInstance()->uninit();
 }
 
@@ -70,6 +73,16 @@ PrinterNetworkResult<PrinterNetworkInfo> ElegooPrinterNetwork::getPrinterStatus(
     return ElegooLink::getInstance()->getPrinterStatus(mPrinterNetworkInfo.printerId);
 }
 
+PrinterNetworkResult<bool> ElegooPrinterNetwork::refreshPrinterStatus()
+{
+    return ElegooLink::getInstance()->refreshPrinterStatus(mPrinterNetworkInfo.printerId);
+}
+
+PrinterNetworkResult<std::string> ElegooPrinterNetwork::getPrinterStatusRaw()
+{
+    return ElegooLink::getInstance()->getPrinterStatusRaw(mPrinterNetworkInfo.printerId);
+}
+
 PrinterNetworkResult<PrinterPrintFileResponse> ElegooPrinterNetwork::getFileList(int pageNumber, int pageSize)
 {
     return ElegooLink::getInstance()->getFileList(mPrinterNetworkInfo.printerId, pageNumber, pageSize);
@@ -78,6 +91,11 @@ PrinterNetworkResult<PrinterPrintFileResponse> ElegooPrinterNetwork::getFileList
 PrinterNetworkResult<PrinterPrintTaskResponse> ElegooPrinterNetwork::getPrintTaskList(int pageNumber, int pageSize)
 {
     return ElegooLink::getInstance()->getPrintTaskList(mPrinterNetworkInfo.printerId, pageNumber, pageSize);
+}
+
+PrinterNetworkResult<PrinterExceptionResponse> ElegooPrinterNetwork::getExceptionList(int pageNumber, int pageSize)
+{
+    return ElegooLink::getInstance()->getExceptionList(mPrinterNetworkInfo.printerId, pageNumber, pageSize);
 }
 
 PrinterNetworkResult<bool> ElegooPrinterNetwork::deletePrintTasks(const std::vector<std::string>& taskIds)

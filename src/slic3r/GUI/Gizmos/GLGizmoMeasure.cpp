@@ -599,6 +599,7 @@ void GLGizmoMeasure::on_render()
         if (!m_editing_distance) {
             for (auto item : m_mesh_raycaster_map) {
                 auto   raycaster                    = item.second->get_raycaster();
+                if(!raycaster) { continue; }
                 auto   world_tran                   = item.second->get_transform();
                 Vec3f  normal                       = Vec3f::Zero();
                 Vec3f  hit                          = Vec3f::Zero();

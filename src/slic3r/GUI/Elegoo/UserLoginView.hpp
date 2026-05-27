@@ -1,47 +1,30 @@
-#ifndef USERLOGINVIEW_HPP
-#define USERLOGINVIEW_HPP
+#pragma once
 
-#include <wx/wx.h>
-#include <wx/webview.h>
-#include <memory>
+#include "slic3r/GUI/Elegoo/ElegooDialog.hpp"
 #include <atomic>
-#include "slic3r/Utils/WebviewIPCManager.h"
-#include "slic3r/GUI/MsgDialog.hpp"
+#include <wx/webview.h>
 
 namespace Slic3r { namespace GUI {
 
-class UserLoginView : public GUI::MsgDialog
+class UserLoginView : public ElegooDialog
 {
 public:
-    UserLoginView(wxWindow *parent);
-    ~UserLoginView();
+    UserLoginView(wxWindow* parent);
+    virtual ~UserLoginView();
     
     static void ShowLoginDialog();
 
-private:
-    void initUI();
-    void setupIPCHandlers();
-    void cleanupIPC();
-    
-    // Event handlers
-    void onWebViewLoaded(wxWebViewEvent& event);
-    void onWebViewError(wxWebViewEvent& event);
-    void OnNavigationRequest(wxWebViewEvent& event);
-    void OnNavigationComplete(wxWebViewEvent& event);
-    void onClose(wxCloseEvent& event);
+protected:
+    void setupIPCHandlers() override;
+    void onCloseWindow(wxCloseEvent& event) override;
 
 private:
-    wxWebView* mBrowser;
-    std::unique_ptr<webviewIpc::WebviewIPCManager> mIpc;
-    
     std::string mLanguage;
     std::string mRegion;
     
     static std::atomic<bool> s_isShown;
-    bool mIsLoading=false;
+    
     DECLARE_EVENT_TABLE()
 };
 
 }} // namespace Slic3r::GUI
-
-#endif // USERLOGINVIEW_HPP

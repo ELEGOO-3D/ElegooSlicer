@@ -36,6 +36,7 @@ if [ -z "${CMAKE_BUILD_PARALLEL_LEVEL}" ]; then
 fi
 
 SLIC3R_PRECOMPILED_HEADERS="ON"
+COLORED_OUTPUT_ARGS=()
 
 unset name
 while getopts ":1j:bcCdhiprstulLwe" opt ; do
@@ -53,7 +54,7 @@ while getopts ":1j:bcCdhiprstulLwe" opt ; do
         CLEAN_BUILD=1
         ;;
     C )
-        COLORED_OUTPUT="-DCOLORED_OUTPUT=ON"
+        COLORED_OUTPUT_ARGS=(-DCOLORED_OUTPUT=ON)
         ;;
     d )
         BUILD_DEPS="1"
@@ -232,7 +233,7 @@ if [[ -n "${BUILD_DEPS}" ]] ; then
 	      -DSLIC3R_PCH="${SLIC3R_PRECOMPILED_HEADERS}" \
 	      -DDESTDIR="${SCRIPT_PATH}/deps/build/destdir" \
 	      -DDEP_DOWNLOAD_DIR="${SCRIPT_PATH}/deps/DL_CACHE" \
-	      "${COLORED_OUTPUT}" \
+          "${COLORED_OUTPUT_ARGS[@]}" \
 	      "${BUILD_ARGS[@]}"
 	set +x
         cmake --build deps/build/release
@@ -244,7 +245,7 @@ if [[ -n "${BUILD_DEPS}" ]] ; then
 	  -DSLIC3R_PCH="${SLIC3R_PRECOMPILED_HEADERS}" \
 	  -DDESTDIR="${SCRIPT_PATH}/deps/build/destdir" \
 	  -DDEP_DOWNLOAD_DIR="${SCRIPT_PATH}/deps/DL_CACHE" \
-	  "${COLORED_OUTPUT}" \
+      "${COLORED_OUTPUT_ARGS[@]}" \
 	  "${BUILD_ARGS[@]}"
     set +x
     cmake --build deps/build
@@ -278,7 +279,7 @@ if [[ -n "${BUILD_ELEGOO}" ]] ; then
 	  -DCMAKE_PREFIX_PATH="${SCRIPT_PATH}/deps/build/destdir/usr/local" \
 	  -DSLIC3R_STATIC=1 \
 	  -DORCA_TOOLS=ON \
-	  "${COLORED_OUTPUT}" \
+      "${COLORED_OUTPUT_ARGS[@]}" \
 	  "${BUILD_ARGS[@]}"
     set +x
     echo "done"

@@ -12,6 +12,7 @@
 #include <wx/osx/webview_webkit.h>
 #endif
 #include <wx/uri.h>
+#include <wx/utils.h>
 #if defined(__WIN32__) || defined(__WXMAC__)
 #include "wx/private/jsscriptwrapper.h"
 #endif
@@ -105,7 +106,8 @@ public:
         // Clean up any registered script message handlers
         RemoveScriptMessageHandler("wx");
     }
-    bool SetUserAgent(const wxString &userAgent)
+
+    bool SetUserAgent(const wxString &userAgent) override
     {
         bool dark = userAgent.Contains("dark");
         SetColorScheme(dark ? COREWEBVIEW2_PREFERRED_COLOR_SCHEME_DARK : COREWEBVIEW2_PREFERRED_COLOR_SCHEME_LIGHT);
@@ -166,11 +168,77 @@ public:
             thiz->pendingColorScheme = COREWEBVIEW2_PREFERRED_COLOR_SCHEME_AUTO;
             thiz->SetColorScheme(colorScheme);
         }
+        if (m_focusForwardPending && GetNativeBackend() != nullptr) {
+            auto thiz = const_cast<WebViewEdge *>(this);
+            thiz->m_focusForwardPending = !ForwardFocusToDescendant(GetHWND());
+        }
         wxWebViewEdge::DoGetClientSize(x, y);
     };
+
+    WXLRESULT MSWWindowProc(WXUINT nMsg, WXWPARAM wParam, WXLPARAM lParam) override
+    {
+        if (nMsg == WM_SETFOCUS) {
+            m_focusForwardPending = true;
+            HWND wrapperHWND = GetHWND();
+            CallAfter([this, wrapperHWND]() {
+                m_focusForwardPending = !ForwardFocusToDescendant(wrapperHWND);
+            });
+        }
+        return wxWebViewEdge::MSWWindowProc(nMsg, wParam, lParam);
+    }
+
+    bool MSWShouldPreProcessMessage(WXMSG *msg) override
+    {
+        if (GetNativeBackend() != nullptr) {
+            UINT message = msg->message;
+            if (message == WM_KEYDOWN || message == WM_KEYUP ||
+                message == WM_CHAR   || message == WM_SYSKEYDOWN ||
+                message == WM_SYSKEYUP || message == WM_SYSCHAR) {
+                HWND msgHwnd    = static_cast<HWND>(msg->hwnd);
+                HWND wrapperHWND = GetHWND();
+                if (msgHwnd != wrapperHWND && ::IsChild(wrapperHWND, msgHwnd)) {
+                    return false;
+                }
+            }
+        }
+        return wxWebViewEdge::MSWShouldPreProcessMessage(msg);
+    }
+
 private:
+    static HWND FindFocusableDescendant(HWND parent)
+    {
+        for (HWND child = ::GetWindow(parent, GW_CHILD); child; child = ::GetWindow(child, GW_HWNDNEXT)) {
+            if (!::IsWindowVisible(child) || !::IsWindowEnabled(child))
+                continue;
+
+            if (HWND deeper = FindFocusableDescendant(child))
+                return deeper;
+
+            return child;
+        }
+
+        return nullptr;
+    }
+
+    static bool ForwardFocusToDescendant(HWND wrapperHWND)
+    {
+        if (!wrapperHWND || !::IsWindow(wrapperHWND))
+            return false;
+
+        HWND currentFocus = ::GetFocus();
+        if (currentFocus != wrapperHWND && !::IsChild(wrapperHWND, currentFocus))
+            return false;
+
+        HWND target = FindFocusableDescendant(wrapperHWND);
+        if (target && target != currentFocus && target != wrapperHWND)
+            ::SetFocus(target);
+
+        return target != nullptr;
+    }
+
     wxString pendingUserAgent;
     COREWEBVIEW2_PREFERRED_COLOR_SCHEME pendingColorScheme = COREWEBVIEW2_PREFERRED_COLOR_SCHEME_AUTO;
+    bool m_focusForwardPending = true;
 };
 
 #elif defined __WXOSX__
@@ -260,6 +328,26 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
     BOOST_LOG_TRIVIAL(trace) << __FUNCTION__ << ": " << url2.ToUTF8();
 
 #ifdef __WIN32__
+    // On Windows, wxWebViewEdge / WebView2 does not expose CoreWebView2Environment
+    // creation options directly, but we can pass additional browser arguments
+    // (such as disabling GPU) via the official environment variable
+    // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS before the first environment is created.
+    //
+    // This is equivalent to C#:
+    //   new CoreWebView2EnvironmentOptions("--disable-gpu");
+    //
+    // If the variable already contains other arguments, we just append ours.
+    wxString additional_args;
+    wxGetEnv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", &additional_args);
+    if (!additional_args.Contains("--disable-gpu")) {
+        if (!additional_args.empty())
+            additional_args += " ";
+        additional_args += "--disable-gpu";
+        wxSetEnv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", additional_args);
+        BOOST_LOG_TRIVIAL(info) << "WebView2: Set WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS="
+                                << additional_args.ToUTF8().data();
+    }
+
     wxWebView* webView = new WebViewEdge;
 #elif defined(__WXOSX__)
     wxWebView *webView = new WebViewWebKit;
@@ -273,6 +361,7 @@ wxWebView* WebView::CreateWebView(wxWindow * parent, wxString const & url)
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36 Edg/107.0.1418.52", ELEGOOSLICER_VERSION, 
             Slic3r::GUI::wxGetApp().dark_mode() ? "dark" : "light"));
         webView->Create(parent, wxID_ANY, url2, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE);
+
         // We register the wxfs:// protocol for testing purposes
         webView->RegisterHandler(wxSharedPtr<wxWebViewHandler>(new wxWebViewArchiveHandler("bbl")));
         // And the memory: file system
@@ -390,4 +479,75 @@ void WebView::RecreateAll()
                                                dark ? "dark" : "light"));
         webView->Reload();
     }
+}
+
+void WebView::CleanupAll()
+{
+    BOOST_LOG_TRIVIAL(info) << "WebView::CleanupAll: Starting cleanup of " << g_webviews.size() 
+                            << " webviews";
+    
+    // Clear delay queue first
+    g_delay_webviews.clear();
+    
+    // Make a copy of the webview list to avoid iterator invalidation
+    auto webviews_copy = g_webviews;
+    
+    for (auto webView : webviews_copy) {
+        if (webView) {
+            try {
+                BOOST_LOG_TRIVIAL(trace) << "WebView::CleanupAll: Cleaning up webview " << webView;
+                
+                // Stop any ongoing operations first
+                webView->Stop();
+                
+                // Clear history to free memory
+                webView->ClearHistory();
+                
+#ifdef __WXMAC__
+                // For macOS WKWebView, we need to be more aggressive
+                // Get the native WKWebView pointer
+                WKWebView * wkWebView = (WKWebView *) webView->GetNativeBackend();
+                
+                // First, remove all user scripts
+                try {
+                    webView->RemoveAllUserScripts();
+                } catch (...) {
+                    // RemoveAllUserScripts might not exist in all versions
+                }
+                
+                // Remove script message handlers
+                try {
+                    webView->RemoveScriptMessageHandler("wx");
+                } catch (...) {
+                    BOOST_LOG_TRIVIAL(trace) << "WebView::CleanupAll: Failed to remove message handler";
+                }
+                
+                // Use native cleanup function for deep cleanup
+                // This clears cache, scripts, and message handlers without triggering navigation
+                if (wkWebView) {
+                    Slic3r::GUI::WKWebView_cleanup(wkWebView);
+                }
+#else
+                // Remove script message handlers
+                webView->RemoveScriptMessageHandler("wx");
+#endif
+                
+                // Disable the webview to prevent further events
+                webView->Enable(false);
+                
+                // Hide the webview
+                webView->Hide();
+                
+            } catch (const std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << "WebView::CleanupAll: Exception during cleanup: " << e.what();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << "WebView::CleanupAll: Unknown exception during cleanup";
+            }
+        }
+    }
+    
+    // Note: Don't clear g_webviews here as WebViewRef destructors will handle removal
+    // when the actual wxWebView objects are destroyed by their parent windows
+    
+    BOOST_LOG_TRIVIAL(info) << "WebView::CleanupAll: Cleanup completed";
 }

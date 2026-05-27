@@ -43,6 +43,8 @@ const float GLGizmosManager::Default_Icons_Size = 40;
 const float GLGizmosManager::Default_Icons_Size = 64;
 #endif
 
+std::map<int, void*> GLGizmosManager::icon_list = {};
+
 GLGizmosManager::GLGizmosManager(GLCanvas3D& parent)
     : m_parent(parent)
     , m_enabled(false)
@@ -244,6 +246,9 @@ bool GLGizmosManager::init()
 
 bool GLGizmosManager::init_icon_textures()
 {
+    if (!icon_list.empty())
+        return true;
+
     ImTextureID texture_id;
 
     icon_list.clear();
@@ -274,6 +279,16 @@ bool GLGizmosManager::init_icon_textures()
 
     if (IMTexture::load_from_svg_file(Slic3r::resources_dir() + "/images/toolbar_tooltip_hover.svg", 25, 25, texture_id)) // ORCA: Use same resolution with gizmos to prevent blur on icon
         icon_list.insert(std::make_pair((int)IC_TOOLBAR_TOOLTIP_HOVER, texture_id));
+    else
+        return false;
+
+    if (IMTexture::load_from_svg_file(Slic3r::resources_dir() + "/images/reset_zoom.svg", 72, 72, texture_id))
+        icon_list.insert(std::make_pair((int)IC_RESET_ZOOM, texture_id));
+    else
+        return false;
+
+    if (IMTexture::load_from_svg_file(Slic3r::resources_dir() + "/images/reset_zoom_click.svg", 72, 72, texture_id))
+        icon_list.insert(std::make_pair((int)IC_RESET_ZOOM_HOVER, texture_id));
     else
         return false;
 

@@ -123,6 +123,7 @@ const Recent = {
     },
 
     async mounted() {
+        disableRightClickMenu();
         // console.log('Recent component mounted');
         this.init();
 

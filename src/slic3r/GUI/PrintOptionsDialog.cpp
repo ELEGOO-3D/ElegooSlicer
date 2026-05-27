@@ -214,7 +214,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     // ai monitoring with levels
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_ai_monitoring = new CheckBox(parent);
+    m_cb_ai_monitoring = new ::CheckBox(parent);
     text_ai_monitoring = new Label(parent, _L("Enable AI monitoring of printing"));
     text_ai_monitoring->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
@@ -252,7 +252,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     // detection of build plate position
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_plate_mark = new CheckBox(parent);
+    m_cb_plate_mark = new ::CheckBox(parent);
     text_plate_mark = new Label(parent, _L("Enable detection of build plate position"));
     text_plate_mark->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
@@ -279,7 +279,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     // detection of first layer
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_first_layer = new CheckBox(parent);
+    m_cb_first_layer = new ::CheckBox(parent);
     text_first_layer = new Label(parent, _L("First Layer Inspection"));
     text_first_layer->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
@@ -295,7 +295,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     // auto-recovery from step loss
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_auto_recovery = new CheckBox(parent);
+    m_cb_auto_recovery = new ::CheckBox(parent);
     text_auto_recovery = new Label(parent, _L("Auto-recovery from step loss"));
     text_auto_recovery->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
@@ -312,7 +312,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     //Allow prompt sound
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_sup_sound = new CheckBox(parent);
+    m_cb_sup_sound = new ::CheckBox(parent);
     text_sup_sound = new Label(parent, _L("Allow Prompt Sound"));
     text_sup_sound->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
@@ -329,7 +329,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     //filament tangle detect
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_filament_tangle = new CheckBox(parent);
+    m_cb_filament_tangle = new ::CheckBox(parent);
     text_filament_tangle = new Label(parent, _L("Filament Tangle Detect"));
     text_filament_tangle->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);
@@ -346,7 +346,7 @@ wxBoxSizer* PrintOptionsDialog::create_settings_group(wxWindow* parent)
 
     //nozzle blob detect
     line_sizer = new wxBoxSizer(wxHORIZONTAL);
-    m_cb_nozzle_blob = new CheckBox(parent);
+    m_cb_nozzle_blob = new ::CheckBox(parent);
     text_nozzle_blob = new Label(parent, _L("Nozzle Clumping Detection"));
     text_nozzle_blob->SetFont(Label::Body_14);
     line_sizer->Add(FromDIP(5), 0, 0, 0);

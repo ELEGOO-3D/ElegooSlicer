@@ -1,0 +1,261 @@
+@import url("../../styles/light.css");
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #f5f5f5;
+    overflow: hidden;
+    user-select: none;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 主容器 */
+.guide-container {
+    width: 100vw;
+    height: 100vh;
+    background: var(--bg-primary);
+    box-shadow: 0 8px 32px var(--shadow-light);
+    display: flex;
+    overflow: hidden;
+}
+
+/* 左侧边栏 */
+.guide-sidebar {
+    width: 310px;
+    background: linear-gradient(180deg, #1e88e5 0%, #1565c0 100%);
+    background-image: url('../img/sider.light.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: var(--text-primary);
+    padding: 48px 24px;
+    display: flex;
+    flex-direction: column;
+}
+
+.guide-header {
+    margin-bottom: 40px;
+}
+.guide-header h1 {
+    margin-bottom: 8px;
+}
+.guide-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.guide-header p {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+/* 教程导航 */
+.tutorial-nav {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tutorial-item {
+    padding: 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.tutorial-item:hover {
+    /* background: rgba(255, 255, 255, 0.15); */
+    transform: translateX(4px);
+}
+
+.tutorial-item.active {
+    color: #1e88e5;
+}
+
+.tutorial-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tutorial-item.active .tutorial-icon {
+    background: transparent;
+}
+
+.tutorial-icon img {
+    width: 48px;
+    height: 48px;
+}
+
+.tutorial-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+
+/* 右侧内容区 */
+.guide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--bg-tertiary);
+    padding: 16px 16px;
+}
+
+/* 关闭按钮 */
+.close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: var(--shadow-hover);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.close-btn:hover {
+    background: var(--shadow-active);
+    transform: rotate(90deg);
+}
+
+.close-btn svg {
+    color: var(--text-secondary);
+}
+
+/* 教程展示区 */
+.tutorial-display {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background-color: var(--bg-primary);
+    border-radius: 12px;
+}
+
+.tutorial-image {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0px;
+}
+
+.tutorial-image img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+
+
+/* 底部导航 */
+.guide-footer {
+    margin-top: 18px;
+    margin-bottom: 2px;
+    padding: 0px 0px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.footer-text {
+    flex: 1;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.footer-text .highlight {
+    color: var(--color-primary);
+    font-weight: 500;
+    margin-left: 8px;
+}
+
+.footer-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.nav-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+.prev-btn {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+}
+
+.prev-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.skip-btn {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-primary);
+}
+
+.skip-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--color-primary);
+}
+
+.next-btn {
+    background: var(--color-primary);
+    color: white;
+}
+
+.next-btn:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    box-shadow: 0 2px 8px var(--color-primary-shadow);
+}
+
+.nav-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <sstream>
 #include "libslic3r/FlushVolCalc.hpp"
 #include "WipeTowerDialog.hpp"
@@ -16,6 +17,8 @@
 #include "MainFrame.hpp"
 #include "libslic3r/Config.hpp"
 #include "Widgets/Label.hpp"
+#include <wx/choice.h>
+#include <wx/display.h>
 
 using namespace Slic3r;
 using namespace Slic3r::GUI;
@@ -274,6 +277,46 @@ wxBoxSizer* WipingPanel::create_calc_btn_sizer(wxWindow* parent) {
 
     return btn_sizer;
 }
+void WipingDialog::sync_wiping_scroll_area()
+{
+    if (!m_scroll_body || !m_panel_wiping)
+        return;
+    wxSizer* ss = m_scroll_body->GetSizer();
+    if (!ss)
+        return;
+    m_panel_wiping->Layout();
+    Layout();
+    const wxSize from_sizer = ss->CalcMin();
+    m_panel_wiping->InvalidateBestSize();
+    const wxSize from_best = m_panel_wiping->GetBestSize();
+    const wxSize virt(std::max(from_sizer.x, from_best.x), std::max(from_sizer.y, from_best.y));
+    m_scroll_body->SetVirtualSize(virt);
+    m_scroll_body->FitInside();
+    m_scroll_body->Refresh();
+}
+
+void WipingDialog::apply_wiping_scroll_viewport_limits()
+{
+    if (!m_scroll_body)
+        return;
+    const wxRect usable        = wxGetClientDisplayRect();
+    const int   margin_lr      = FromDIP(80);
+    const int   margin_tb      = FromDIP(140);
+    const int   max_viewport_w = std::max((int)MIN_WIPING_DIALOG_WIDTH, usable.GetWidth() - margin_lr);
+    const int   max_viewport_h = std::max(FromDIP(280), usable.GetHeight() - margin_tb);
+    sync_wiping_scroll_area();
+    const wxSize virt          = m_scroll_body->GetVirtualSize();
+    const int   scroll_w       = std::min(std::max(virt.x, (int)MIN_WIPING_DIALOG_WIDTH), max_viewport_w);
+    const int min_scroll_h = (m_panel_wiping && !m_panel_wiping->is_advanced_mode()) ? FromDIP(100) : FromDIP(220);
+    const int   scroll_h       = std::min(std::max(virt.y, min_scroll_h), max_viewport_h);
+    m_scroll_body->SetInitialSize(wxSize(scroll_w, scroll_h));
+    Layout();
+    if (wxSizer* sz = GetSizer())
+        sz->SetSizeHints(this);
+    Fit();
+    sync_wiping_scroll_area();
+}
+
 void WipingDialog::on_dpi_changed(const wxRect &suggested_rect)
 {
     for (auto button_item : m_button_list) 
@@ -284,6 +327,7 @@ void WipingDialog::on_dpi_changed(const wxRect &suggested_rect)
         }
     }
     m_panel_wiping->msw_rescale();
+    apply_wiping_scroll_viewport_limits();
     this->Refresh();
 };
 
@@ -294,30 +338,66 @@ WipingDialog::WipingDialog(wxWindow* parent, const std::vector<float>& matrix, c
                 _(L("Flushing volumes for filament change")),
                 wxDefaultPosition,
                 wxDefaultSize,
-                wxDEFAULT_DIALOG_STYLE /* | wxRESIZE_BORDER*/)
+                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
     auto m_line_top = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 1));
     m_line_top->SetBackgroundColour(wxColour(166, 169, 170));
 
     this->SetBackgroundColour(*wxWHITE);
     this->SetMinSize(wxSize(MIN_WIPING_DIALOG_WIDTH, -1));
-    
 
-    m_panel_wiping = new WipingPanel(this, matrix, extruders, extruder_colours, nullptr, extra_flush_volume, flush_multiplier);
+    m_scroll_body = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL | wxHSCROLL);
+    m_scroll_body->SetScrollRate(FromDIP(10), FromDIP(10));
+    m_scroll_body->SetBackgroundColour(*wxWHITE);
+    m_scroll_body->ShowScrollbars(wxSHOW_SB_DEFAULT, wxSHOW_SB_DEFAULT);
+
+    m_panel_wiping = new WipingPanel(m_scroll_body, matrix, extruders, extruder_colours, nullptr, extra_flush_volume, flush_multiplier);
+
+    auto* scroll_sizer = new wxBoxSizer(wxVERTICAL);
+    scroll_sizer->Add(m_panel_wiping, wxSizerFlags(0).Align(wxALIGN_TOP | wxALIGN_CENTER_HORIZONTAL));
+    m_scroll_body->SetSizer(scroll_sizer);
+
+    m_scroll_body->SetMinSize(wxSize(MIN_WIPING_DIALOG_WIDTH, FromDIP(220)));
+
+    auto* mode_choice = new wxChoice(this, wxID_ANY);
+    mode_choice->Append(_L("Advanced"));
+    mode_choice->Append(_L("Simple"));
+    mode_choice->SetSelection(m_panel_wiping->is_advanced_mode() ? 0 : 1);
+    mode_choice->Bind(wxEVT_CHOICE, [this, mode_choice](wxCommandEvent&) {
+        const bool want_advanced = mode_choice->GetSelection() == 0;
+        if (want_advanced != m_panel_wiping->is_advanced_mode())
+            m_panel_wiping->toggle_advanced(true);
+        apply_wiping_scroll_viewport_limits();
+    });
+    auto* mode_row = new wxBoxSizer(wxHORIZONTAL);
+    mode_row->Add(new wxStaticText(this, wxID_ANY, _L("Mode")), 0, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(12));
+    mode_row->Add(mode_choice, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(8));
 
     auto main_sizer = new wxBoxSizer(wxVERTICAL);
     main_sizer->Add(m_line_top, 0, wxEXPAND, 0);
-    
-    // set min sizer width according to extruders count
-    auto sizer_width = (int)((sqrt(matrix.size()) + 2.8)*ITEM_WIDTH());
-    sizer_width = sizer_width > MIN_WIPING_DIALOG_WIDTH ? sizer_width : MIN_WIPING_DIALOG_WIDTH;
-    main_sizer->SetMinSize(wxSize(sizer_width, -1));
-    main_sizer->Add(m_panel_wiping, 1, wxEXPAND | wxALL, 0);
+    main_sizer->Add(mode_row, 0, wxEXPAND | wxTOP, FromDIP(4));
+    main_sizer->Add(m_scroll_body, 1, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, FromDIP(8));
 
     auto dlg_btns = new DialogButtons(this, {"OK", "Cancel"});
     main_sizer->Add(dlg_btns, 0, wxEXPAND);
     SetSizer(main_sizer);
     main_sizer->SetSizeHints(this);
+    Layout();
+    apply_wiping_scroll_viewport_limits();
+    if (GetParent())
+        CenterOnParent();
+    else
+        Center();
+
+    Bind(wxEVT_SHOW, [this](wxShowEvent& ev) {
+        ev.Skip();
+        if (ev.IsShown())
+            CallAfter([this]() {
+                sync_wiping_scroll_area();
+                if (GetParent())
+                    CenterOnParent();
+            });
+    });
 
     dlg_btns->GetOK()->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {                 // if OK button is clicked..
         m_output_matrix = m_panel_wiping->read_matrix_values();    // ..query wiping panel and save returned values
@@ -384,6 +464,7 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
 : wxPanel(parent,wxID_ANY, wxDefaultPosition, wxDefaultSize/*,wxBORDER_RAISED*/)
 ,m_matrix(matrix), m_min_flush_volume(extra_flush_volume), m_max_flush_volume(Slic3r::g_max_flush_volume)
 {
+    this->SetLayoutDirection(wxLayout_LeftToRight);
     m_number_of_extruders = (int)(sqrt(matrix.size())+0.001);
 
     for (const std::string& color : extruder_colours) {
@@ -393,7 +474,7 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
     }
     auto sizer_width = (int)((sqrt(matrix.size())) * ITEM_WIDTH() + (sqrt(matrix.size()) + 1) * HEADER_BEG_PADDING);
     sizer_width = sizer_width > MIN_WIPING_DIALOG_WIDTH ? sizer_width : MIN_WIPING_DIALOG_WIDTH;
-    // Create two switched panels with their own sizers
+    // Two pages on this panel; only one Shown so min size matches visible mode (avoids wxSimplebook max-page width).
     m_sizer_simple          = new wxBoxSizer(wxVERTICAL);
     m_sizer_advanced        = new wxBoxSizer(wxVERTICAL);
     m_page_simple			= new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
@@ -405,7 +486,6 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
     update_ui(m_page_simple);
     update_ui(m_page_advanced);
 
-    auto gridsizer_simple   = new wxGridSizer(3, 5, 10);
     m_gridsizer_advanced = new wxGridSizer(m_number_of_extruders + 1, 5, 1);
 
     // First create controls for advanced mode and assign them to m_page_advanced:
@@ -562,60 +642,88 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
     }
     this->update_warning_texts();
 
-    m_page_advanced->Hide(); 
+    m_page_simple->SetLayoutDirection(wxLayout_LeftToRight);
 
-    // Now the same for simple mode:
-    gridsizer_simple->Add(new wxStaticText(m_page_simple, wxID_ANY, wxString("")), 0, wxALIGN_CENTER | wxALIGN_CENTER_VERTICAL);
-    gridsizer_simple->Add(new wxStaticText(m_page_simple, wxID_ANY, wxString(_(L("unloaded")))), 0, wxALIGN_CENTER | wxALIGN_CENTER_VERTICAL);
-    gridsizer_simple->Add(new wxStaticText(m_page_simple,wxID_ANY,wxString(_(L("loaded")))), 0, wxALIGN_CENTER | wxALIGN_CENTER_VERTICAL);
+    const int simple_spin_w = std::max(ITEM_WIDTH(), FromDIP(64));
 
-    auto add_spin_ctrl = [this](std::vector<wxSpinCtrl*>& vec, float initial)
+    int label_col_w = FromDIP(100);
     {
-        wxSpinCtrl* spin_ctrl = new wxSpinCtrl(m_page_simple, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(ITEM_WIDTH(), -1), style | wxALIGN_RIGHT, 0, 300, (int)initial);
+        wxClientDC dc(m_page_simple);
+        dc.SetFont(m_page_simple->GetFont());
+        for (unsigned int i = 0; i < m_number_of_extruders; ++i) {
+            wxString lab = wxString(_(L("Filament #"))) << (i + 1) << ": ";
+            const int w = ICON_SIZE.x + 10 + dc.GetTextExtent(lab).x + FromDIP(8);
+            label_col_w = std::max(label_col_w, w);
+        }
+    }
+
+    auto* simple_rows = new wxBoxSizer(wxVERTICAL);
+
+    auto* hdr = new wxBoxSizer(wxHORIZONTAL);
+    auto add_header_pair = [&]() {
+        hdr->Add(label_col_w, FromDIP(1), 0);
+        const int hdr_sty = wxST_NO_AUTORESIZE | wxALIGN_CENTER_HORIZONTAL;
+        auto* t_unload = new wxStaticText(m_page_simple, wxID_ANY, _(L("unloaded")), wxDefaultPosition, wxSize(simple_spin_w, -1), hdr_sty);
+        auto* t_load   = new wxStaticText(m_page_simple, wxID_ANY, _(L("loaded")), wxDefaultPosition, wxSize(simple_spin_w, -1), hdr_sty);
+        update_ui(t_unload);
+        update_ui(t_load);
+        hdr->Add(t_unload, 0, wxALIGN_CENTER_VERTICAL);
+        hdr->Add(t_load, 0, wxALIGN_CENTER_VERTICAL);
+        hdr->AddSpacer(FromDIP(24));
+    };
+    add_header_pair();
+    add_header_pair();
+    simple_rows->Add(hdr, 0, wxBOTTOM, FromDIP(6));
+
+    auto add_spin_ctrl = [this, simple_spin_w](std::vector<wxSpinCtrl*>& vec, float initial) {
+        wxSpinCtrl* spin_ctrl = new wxSpinCtrl(m_page_simple, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(simple_spin_w, -1), style | wxALIGN_RIGHT, 0, 300, (int)initial);
         update_ui(spin_ctrl);
         vec.push_back(spin_ctrl);
 
 #ifdef __WXOSX__
-        // On OSX / Cocoa, wxSpinCtrl::GetValue() doesn't return the new value
-        // when it was changed from the text control, so the on_change callback
-        // gets the old one, and on_kill_focus resets the control to the old value.
-        // As a workaround, we get the new value from $event->GetString and store
-        // here temporarily so that we can return it from get_value()
         spin_ctrl->Bind(wxEVT_TEXT, ([spin_ctrl](wxCommandEvent e)
         {
             long value;
             const bool parsed = e.GetString().ToLong(&value);
             int tmp_value = parsed && value >= INT_MIN && value <= INT_MAX ? (int)value : INT_MIN;
 
-            // Forcibly set the input value for SpinControl, since the value 
-            // inserted from the keyboard or clipboard is not updated under OSX
             if (tmp_value != INT_MIN) {
                 spin_ctrl->SetValue(tmp_value);
-
-                // But in SetValue() is executed m_text_ctrl->SelectAll(), so
-                // discard this selection and set insertion point to the end of string
                 spin_ctrl->GetText()->SetInsertionPointEnd();
             }
         }), spin_ctrl->GetId());
 #endif
     };
 
-    for (unsigned int i=0;i<m_number_of_extruders;++i) {
-        add_spin_ctrl(m_old, extruders[2 * i]);
-        add_spin_ctrl(m_new, extruders[2 * i+1]);
+    for (unsigned int start = 0; start < m_number_of_extruders; start += 2) {
+        auto* row = new wxBoxSizer(wxHORIZONTAL);
+        for (unsigned int k = 0; k < 2 && start + k < m_number_of_extruders; ++k) {
+            const unsigned int i = start + k;
+            add_spin_ctrl(m_old, extruders[2 * i]);
+            add_spin_ctrl(m_new, extruders[2 * i + 1]);
 
-        auto hsizer = new wxBoxSizer(wxHORIZONTAL);
-        wxWindow* w = new wxWindow(m_page_simple, wxID_ANY, wxDefaultPosition, ICON_SIZE, wxBORDER_SIMPLE);
-        w->SetCanFocus(false);
-        w->SetBackgroundColour(m_colours[i]);
-        hsizer->Add(w, wxALIGN_CENTER_VERTICAL);
-        hsizer->AddSpacer(10);
-        hsizer->Add(new wxStaticText(m_page_simple, wxID_ANY, wxString(_(L("Filament #"))) << i + 1 << ": "), 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
+            auto hsizer = new wxBoxSizer(wxHORIZONTAL);
+            wxWindow* w = new wxWindow(m_page_simple, wxID_ANY, wxDefaultPosition, ICON_SIZE, wxBORDER_SIMPLE);
+            w->SetCanFocus(false);
+            w->SetBackgroundColour(m_colours[i]);
+            hsizer->Add(w, wxALIGN_CENTER_VERTICAL);
+            hsizer->AddSpacer(10);
+            hsizer->Add(new wxStaticText(m_page_simple, wxID_ANY, wxString(_(L("Filament #"))) << i + 1 << ": "), 0, wxALIGN_LEFT | wxALIGN_CENTER_VERTICAL);
 
-        gridsizer_simple->Add(hsizer, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL);
-        gridsizer_simple->Add(m_old.back(),0);
-        gridsizer_simple->Add(m_new.back(),0);
+            auto* cell = new wxBoxSizer(wxHORIZONTAL);
+            cell->Add(hsizer, 0, wxALIGN_CENTER_VERTICAL);
+            cell->Add(m_old.back(), 0, wxALIGN_CENTER_VERTICAL);
+            cell->Add(m_new.back(), 0, wxALIGN_CENTER_VERTICAL);
+            row->Add(cell, 0, wxALIGN_TOP | wxRIGHT, FromDIP(24));
+        }
+        simple_rows->Add(row, 0, wxTOP, FromDIP(4));
     }
+
+    auto* simple_hug = new wxBoxSizer(wxHORIZONTAL);
+    simple_hug->AddStretchSpacer(1);
+    simple_hug->Add(simple_rows, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(10));
+    simple_hug->AddStretchSpacer(1);
+    m_sizer_simple->Add(simple_hug, 1, wxEXPAND);
 
     m_sizer = new wxBoxSizer(wxVERTICAL);
     m_sizer->Add(m_page_simple, 0, wxEXPAND, 0);

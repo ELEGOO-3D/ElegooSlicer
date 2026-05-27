@@ -193,7 +193,7 @@ private:
     Label* m_text_bed_type;
     
     std::shared_ptr<int>                m_token = std::make_shared<int>(0);
-    std::map<std::string, CheckBox *>   m_checkbox_list;
+    std::map<std::string, ::CheckBox *>   m_checkbox_list;
     //std::map<std::string, bool>         m_checkbox_state_list;
     std::vector<wxString>               m_bedtype_list;
     std::vector<MachineObject*>         m_list;

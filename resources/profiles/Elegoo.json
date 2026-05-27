@@ -1,6 +1,6 @@
 {
     "name": "Elegoo",
-    "version": "01.03.00.11",
+    "version": "01.05.01.03",
     "force_update": "0",
     "description": "Elegoo configurations",
     "machine_model_list": [
@@ -1125,10 +1125,6 @@
             "sub_path": "filament/fdm_filament_ppa.json"
         },
         {
-            "name": "fdm_filament_paht",
-            "sub_path": "filament/fdm_filament_paht.json"
-        },
-        {
             "name": "Generic ABS @base",
             "sub_path": "filament/BASE/Generic ABS @base.json"
         },
@@ -1535,6 +1531,26 @@
         {
             "name": "Elegoo PETG Translucent @ECC2",
             "sub_path": "filament/ECC2/Elegoo PETG Translucent @ECC2.json"
+        },
+        {
+            "name": "Elegoo ASA-CF @ECC2",
+            "sub_path": "filament/ECC2/Elegoo ASA-CF @ECC2.json"
+        },
+        {
+            "name": "Elegoo PET-CF @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PET-CF @ECC2.json"
+        },
+        {
+            "name": "Elegoo PETG HF @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PETG HF @ECC2.json"
+        },
+        {
+            "name": "Elegoo PLA Glow @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PLA Glow @ECC2.json"
+        },
+        {
+            "name": "Elegoo PLA Translucent2 @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PLA Translucent2 @ECC2.json"
         },
         {
             "name": "Elegoo RAPID TPU 95A @ECC2",

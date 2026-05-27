@@ -7,7 +7,9 @@
 #include <wx/icon.h>
 #include <wx/sizer.h>
 #include <wx/menu.h>
+#include <wx/filedlg.h>
 #include <wx/progdlg.h>
+#include <wx/stdpaths.h>
 #include <wx/tooltip.h>
 //#include <wx/glcanvas.h>
 #include <wx/filename.h>
@@ -15,6 +17,7 @@
 #include <wx/utils.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -23,6 +26,7 @@
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/SLAPrint.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/Zipper.hpp"
 
 #include "Tab.hpp"
 #include "ProgressStatusBar.hpp"
@@ -38,6 +42,8 @@
 #include "GLCanvas3D.hpp"
 #include "Plater.hpp"
 #include "WebViewDialog.hpp"
+#include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
+#include "Gizmos/GLGizmosManager.hpp"
 #include "../Utils/Process.hpp"
 #include "format.hpp"
 // BBS
@@ -46,6 +52,9 @@
 #include "Widgets/ProgressDialog.hpp"
 #include "BindDialog.hpp"
 #include "../Utils/MacDarkMode.hpp"
+#ifdef WIN32
+#include "dev-utils/CrashReporter.h"
+#endif
 
 #include <fstream>
 #include <string_view>
@@ -64,6 +73,8 @@
 #include "DailyTips.hpp"
 #include "PrinterWebView.hpp"
 #include "Elegoo/PrinterManagerView.hpp"
+#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
+
 
 #ifdef _WIN32
 #include <dbt.h>
@@ -73,7 +84,9 @@
 #include <slic3r/GUI/CreatePresetsDialog.hpp>
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
-
+#include "slic3r/Utils/Elegoo/IPCServer.hpp"
+#include "slic3r/Utils/Elegoo/IPCClient.hpp"
+#include "slic3r/Utils/Elegoo/PrinterNetworkEvent.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -85,6 +98,7 @@ wxDEFINE_EVENT(EVT_REGION_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_LOGIN_HANDLE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_INFO_UPDATED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_USER_LOGOUT, wxCommandEvent);
+wxDEFINE_EVENT(EVT_ELEGOO_AI_ENABLED_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_VER, wxCommandEvent);
 wxDEFINE_EVENT(EVT_CHECK_PRIVACY_SHOW, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SHOW_IP_DIALOG, wxCommandEvent);
@@ -273,17 +287,10 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     // Load the icon either from the exe, or from the ico file.
     SetIcon(main_frame_icon(wxGetApp().get_app_mode()));
 
-    // Initialize multi-instance coordinator first
+    // Know master/slave before building the rest of the UI; defer printer/network/IPC until after this
+    // frame is registered on GUI_App (see CallAfter after m_loaded) so notifyUserInfoUpdated sees mainframe.
     MultiInstanceCoordinator::getInstance()->init();
-    MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([this](bool isMaster) {
-        if (isMaster) {
-            wxGetApp().CallAfter([this]() {
-                PrinterManager::getInstance()->init();
-            });
-        }
-    });
-    // Initialize printer manager before initializing webview
-    PrinterManager::getInstance()->init();
+
 
     // initialize tabpanel and menubar
     init_tabpanel();
@@ -397,6 +404,13 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
             }
         });
     });
+    Bind(EVT_GLCANVAS_COLOR_MODE_CHANGED, [this](SimpleEvent&) {
+        wxGetApp().CallAfter([this]() {
+            if (m_home_view) {
+                m_home_view->onThemeChanged();
+            }
+        });
+    });
     Bind(EVT_USER_INFO_UPDATED, [this](wxCommandEvent&) {
         wxGetApp().CallAfter([this]() {
             if (m_home_view) {
@@ -437,6 +451,27 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     wxToolTip::SetAutoPop(32767);
 
     m_loaded = true;
+
+    wxGetApp().CallAfter([]() {
+        MultiInstanceCoordinator::getInstance()->registerMasterStatusCallback([](bool isMaster) {
+            if (isMaster) {
+                BOOST_LOG_TRIVIAL(info) << "Role change: slave promoted to master";
+                wxGetApp().CallAfter([]() {
+                    IPCClient::getInstance()->stop();
+                    IPCServer::getInstance()->start();
+                    PrinterManager::getInstance()->init();
+                    TelemetryReporter::getInstance()->init();
+                });
+            }
+        });
+        PrinterManager::getInstance()->init();
+        if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+            IPCServer::getInstance()->start();
+        } else {
+            IPCClient::getInstance()->start();
+        }
+        TelemetryReporter::getInstance()->init();
+    });
 
     // initialize layout
     m_main_sizer = new wxBoxSizer(wxVERTICAL);
@@ -561,7 +596,9 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         event.Skip();
         if (event.IsShown()) {
             // Delay initialization slightly to ensure window is fully displayed on the correct display
-            wxGetApp().CallAfter([this]() {
+            this->CallAfter([this]() {
+                if (wxGetApp().is_closing() || this->IsBeingDeleted())
+                    return;
                 // Initialize HomeView's WebView (HomeView is created in MainFrame constructor)
                 if (m_home_view) {
                     m_home_view->initializeNavigationWebView();
@@ -1029,13 +1066,12 @@ void MainFrame::shutdown()
 //             m_plater->print = undef;
 //         Slic3r::GUI::deregister_on_request_update_callback();
 
-    // set to null tabs and a plater
-    // to avoid any manipulations with them from App->wxEVT_IDLE after of the mainframe closing
-    wxGetApp().tabs_list.clear();
-    wxGetApp().model_tabs_list.clear();
-    wxGetApp().shutdown();
-    // BBS: why clear ?
-    //wxGetApp().plater_ = nullptr;
+    // Elegoo / printer stack: disconnect signals and drain async handlers, then tear down printer UI,
+    // stop IPC and PrinterManager (joins monitor / async connects) before GUI_App::shutdown()'s
+    // WebView::CleanupAll, so background connect work does not overlap global WebView teardown.
+    Slic3r::disconnectAllPrinterNetworkEvents();
+    TelemetryReporter::getInstance()->stop();
+
     if (m_printer_manager_view) {
         // Remove from tabpanel before deletion to prevent Layout() crash
         int idx = m_tabpanel->FindPage(m_printer_manager_view);
@@ -1045,7 +1081,20 @@ void MainFrame::shutdown()
         delete m_printer_manager_view;
         m_printer_manager_view = nullptr;
     }
+
+    // set to null tabs and a plater
+    // to avoid any manipulations with them from App->wxEVT_IDLE after of the mainframe closing
+    wxGetApp().tabs_list.clear();
+    wxGetApp().model_tabs_list.clear();
+
+    IPCServer::getInstance()->stop();
+    IPCClient::getInstance()->stop();
     PrinterManager::getInstance()->close();
+
+    wxGetApp().shutdown();
+    // BBS: why clear ?
+    //wxGetApp().plater_ = nullptr;
+
     MultiInstanceCoordinator::getInstance()->uninit();
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "MainFrame::shutdown exit";
 }
@@ -1165,6 +1214,10 @@ void MainFrame::init_tabpanel() {
             show_option(false);
             break;
         }*/
+        
+        if (sel == tp3DEditor) {
+            wxGetApp().TryShowBeginnerGuideOnPreparePage();
+        }
     });
 
     if (wxGetApp().is_editor()) {
@@ -1234,8 +1287,8 @@ static void initializePrinterManagerViewWebView(MainFrame* frame, PrinterManager
 {
     if (!view || !frame) return;
     if (frame->IsShown()) {
-        wxGetApp().CallAfter([view]() {
-            if (view) {
+        view->CallAfter([view]() {
+            if (!wxGetApp().is_closing() && !view->IsBeingDeleted()) {
                 view->initializeWebView();
             }
         });
@@ -2243,6 +2296,10 @@ void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
         m_multi_machine->msw_rescale();
     if(m_calibration)
         m_calibration->msw_rescale();
+    if(m_home_view)
+        m_home_view->msw_rescale();
+    if(m_printer_manager_view)
+        m_printer_manager_view->msw_rescale();
 
     // BBS
 #if 0
@@ -2332,10 +2389,106 @@ static const wxString sep = " - ";
 static const wxString sep = "\t";
 #endif
 
+static void export_logs_archive(wxWindow* parent)
+{
+    namespace fs = boost::filesystem;
+
+    auto show_export_error = [parent](const wxString& message) {
+        MessageDialog dlg(parent, message, _L("Export Logs"), wxOK | wxICON_ERROR);
+        dlg.ShowModal();
+    };
+
+    const fs::path log_dir = fs::path(Slic3r::data_dir()) / "log";
+    if (!fs::exists(log_dir) || !fs::is_directory(log_dir)) {
+        show_export_error(_L("The log directory does not exist."));
+        return;
+    }
+
+    bool has_log_files = false;
+    for (fs::recursive_directory_iterator it(log_dir), end; it != end; ++it) {
+        if (fs::is_regular_file(it->path())) {
+            has_log_files = true;
+            break;
+        }
+    }
+
+    if (!has_log_files) {
+        show_export_error(_L("No log files were found to export."));
+        return;
+    }
+
+    const wxString default_name = wxString::Format(
+        "ElegooSlicer_logs_%s.zip",
+        wxDateTime::Now().Format("%Y%m%d_%H%M%S"));
+
+    wxString default_dir = wxStandardPaths::Get().GetUserDir(wxStandardPaths::Dir_Downloads);
+    if (default_dir.empty() || !wxFileName::DirExists(default_dir))
+        default_dir = from_u8(log_dir.parent_path().string());
+
+    wxFileDialog dlg(
+        parent,
+        _L("Export Logs"),
+        default_dir,
+        default_name,
+        "Zip files (*.zip)|*.zip",
+        wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+
+    wxFileName archive_name(dlg.GetPath());
+    if (!archive_name.GetExt().IsSameAs("zip", false))
+        archive_name.SetExt("zip");
+
+    const fs::path archive_path = fs::path(into_u8(archive_name.GetFullPath()));
+    const std::string archive_path_str = fs::absolute(archive_path).generic_string();
+
+    try {
+        wxBusyCursor busy;
+
+        if (fs::exists(archive_path))
+            fs::remove(archive_path);
+
+        Zipper zipper(archive_path.string());
+        for (fs::recursive_directory_iterator it(log_dir), end; it != end; ++it) {
+            const fs::path file_path = it->path();
+            if (!fs::is_regular_file(file_path))
+                continue;
+
+            if (fs::absolute(file_path).generic_string() == archive_path_str)
+                continue;
+
+            std::string entry_name = file_path.generic_string();
+            const std::string log_dir_prefix = log_dir.generic_string() + "/";
+            if (entry_name.rfind(log_dir_prefix, 0) == 0)
+                entry_name.erase(0, log_dir_prefix.size());
+
+            std::ifstream input(file_path.string(), std::ios::binary);
+            if (!input)
+                throw Slic3r::FileIOError("Failed to read log file: " + file_path.string());
+
+            std::vector<char> buffer((std::istreambuf_iterator<char>(input)), std::istreambuf_iterator<char>());
+            zipper.add_entry(entry_name, buffer.empty() ? "" : buffer.data(), buffer.size());
+        }
+        zipper.finalize();
+
+        MessageDialog success(
+            parent,
+            wxString::Format(_L("Logs were exported to:\n%s"), archive_name.GetFullPath()),
+            _L("Export Logs"),
+            wxOK | wxICON_INFORMATION);
+        success.ShowModal();
+    }
+    catch (const std::exception& ex) {
+        show_export_error(from_u8(ex.what()));
+    }
+}
+
 static wxMenu* generate_help_menu()
 {
     wxMenu* helpMenu = new wxMenu();
 
+    append_menu_item(helpMenu, wxID_ANY, _L("Beginner Guide"), _L("Beginner Guide"), [](wxCommandEvent &) {wxGetApp().ShowBeginnerGuide();});
     // shortcut key
     append_menu_item(helpMenu, wxID_ANY, _L("Keyboard Shortcuts") + sep + "&?", _L("Show the list of the keyboard shortcuts"),
         [](wxCommandEvent&) { wxGetApp().keyboard_shortcuts(); });
@@ -2346,6 +2499,8 @@ static wxMenu* generate_help_menu()
     // Open Config Folder
     append_menu_item(helpMenu, wxID_ANY, _L("Show Configuration Folder"), _L("Show Configuration Folder"),
         [](wxCommandEvent&) { Slic3r::GUI::desktop_open_datadir_folder(); });
+    append_menu_item(helpMenu, wxID_ANY, _L("Export Logs"), _L("Export logs to a zip file"),
+        [](wxCommandEvent&) { export_logs_archive(wxGetApp().mainframe); });
 
 #if 0  // Temporarily disable Show Tip of the Day
     append_menu_item(helpMenu, wxID_ANY, _L("Show Tip of the Day"), _L("Show Tip of the Day"), [](wxCommandEvent&) {
@@ -2375,6 +2530,17 @@ static wxMenu* generate_help_menu()
             NetworkTestDialog dlg(wxGetApp().mainframe);
             dlg.ShowModal();
         });
+
+#if ELEGOO_INTERNAL_TESTING
+#ifdef WIN32
+    // Test crash (for testing crash reporting)
+    helpMenu->AppendSeparator();
+    append_menu_item(helpMenu, wxID_ANY, _L("Test Crash Report"), _L("Trigger a test crash to verify crash reporting"),
+        [](wxCommandEvent&) { 
+            CrashReporter::triggerTestCrash();
+        });
+#endif
+#endif
 
     // About
 #ifndef __APPLE__
@@ -3704,6 +3870,11 @@ void MainFrame::request_select_tab(TabPosition pos, const std::string& printerId
         evt->SetString(wxString::FromUTF8(printerId));
     }
     wxQueueEvent(this, evt);
+}
+
+int MainFrame::current_tab() const
+{
+    return m_tabpanel ? m_tabpanel->GetSelection() : wxNOT_FOUND;
 }
 
 int MainFrame::get_calibration_curr_tab() {

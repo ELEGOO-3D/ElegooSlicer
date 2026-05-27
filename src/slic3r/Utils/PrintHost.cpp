@@ -27,6 +27,7 @@
 #include "Flashforge.hpp"
 #include "SimplyPrint.hpp"
 #include "Elegoo/PrinterManager.hpp"
+#include "Elegoo/PrinterUploadManager.hpp"
 #include "Elegoo/PrinterMmsManager.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
 
@@ -435,7 +436,7 @@ void PrintHostJobQueue::priv::perform_job(PrintHostJob the_job)
         params.errorFn = [this](const std::string& errorMsg) { 
             this->error_fn(wxString::FromUTF8(errorMsg)); 
         };
-        auto result = PrinterManager::getInstance()->upload(params);
+        auto result = PrinterUploadManager::getInstance()->upload(params);
         success = result.isSuccess();
     } else {
         success = the_job.printhost->upload(

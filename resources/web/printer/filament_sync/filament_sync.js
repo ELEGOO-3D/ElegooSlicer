@@ -184,6 +184,12 @@ const FilamentSyncApp = {
         disableRightClickMenu();
     },
     computed: {
+        networkPrinters() {
+            return this.printerList.filter(printer => printer.networkType === 1);
+        },
+        localPrinters() {
+            return this.printerList.filter(printer => printer.networkType === 0);
+        },
         canSync() {
             // Check if printer list is available
             if (!this.printerList || this.printerList.length === 0) {

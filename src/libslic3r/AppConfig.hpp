@@ -124,6 +124,11 @@ public:
 		}
 	}
 
+	std::string get_with_default(const std::string& section, const std::string& key, const std::string& default_value) const {
+	    std::string value;
+	    return get(section, key, value) ? value : default_value;
+	}
+
 	void			    set_str(const std::string& section, const std::string& key, const std::string& value)
 	{
 #ifndef NDEBUG
@@ -348,6 +353,10 @@ public:
 	std::string 		message_check_url();
 	void 				set_last_pop_message_version(const std::string& version);
 	std::string 		get_last_pop_message_version();
+	
+	// Beginner Guide
+	bool				get_beginner_guide_shown() const { return get_bool("beginner_guide_shown"); }
+	void				set_beginner_guide_shown(bool shown) { set_bool("beginner_guide_shown", shown); }
 private:
 	template<typename T>
 	bool get_3dmouse_device_numeric_value(const std::string &device_name, const char *parameter_name, T &out) const 

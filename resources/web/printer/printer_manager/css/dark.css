@@ -10,6 +10,13 @@
 
 html.dark {
   /* Only add specific overrides that differ from the light theme logic */
+  .printer-assistant-icon.is-normal {
+    background-image: url("../img/assistant-dark.svg");
+  }
+
+  .printer-assistant-icon.is-error {
+    background-image: url("../img/assistant-error-dark.svg");
+  }
   
   /* Progress bar uses specific variable mapping */
   .progress-bar-bg {

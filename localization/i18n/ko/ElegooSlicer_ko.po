@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-09 20:08+0800\n"
+"POT-Creation-Date: 2026-05-08 17:55+0800\n"
 "PO-Revision-Date: 2024-05-31 23:33+0900\n"
 "Last-Translator: Hotsolidinfill <138652683+Hotsolidinfill@users.noreply."
 "github.com>, crwusiz <crwusiz@gmail.com>\n"
@@ -700,6 +700,9 @@ msgstr "텍스트 회전"
 msgid "Text shape"
 msgstr "텍스트 모양"
 
+msgid "Edit your text below."
+msgstr ""
+
 #. TRN - Title in Undo/Redo stack after rotate with text around emboss axe
 msgid "Text rotate"
 msgstr "텍스트 회전"
@@ -758,6 +761,11 @@ msgstr "선택한 글꼴로는 텍스트를 쓸 수 없습니다. 다른 글꼴�
 msgid "Embossed text cannot contain only white spaces."
 msgstr "양각 텍스트에는 공백만 포함될 수 없습니다."
 
+msgid ""
+"Some characters are displayed using backup fonts because they are not "
+"supported by the selected font."
+msgstr ""
+
 msgid "Text contains character glyph (represented by '?') unknown by font."
 msgstr ""
 "텍스트에 글꼴로 알 수 없는 문자 모양('?'으로 표시)이 포함되어 있습니다."
@@ -779,6 +787,12 @@ msgstr "텍스트 입력 내 글꼴 높이가 너무 작아서 확대되었습�
 
 msgid "Text doesn't show current horizontal alignment."
 msgstr "텍스트에 현재 가로 정렬이 표시되지 않습니다."
+
+msgid "Open text editor"
+msgstr ""
+
+msgid "Edit Text"
+msgstr "텍스트 편집"
 
 msgid "Revert font changes."
 msgstr "글꼴 변경 사항을 되돌립니다."
@@ -3646,6 +3660,12 @@ msgstr ""
 "레이어 높이가 너무 작습니다.\n"
 "0.2로 재설정"
 
+#, c-format, boost-format
+msgid ""
+"Too large layer height.\n"
+"Reset to %0.3f."
+msgstr ""
+
 msgid ""
 "Too small ironing spacing.\n"
 "Reset to 0.1."
@@ -4372,6 +4392,12 @@ msgstr "압출 교정 영역을 피하세요"
 msgid "Align to Y axis"
 msgstr "Y축에 정렬"
 
+msgid "Fit"
+msgstr ""
+
+msgid "Focus selected model, or whole bed if nothing is selected"
+msgstr ""
+
 msgid "Add plate"
 msgstr "플레이트 추가"
 
@@ -4606,6 +4632,9 @@ msgstr "모두 출력"
 msgid "Send all"
 msgstr "모두 전송"
 
+msgid "Beginner Guide"
+msgstr ""
+
 msgid "Keyboard Shortcuts"
 msgstr "키보드 단축키"
 
@@ -4629,6 +4658,12 @@ msgstr ""
 
 msgid "Open Network Test"
 msgstr "네트워크 테스트 열기"
+
+msgid "Test Crash Report"
+msgstr ""
+
+msgid "Trigger a test crash to verify crash reporting"
+msgstr ""
 
 #, c-format, boost-format
 msgid "&About %s"
@@ -8511,6 +8546,9 @@ msgstr "다시 계산"
 msgid "Flushing volumes for filament change"
 msgstr "필라멘트 교체를 위한 버리기 볼륨"
 
+msgid "Simple"
+msgstr ""
+
 msgid ""
 "Elegoo would re-calculate your flushing volumes everytime the filaments "
 "color changed. You could disable the auto-calculate in ElegooSlicer > "
@@ -8533,14 +8571,14 @@ msgstr "승수는 [%.2f, %.2f] 범위에 있어야 합니다."
 msgid "Multiplier"
 msgstr "승수"
 
+msgid "Filament #"
+msgstr "필라멘트 #"
+
 msgid "unloaded"
 msgstr "언로드됨"
 
 msgid "loaded"
 msgstr "로드됨"
-
-msgid "Filament #"
-msgstr "필라멘트 #"
 
 msgid "From"
 msgstr "에서"
@@ -17720,6 +17758,9 @@ msgid ""
 "printer, then try again."
 msgstr ""
 
+msgid "Not connected to subservice. Please try again later."
+msgstr ""
+
 msgid ""
 "Unauthorized access, please check your account login status and try again."
 msgstr ""
@@ -17828,6 +17869,9 @@ msgstr ""
 msgid "Forbidden access. Please try again later."
 msgstr ""
 
+msgid "Pairing failed. Please select the correct printer model."
+msgstr ""
+
 msgid "Insufficient memory. Please try again later."
 msgstr ""
 
@@ -17841,26 +17885,80 @@ msgid "Operation not implemented. Please try again later."
 msgstr ""
 
 msgid ""
-"Operation failed. Please check if multiple clients are open and continue on "
-"the main client."
-msgstr ""
-
-msgid ""
 "The file is too large to upload. Please try another way to start the "
 "transfer or print."
+msgstr ""
+
+msgid "Unable to connect to main process. Please try again."
+msgstr ""
+
+msgid "Failed to connect to main process. Please try again."
+msgstr ""
+
+msgid "Connection to main process lost. Please try again."
+msgstr ""
+
+msgid "Connection to main process closed. Please try again."
+msgstr ""
+
+msgid "Communication error with main process. Please try again."
+msgstr ""
+
+msgid "Failed to send request to main process. Please try again."
+msgstr ""
+
+msgid "Invalid data received from main process. Please try again."
+msgstr ""
+
+msgid "Communication protocol error with main process. Please try again."
+msgstr ""
+
+msgid "Too many requests to main process. Please try again later."
+msgstr ""
+
+msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
 msgstr ""
 
-msgid "Send print task failed"
-msgstr ""
-
-msgid "Send print file failed"
-msgstr ""
-
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
+msgstr ""
+
+msgid "Step file import parameters"
+msgstr ""
+
+msgid ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
+msgstr ""
+
+msgid "View Wiki for more information"
+msgstr ""
+
+msgid "Linear Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
+msgstr ""
+
+msgid "Angle Deflection"
+msgstr ""
+
+msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
+msgstr ""
+
+msgid "Split compound and compsolid into multiple objects"
+msgstr ""
+
+msgid "Number of triangular facets"
+msgstr ""
+
+msgid "Calculating, please wait..."
+msgstr ""
+
+msgid "The download has failed"
 msgstr ""
 
 #: resources/data/hints.ini: [hint:G-code window]
@@ -22953,9 +23051,6 @@ msgstr ""
 
 #~ msgid "The beginning of the vendor can not be a number. Please re-enter."
 #~ msgstr "공급업체의 시작 부분은 숫자일 수 없습니다. 다시 입력해 주세요."
-
-#~ msgid "Edit Text"
-#~ msgstr "텍스트 편집"
 
 #~ msgid "Error! Unable to create thread!"
 #~ msgstr "오류! 스레드를 만들 수 없습니다!"

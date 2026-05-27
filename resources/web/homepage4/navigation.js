@@ -112,7 +112,7 @@ const Navigation = {
     },
 
     async mounted() {
-
+        disableRightClickMenu();
         await this.init();
       
         nativeIpc.on('onUserInfoUpdated', (data) => {

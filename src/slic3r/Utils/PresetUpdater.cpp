@@ -39,6 +39,7 @@
 #include "slic3r/GUI/MarkdownTip.hpp"
 #include "libslic3r/miniz_extension.hpp"
 #include "slic3r/GUI/GUI_Utils.hpp"
+#include "slic3r/Utils/Elegoo/PrinterNetwork.hpp"
 
 namespace fs = boost::filesystem;
 using Slic3r::GUI::Config::Index;
@@ -55,6 +56,7 @@ namespace Slic3r {
 static const char *INDEX_FILENAME = "index.idx";
 static const char *TMP_EXTENSION = ".data";
 static const char *PRESET_SUBPATH = "profiles";
+ static const char *OTA_PROFILES_PREFIX = "profiles_ota_";
 
 
 void copy_file_fix(const fs::path &source, const fs::path &target)
@@ -221,12 +223,27 @@ struct PresetUpdater::priv
 	void parse_version_string(const std::string& body) const;
     void sync_resources(std::string http_url, std::map<std::string, Resource> &resources, bool check_patch = false,  std::string current_version="", std::string changelog_file="");
     
-    void remove_ota_cached_profiles(std::string vendor, std::string sub_path) const;
-    void remove_invalid_ota_cached_profiles(const fs::path& cache_profile_path, const std::map<std::string, VendorProfile>& vendors) const;
-    bool get_valid_ota_version(Semver& app_version, Semver& current_version, Semver& cached_version, int compare_count) const;
+    bool get_valid_ota_version(const Semver& app_version, const Semver& current_version, const Semver& cached_version, int compare_count) const;
     void parse_ota_files(std::string ota_json, std::string& version, bool& force_upgrade, nlohmann::json & description) const;
 
-    bool sync_config(const VendorMap &vendors);
+    // Fetch OTA version from API, returns true if version found, false if network error or no version available
+    bool fetch_ota_version_from_api(const std::string& profile_update_url, 
+                                     const Semver& app_semver, 
+                                     const Semver& current_preset_semver,
+                                     Resource& ota_profile_info) const;
+    // Find latest valid local OTA version from cached folders
+    bool find_latest_valid_local_ota_version(const Semver& app_semver,
+                                             const Semver& current_preset_semver,
+                                             const std::string& current_language,
+                                             const std::string& current_region,
+                                             Resource& ota_profile_info) const;
+    // Clean up old OTA cache files and folders that don't match the current valid OTA base name
+    void cleanup_old_ota_cache(const fs::path& cache_path, const std::string& ota_base_name) const;
+    // Check if preset files are complete for any vendor in the cache path
+    bool check_preset_files_complete(const fs::path& cache_profile_path) const;
+    // Check if preset files are complete for a specific vendor
+    bool check_vendor_preset_files_complete(const fs::path& cache_profile_path, const std::string& vendor_name) const;
+    bool check_has_valid_ota_version();
     void sync_tooltip(std::string http_url, std::string language);
     void sync_plugins(std::string http_url, std::string plugin_version);
     void sync_printer_config(std::string http_url);
@@ -278,6 +295,15 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
     fs::path tmp_path = target_path;
     tmp_path += format(".%1%%2%", get_current_pid(), TMP_EXTENSION);
 
+    auto remove_tmp_if_exists = [&tmp_path]() {
+        try {
+            if (fs::exists(tmp_path))
+                fs::remove(tmp_path);
+        } catch (...) {
+            // Keep best-effort cleanup only.
+        }
+    };
+
     BOOST_LOG_TRIVIAL(info) << format("[BBS Updater]download file `%1%`, stored to `%2%`, tmp path `%3%`",
         url,
         target_path.string(),
@@ -297,11 +323,41 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
                 error);
         })
         .on_complete([&](std::string body, unsigned /* http_status */) {
-            boost::nowide::ofstream file(tmp_path.string(), std::ios::out | std::ios::binary | std::ios::trunc);
-            file.write(body.c_str(), body.size());
-            file.close();
-            fs::rename(tmp_path, target_path);
-            res = true;
+            try {
+                const fs::path parent_dir = target_path.parent_path();
+                if (!parent_dir.empty() && !fs::exists(parent_dir)) {
+                    fs::create_directories(parent_dir);
+                }
+
+                boost::nowide::ofstream file(tmp_path.string(), std::ios::out | std::ios::binary | std::ios::trunc);
+                if (!file.is_open()) {
+                    BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]open tmp file failed: `%1%`", tmp_path.string());
+                    remove_tmp_if_exists();
+                    return;
+                }
+
+                file.write(body.data(), static_cast<std::streamsize>(body.size()));
+                if (!file.good()) {
+                    BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]write tmp file failed: `%1%`", tmp_path.string());
+                    file.close();
+                    remove_tmp_if_exists();
+                    return;
+                }
+                file.close();
+
+                // On Windows, rename may fail if target already exists, remove it first.
+                if (fs::exists(target_path))
+                    fs::remove(target_path);
+
+                fs::rename(tmp_path, target_path);
+                res = true;
+            } catch (const std::exception &e) {
+                BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]save file failed: `%1%`, reason: %2%", target_path.string(), e.what());
+                remove_tmp_if_exists();
+            } catch (...) {
+                BOOST_LOG_TRIVIAL(error) << format("[BBS Updater]save file failed: `%1%`, unknown exception", target_path.string());
+                remove_tmp_if_exists();
+            }
         })
         .perform_sync();
 
@@ -649,56 +705,7 @@ void PresetUpdater::priv::sync_resources(std::string http_url, std::map<std::str
         }
     }
 }
-
-//remove the ota profiles that are not in the vendor list
-void PresetUpdater::priv::remove_invalid_ota_cached_profiles(const fs::path& cache_profile_path, const std::map<std::string, VendorProfile>& vendors) const
-{
-    for (auto& dir_entry : boost::filesystem::directory_iterator(cache_profile_path)) {
-        const auto& path      = dir_entry.path();
-        std::string file_path = path.string();
-        if (is_json_file(file_path)) {
-            const auto  path_in_vendor = vendor_path / path.filename();
-            std::string vendor_name    = path.filename().string();
-            vendor_name.erase(vendor_name.size() - 5);
-            if (vendors.find(vendor_name) == vendors.end()) {
-                remove_ota_cached_profiles(vendor_name, PRESET_SUBPATH);
-            }
-        }
-    }
-}
-void PresetUpdater::priv::remove_ota_cached_profiles(std::string vendor, std::string sub_path) const
-{
-    fs::path    cache_folder    = sub_path.empty() ? cache_path : (cache_path / sub_path);
-    fs::path    vendor_folder   = sub_path.empty() ? (cache_path / vendor) : (cache_path / sub_path / vendor);
-    std::string vendor_ota_json = cache_folder.string() + "/" + vendor + ".changelog";
-    std::string vendor_json     = cache_folder.string() + "/" + vendor + ".json";
-    if (fs::exists(vendor_ota_json)) {
-        try {
-            fs::remove(vendor_ota_json);
-        } catch (...) {
-            BOOST_LOG_TRIVIAL(error) << "Failed  removing vendor ota json: " << vendor_ota_json;
-        }
-    }
-
-    if (fs::exists(vendor_json)) {
-        try {
-            fs::remove(vendor_json);
-        } catch (...) {
-            BOOST_LOG_TRIVIAL(error) << "Failed  removing vendor json: " << vendor_json;
-        }
-    }
-
-    if (fs::exists(vendor_folder)) {
-        try {
-            fs::remove_all(vendor_folder);
-        } catch (...) {
-            BOOST_LOG_TRIVIAL(error) << "Failed  removing the vendor directory: " << vendor_folder.string();
-        }
-    }
-    return;
-}
-
-bool PresetUpdater::priv::get_valid_ota_version(Semver& app_version, Semver& current_version, Semver& cached_version, int compare_count) const
+bool PresetUpdater::priv::get_valid_ota_version(const Semver& app_version, const Semver& current_version, const Semver& cached_version, int compare_count) const
 {
     bool valid           = false;
     int  app_patch_cc    = app_version.patch() / 100;
@@ -755,139 +762,342 @@ void PresetUpdater::priv::parse_ota_files(std::string ota_json, std::string& ver
     return;
 }
 
-// ElegooSlicer: sync config update for currect App version
-bool PresetUpdater::priv::sync_config(const VendorMap &vendors)
-{ 
-    bool has_new_config = false;
-    auto cache_profile_path = cache_path / PRESET_SUBPATH;
-    AppConfig *app_config = GUI::wxGetApp().app_config;
-    std::string profile_update_url = app_config->profile_update_url();
-    if(profile_update_url.empty()) {
-        BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: profile_update_url is empty, skip sync_config";
-        return false;
-    }
-
-    if (fs::exists(cache_profile_path)) {   
-        remove_invalid_ota_cached_profiles(cache_profile_path, vendors);
-    }
-           
-        
-    //get the list of online profiles
-    std::map<std::string, Resource>  ota_profiles_list;
+// Fetch OTA version from API
+// Returns true if a compatible version is found, false if network error or no version available
+bool PresetUpdater::priv::fetch_ota_version_from_api(const std::string& profile_update_url, 
+                                                       const Semver& app_semver, 
+                                                       const Semver& current_preset_semver,
+                                                       Resource& ota_profile_info) const
+{
+    ota_profile_info.version.clear();
     Http::get(profile_update_url)
         .on_error([](std::string body, std::string error, unsigned http_status) {
-            BOOST_LOG_TRIVIAL(info) << format("Error getting: `%1%`: HTTP %2%, %3%", "sync_config_elegooslicer", http_status, error);
+            BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]: network error when checking OTA version: HTTP " << http_status 
+                                       << ", error: " << error;
         })
         .timeout_connect(5)
-        .on_complete([this, vendors, &ota_profiles_list](std::string body, unsigned http_status) {
-            if (http_status != 200)
+        .on_complete([this, &ota_profile_info, &app_semver, &current_preset_semver](std::string body, unsigned http_status) {
+            if (http_status != 200) {
+                BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]: HTTP error when checking OTA version: HTTP " << http_status;
                 return;
+            }
+            
             try {
                 json j = json::parse(body);
-                if (j.contains("profiles") && j["profiles"].is_array()) {
-                    for (auto profile : j["profiles"]) {
-                        std::string vendor_name = profile["vendor"].get<std::string>(); 
-                        boost::to_lower(vendor_name); 
-                   
-                        // if the vendor is not in the list, skip it, case sensitivity
-                        auto vendor_it = std::find_if(vendors.begin(), vendors.end(), [&vendor_name](const auto& pair) {
-                            std::string key = pair.first;
-                            boost::to_lower(key);
-                            return key == vendor_name;
-                        });
-
-                        if (vendor_it == vendors.end())
-                            continue;
-
-                        auto vendor_profile = vendor_it->second;
-                        Resource resource;
-                        resource.url = profile["url"].get<std::string>();
-                        resource.description = profile["description"].dump();                      
-                        resource.force = profile["force_update"].get<bool>();
-                        resource.version = profile["version"].get<std::string>();
-                        ota_profiles_list.emplace(vendor_profile.id, resource);
-                    }
-                } 
+                if (!j.contains("code") || j["code"].get<int>() != 200 || 
+                    !j.contains("message") || j["message"].get<std::string>() != "success" ||
+                    !j.contains("data") || !j["data"].is_object()) {
+                    BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: API response indicates no OTA version available (code or message mismatch)";
+                    return;
+                }
+                
+                auto data = j["data"];
+                if (!data.contains("items") || !data["items"].is_array()) {
+                    BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: API response does not contain items array, no OTA version available";
+                    return;
+                }
+                
+                // Multiple versions in items array
+                std::vector<Resource> valid_versions;
+                for (const auto& item : data["items"]) {
+                    if (!item.contains("version") || !item.contains("downloadUrl"))
+                        continue;
+                    
+                    std::string version_str = item["version"].get<std::string>();
+                    Semver item_semver(version_str);
+                    
+                    if (!get_valid_ota_version(app_semver, current_preset_semver, item_semver, 2))
+                        continue;
+                    
+                    Resource res;
+                    res.version = version_str;
+                    res.url = item["downloadUrl"].get<std::string>();
+                    if (item.contains("info"))
+                        res.description = item["info"].get<std::string>();
+                    res.force = false;
+                    
+                    valid_versions.push_back(res);
+                }
+                
+                if (valid_versions.empty()) {
+                    BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: no compatible OTA version found in API response";
+                    return;
+                }
+                
+                // Find the latest version by comparing version numbers
+                std::sort(valid_versions.begin(), valid_versions.end(), 
+                    [](const Resource& a, const Resource& b) {
+                        Semver ver_a(a.version);
+                        Semver ver_b(b.version);
+                        return ver_b < ver_a; // Higher version first
+                    });
+                
+                ota_profile_info = valid_versions[0];
+                BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: found " << valid_versions.size() 
+                                        << " compatible versions, selected latest: version=" << ota_profile_info.version
+                                        << ", url=" << ota_profile_info.url;
+            } catch (std::exception& e) {
+                BOOST_LOG_TRIVIAL(error) << "[ElegooSlicer Updater]: failed to parse API response, exception=" << e.what() << ", body=" << body;               
             } catch (...) {
-                BOOST_LOG_TRIVIAL(error) << "[ElegooSlicer Updater]: get version of profiles failed, body=" << body;               
+                BOOST_LOG_TRIVIAL(error) << "[ElegooSlicer Updater]: failed to parse API response, body=" << body;               
             }
         })
         .perform_sync();
+    
+    // Return true only if a valid version was found
+    return !ota_profile_info.version.empty() && !ota_profile_info.url.empty();
+}
 
-    // check the cached config files
-    Semver app_semver(SLIC3R_VERSION);
-    for (auto vendor_it : vendors) {
-        const VendorProfile& vendor_profile = vendor_it.second;
-        std::string vendor_name = vendor_profile.id;      
-        std::string vendor_cache_json = cache_profile_path.string() + "/" + vendor_name + ".changelog";
-        std::string vendor_resource_json = vendor_path.string() + "/" + vendor_name + ".json";
-        Semver current_preset_semver = get_version_from_json(vendor_resource_json);
-        std::string cached_version;
+// Helper function to replace underscores with hyphens in language/region codes
+// This prevents parsing issues when language/region codes contain underscores
+static std::string sanitize_for_ota_name(const std::string& str) {
+    std::string result = str;
+    std::replace(result.begin(), result.end(), '_', '-');
+    return result;
+}
+
+// Find latest valid local OTA version from cached folders
+// Returns true if a valid local version is found, false otherwise
+bool PresetUpdater::priv::find_latest_valid_local_ota_version(const Semver& app_semver,
+                                                                const Semver& current_preset_semver,
+                                                                const std::string& current_language,
+                                                                const std::string& current_region,
+                                                                Resource& ota_profile_info) const
+{
+    auto cache_profile_path = cache_path / PRESET_SUBPATH;
+    if (!fs::exists(cache_profile_path))
+        return false;
+    
+    std::vector<Resource> valid_local_versions;
+    
+    // Iterate through all directories in cache_profile_path
+    for (const auto& entry : fs::directory_iterator(cache_profile_path)) {
+        if (!entry.is_directory())
+            continue;
+        
+        std::string dirname = entry.path().filename().string();
+        if (dirname.find(OTA_PROFILES_PREFIX) != 0)
+            continue;
+        
+        // Parse folder name: profiles_ota_version_language_region
+        // Split by underscore since version, language and region are sanitized (no underscores in them)
+        std::string prefix = OTA_PROFILES_PREFIX;
+        if (dirname.length() <= prefix.length())
+            continue;
+        
+        std::string rest = dirname.substr(prefix.length());
+        std::vector<std::string> parts;
+        boost::split(parts, rest, boost::is_any_of("_"), boost::token_compress_off);
+        
+        // Should have exactly 3 parts: version, language, region
+        if (parts.size() != 3)
+            continue;
+        
+        std::string cached_language = parts[1];
+        std::string cached_region = parts[2];
+
+        // Check if language and region match
+        if (cached_language != current_language || cached_region != current_region)
+            continue;
+        
+        // Check changelog file inside the directory
+        std::string changelog_file = (entry.path() / (dirname + ".changelog")).string();
+        if (!fs::exists(changelog_file))
+            continue;
+        
+        // Read changelog file (only version, force and description, not language/region)
+        bool force = false;
         nlohmann::json description;
-        bool force = false, remove_previous = true, valid_version = false;
-        //check previous cached config files, and delete unused
-        parse_ota_files(vendor_cache_json, cached_version, force, description);
-        Semver cached_semver;
-        if (!cached_version.empty()) {   
-            cached_semver = cached_version;               
-            valid_version = get_valid_ota_version(app_semver, current_preset_semver, cached_semver, 2);
-            if (valid_version) {
-                remove_previous       = false;
-                has_new_config        = true;
-            }
+        std::string cached_version;
+        try {
+            parse_ota_files(changelog_file, cached_version, force, description);
+        } catch (...) {
+            BOOST_LOG_TRIVIAL(debug) << "[ElegooSlicer Updater]: failed to parse changelog: " << changelog_file;
+            continue;
         }
-        // remove the previous cached files
-        if (remove_previous) {
-            remove_ota_cached_profiles(vendor_name, PRESET_SUBPATH);
-        }
+        
+        // Check if version is valid
+        if (cached_version.empty())
+            continue;
+        
+        Semver cached_semver(cached_version);
+        if (!get_valid_ota_version(app_semver, current_preset_semver, cached_semver, 2))
+            continue;
+        
+        // Found a valid local version
+        Resource res;
+        res.version = cached_version;
+        res.url = ""; // Local version doesn't need URL
+        res.description = description.dump();
+        res.force = force;
+        
+        valid_local_versions.push_back(res);
+    }
+    
+    if (valid_local_versions.empty()) {
+        BOOST_LOG_TRIVIAL(debug) << "[ElegooSlicer Updater]: no valid local OTA version found";
+        return false;
+    }
+    
+    // Find the latest version by comparing version numbers
+    std::sort(valid_local_versions.begin(), valid_local_versions.end(),
+        [](const Resource& a, const Resource& b) {
+            Semver ver_a(a.version);
+            Semver ver_b(b.version);
+            return ver_b < ver_a; // Higher version first
+        });
+    
+    ota_profile_info = valid_local_versions[0];
+    BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: found " << valid_local_versions.size()
+                            << " valid local versions, selected latest: version=" << ota_profile_info.version;
+    
+    return true;
+}
 
-        if (cancel)
-            return false;
-        if(ota_profiles_list.find(vendor_name) != ota_profiles_list.end()) {
-            auto vendor_ota_profiles = ota_profiles_list.at(vendor_name);
-            Semver ota_semver = vendor_ota_profiles.version;
-            valid_version = get_valid_ota_version(app_semver, current_preset_semver, ota_semver, 2);
-            if(!valid_version) {
-                continue;   
-            }
+// Clean up old OTA cache files and folders that don't match the current valid OTA base name
+// Only keeps the folder with ota_base_name and its corresponding changelog file
+void PresetUpdater::priv::cleanup_old_ota_cache(const fs::path& cache_path, const std::string& ota_base_name) const
+{
+    if (!fs::exists(cache_path))
+        return;
 
-            if (cached_semver.valid()) {
-                if (cached_semver == ota_semver) {
-                    continue;
+    for (const auto& entry : fs::directory_iterator(cache_path)) {
+        std::string name = entry.path().filename().string();
+        try {
+            if (entry.is_directory()) {
+                if (name != ota_base_name) { 
+                    fs::remove_all(entry.path());     
+                    BOOST_LOG_TRIVIAL(debug) << "[ElegooSlicer Updater]: removed old OTA cache folder: " << name;
                 }
-                if (!remove_previous) {
-                    remove_ota_cached_profiles(vendor_name, PRESET_SUBPATH);
+            } else if (entry.is_regular_file()) {
+                if (name != ota_base_name + ".changelog") {            
+                    fs::remove(entry.path());      
+                    BOOST_LOG_TRIVIAL(debug) << "[ElegooSlicer Updater]: removed old OTA cache file: " << name;
                 }
             }
-
-            std::string download_url  = vendor_ota_profiles.url;
-            std::string download_file = (cache_path / (vendor_name + "." + vendor_ota_profiles.version + TMP_EXTENSION)).string();
-            if (!get_file(download_url, download_file)) {
-                return false;
-            }
-            // extract the file downloaded
-            if (!fs::exists(cache_profile_path))
-                fs::create_directories(cache_profile_path );
-            BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]start to unzip the downloaded file " << download_file;
-            if (!extract_file(download_file, cache_profile_path)) {
-                BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]extract downloaded file"
-                                           << " failed, path: " << download_file;
-                remove_ota_cached_profiles(vendor_name, PRESET_SUBPATH);
-                return false;
-            }
-            // record the headers
-            json j;
-            j["version"]     = vendor_ota_profiles.version;
-            j["description"] = nlohmann::json::parse(vendor_ota_profiles.description);
-            j["force"]       = vendor_ota_profiles.force;
-            boost::nowide::ofstream c;
-            c.open(vendor_cache_json, std::ios::out | std::ios::trunc);
-            c << std::setw(4) << j << std::endl;
-            c.close();
-            has_new_config = true;
+        } catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]: failed to remove old OTA cache: " << name << ", error: " << e.what();
         }
     }
-    return has_new_config;
+}
+
+// Check if preset files are complete for a specific vendor
+bool PresetUpdater::priv::check_vendor_preset_files_complete(const fs::path& cache_profile_path, const std::string& vendor_name) const
+{
+    auto vendor_cache_path = cache_profile_path / vendor_name;
+    auto print_in_cache    = vendor_cache_path / PRESET_PRINT_NAME;
+    auto filament_in_cache = vendor_cache_path / PRESET_FILAMENT_NAME;
+    auto machine_in_cache  = vendor_cache_path / PRESET_PRINTER_NAME;
+    
+    return fs::exists(print_in_cache) && fs::exists(filament_in_cache) && fs::exists(machine_in_cache);
+}
+
+// Check if preset files are complete for any vendor in the cache path
+bool PresetUpdater::priv::check_preset_files_complete(const fs::path& cache_profile_path) const
+{
+    if (!fs::exists(cache_profile_path))
+        return false;
+    
+    // Iterate through vendor folders in cache_profile_path
+    for (const auto& entry : fs::directory_iterator(cache_profile_path)) {
+        if (!entry.is_directory())
+            continue;
+        
+        std::string vendor_name = entry.path().filename().string();
+        // If all preset files exist for this vendor, return true
+        if (check_vendor_preset_files_complete(cache_profile_path, vendor_name)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool PresetUpdater::priv::check_has_valid_ota_version()
+{ 
+    fs::path cache_profile_path = cache_path / PRESET_SUBPATH;
+    std::shared_ptr<INetworkHelper> network_helper = NetworkFactory::createNetworkHelper(PrintHostType::htElegooLink);
+    if(!network_helper) {
+        BOOST_LOG_TRIVIAL(error) << "[ElegooSlicer Updater]: failed to create network helper";
+        return false;
+    }
+    std::string profile_update_url = network_helper->getProfileUpdateUrl();
+    if(profile_update_url.empty()) {
+        BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: profile_update_url is empty, skip check_has_valid_ota_version";
+        return false;
+    }
+      
+    Resource ota_profile_info;
+    Semver app_semver(SLIC3R_VERSION);
+    Semver current_preset_semver = get_version_from_json((vendor_path / "Elegoo.json").string());
+    if(!current_preset_semver.valid()) {
+        BOOST_LOG_TRIVIAL(error) << "[ElegooSlicer Updater]: failed to get current preset semver";
+        return false;
+    }  
+    AppConfig* app_config = GUI::wxGetApp().app_config;
+    std::string current_language = sanitize_for_ota_name(app_config->get_language_code());
+    std::string current_region = sanitize_for_ota_name(app_config->get_region());
+    
+    fetch_ota_version_from_api(profile_update_url, app_semver, current_preset_semver, ota_profile_info);
+    // If online version is empty (not a network error), try to find local cached version
+    if(ota_profile_info.version.empty() || ota_profile_info.url.empty()) {
+        find_latest_valid_local_ota_version(app_semver, current_preset_semver, current_language, current_region, ota_profile_info);
+    }
+    
+    // If no valid OTA version found (neither online nor local), clean up all cache and return
+    if(ota_profile_info.version.empty()) {
+        BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: no compatible OTA version available (neither online nor local)";
+        cleanup_old_ota_cache(cache_profile_path, "");
+        return false;
+    }
+    
+    std::string ota_base_name = OTA_PROFILES_PREFIX + sanitize_for_ota_name(ota_profile_info.version) + "_" + current_language + "_" + current_region;
+    cleanup_old_ota_cache(cache_profile_path, ota_base_name);
+    
+    fs::path ota_profile_path = cache_profile_path / ota_base_name;
+    std::string ota_changelog = (ota_profile_path / (ota_base_name + ".changelog")).string();
+
+    // Check if cached version is valid (changelog exists, folder exists, and preset files are complete)
+    if(fs::exists(ota_changelog) && fs::exists(ota_profile_path)) {
+        if (check_preset_files_complete(ota_profile_path)) {
+            return true;
+        }
+    }
+    
+    // Clean up all old OTA cache and download the new OTA version
+    cleanup_old_ota_cache(cache_profile_path, "");
+
+    if(ota_profile_info.url.empty()) {
+        BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]: ota_profile_info.url is empty, skip download";
+        return false;
+    }
+    std::string download_file = (cache_profile_path / (ota_base_name + TMP_EXTENSION)).string();
+    if (!get_file(ota_profile_info.url, download_file)) {
+        return false;
+    }
+    
+    // Ensure the target directory exists before extracting
+    fs::create_directories(ota_profile_path);
+    
+    BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]start to unzip the downloaded file " << download_file;
+    if (!extract_file(download_file, ota_profile_path)) {
+        BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]extract downloaded file"
+                                   << " failed, path: " << download_file;
+        fs::remove_all(ota_profile_path);
+        return false;
+    }
+    
+    // Save changelog file
+    json j;
+    j["version"]     = ota_profile_info.version;
+    j["description"] = ota_profile_info.description;
+    j["force"]       = ota_profile_info.force;
+    boost::nowide::ofstream c;
+    c.open(ota_changelog, std::ios::out | std::ios::trunc);
+    c << std::setw(4) << j << std::endl;
+    c.close();
+
+    return true;
 }
 
 void PresetUpdater::priv::sync_tooltip(std::string http_url, std::string language)
@@ -1326,87 +1536,115 @@ Updates PresetUpdater::priv::get_printer_config_updates(bool update) const
 }
 
 // Generates a list of bundle updates that are to be performed.
-// Version of slic3r that was running the last time and which was read out from PrusaSlicer.ini is provided
-// as a parameter.
-// ElegooSlicer: OTA profile updates should be loacated in ota/profiles folder
+// Uses find_latest_valid_local_ota_version to find the latest valid OTA version from cached folders,
+// then checks each vendor to see if they need to be updated.
+// ElegooSlicer: OTA profile updates should be located in ota/profiles folder
 Updates PresetUpdater::priv::get_config_updates(const Semver& old_slic3r_version) const
 {
     Updates updates;
     BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer Updater]:Checking for cached configuration updates...";
     auto cache_profile_path = cache_path / PRESET_SUBPATH;
+    
     if (!fs::exists(cache_profile_path))
         return updates;
-
-
+    
+    // Get current language and region
+    AppConfig* app_config = GUI::wxGetApp().app_config;
+    std::string current_language = sanitize_for_ota_name(app_config->get_language_code());
+    std::string current_region = sanitize_for_ota_name(app_config->get_region());
+    
+    std::string app_version = SLIC3R_VERSION;
+    Semver app_semver = app_version;
+    
+    // Use find_latest_valid_local_ota_version to find the latest valid version
+    // We use Elegoo's current preset version as reference
+    Semver current_preset_semver = get_version_from_json((vendor_path / "Elegoo.json").string());
+    if (!current_preset_semver.valid()) {
+        return updates;
+    }
+    
+    Resource ota_profile_info;
+    if (!find_latest_valid_local_ota_version(app_semver, current_preset_semver, current_language, current_region, ota_profile_info)) {
+        return updates;
+    }
+    
+    // Build folder path from version, language and region
+    std::string ota_base_name = OTA_PROFILES_PREFIX + sanitize_for_ota_name(ota_profile_info.version) + "_" + current_language + "_" + current_region;
+    fs::path latest_version_folder = cache_profile_path / ota_base_name;
+    
+    if (!fs::exists(latest_version_folder)) {
+        return updates;
+    }
+    
+    BOOST_LOG_TRIVIAL(info) << boost::format("[ElegooSlicer Updater] found latest valid OTA version: version=%1%, force_upgrade=%2%") %
+                               ota_profile_info.version % ota_profile_info.force;
+    
+    // Find JSON files in the selected versioned folder
     std::vector<boost::filesystem::path> paths;
-    for (const auto& dir_entry : boost::filesystem::directory_iterator(cache_profile_path)) {
-        const auto& path      = dir_entry.path();
+    for (const auto& dir_entry : boost::filesystem::directory_iterator(latest_version_folder)) {
+        const auto& path = dir_entry.path();
         std::string file_path = path.string();
         if (!is_json_file(file_path))
             continue;
         paths.push_back(path);
     }
-
+    
     std::stable_partition(paths.begin(), paths.end(), [](const boost::filesystem::path& path) {
         return path.filename().string().find("Elegoo") != std::string::npos;
     });
-
+    
+    // Parse description from Resource
+    nlohmann::json description;
+    try {
+        if (!ota_profile_info.description.empty()) {
+            description = nlohmann::json::parse(ota_profile_info.description);
+        }
+    } catch (...) {
+        // Ignore parse errors
+    }
+    
+    bool description_added = false;
+    
     for (auto& path : paths) {
-
-        const auto  path_in_vendor = vendor_path / path.filename();
-        std::string vendor_name    = path.filename().string(), cached_version , description_content;
-        nlohmann::json description;
-        // Remove the .json suffix.
+        const auto path_in_vendor = vendor_path / path.filename();
+        std::string vendor_name = path.filename().string();
+        
+        // Remove the .json suffix
         vendor_name.erase(vendor_name.size() - 5);
-        auto print_in_cache    = (cache_profile_path / vendor_name / PRESET_PRINT_NAME);
-        auto filament_in_cache = (cache_profile_path / vendor_name / PRESET_FILAMENT_NAME);
-        auto machine_in_cache  = (cache_profile_path / vendor_name / PRESET_PRINTER_NAME);
-
-        std::string changelog_file = (cache_profile_path / (vendor_name + ".changelog")).string();
-        bool        force_update;
-
-        if (!fs::exists(path_in_vendor) || !fs::exists(print_in_cache) || !fs::exists(filament_in_cache) || !fs::exists(machine_in_cache)) 
+        
+        // Check if preset files are complete for this vendor
+        if (!fs::exists(path_in_vendor) || !check_vendor_preset_files_complete(latest_version_folder, vendor_name))
             continue;
-
-        parse_ota_files(changelog_file, cached_version, force_update, description);
-
-        if (cached_version.empty())
-            continue;
-        BOOST_LOG_TRIVIAL(info) << boost::format("[ElegooSlicer Updater] found new presets of vendor: %1%, version %2%, force_upgrade %3%") %
-                                       vendor_name % cached_version % force_update;
-        std::string app_version           = SLIC3R_VERSION;
-        Semver      app_semver            = app_version;
-        Semver      cached_semver         = cached_version;
-        Semver      current_preset_semver = get_version_from_json(path_in_vendor.string());
-
-        bool valid_version = get_valid_ota_version(app_semver, current_preset_semver, cached_semver, 2);
-
+        
+        Semver cached_semver = ota_profile_info.version;
+        Semver current_preset_semver = get_version_from_json(path_in_vendor.string());
+        
+        // Create non-const copies for get_valid_ota_version
+        Semver app_semver_copy = app_semver;
+        Semver current_preset_semver_copy = current_preset_semver;
+        Semver cached_semver_copy = cached_semver;
+        
+        bool valid_version = get_valid_ota_version(app_semver_copy, current_preset_semver_copy, cached_semver_copy, 2);
+        
         if (!valid_version)
             continue;
-        BOOST_LOG_TRIVIAL(info) << boost::format("[ElegooSlicer Updater] need to update vendor: %1%'s settings from version %2%  to "
+        
+        BOOST_LOG_TRIVIAL(info) << boost::format("[ElegooSlicer Updater] need to update vendor: %1%'s settings from version %2% to "
                                                  "newer version %3%, force_upgrade %4%") %
-                                       vendor_name % current_preset_semver.to_string() % cached_semver.to_string() % force_update;
+                                       vendor_name % current_preset_semver.to_string() % cached_semver.to_string() % ota_profile_info.force;
+        
         Version version;
         version.config_version = cached_semver;
-        AppConfig* app_config = GUI::wxGetApp().app_config;
-        //std::string locale_name = app_config->getSystemLocale();
-        const auto  language    = app_config->get("language");
-        if (language.find("zh") != std::string::npos) {
-            description_content = description["zh"].get<std::string>();
-        } else {
-            description_content = description["en"].get<std::string>();
+        if (!description_added) {
+            updates.updates.emplace_back(std::move(path.string()), std::move(path_in_vendor.string()), std::move(version), vendor_name,
+                                         description, "", ota_profile_info.force, false);
+            description_added = true;
         }
-
-        updates.updates.emplace_back(std::move(path.string()), std::move(path_in_vendor.string()), std::move(version), vendor_name, description_content,
-                                     "", force_update, false);
-
-        // BBS: add directory support
-        updates.updates.emplace_back(cache_profile_path / vendor_name, vendor_path / vendor_name, Version(), vendor_name, "", "",
-                                     force_update, true);
+        updates.updates.emplace_back(latest_version_folder / vendor_name, vendor_path / vendor_name, Version(), vendor_name, "", "",
+                                     ota_profile_info.force, true);
     }
-
+    
     return updates;
-
 }
 
 //BBS: switch to new BBL.json configs
@@ -1503,6 +1741,10 @@ void PresetUpdater::sync(std::string http_url, std::string language, std::string
 	// into the closure (but perhaps the compiler can elide this).
     VendorMap vendors = preset_bundle ? preset_bundle->vendors : VendorMap{};
 
+    if(p->thread.joinable()) {
+        BOOST_LOG_TRIVIAL(warning) << "[ElegooSlicer Updater]:Updater is already running, skip this sync request.";
+        return;
+    }
 	p->thread = std::thread([this, vendors, http_url, language, plugin_version]() {
 		this->p->prune_tmps();
 		if (p->cancel)
@@ -1511,10 +1753,10 @@ void PresetUpdater::sync(std::string http_url, std::string language, std::string
 		if (p->cancel)
 			return;
         if (!vendors.empty()) {
-		    bool has_new_config = this->p->sync_config(vendors);
+		    bool has_valid_ota_version = this->p->check_has_valid_ota_version();
 		    if (p->cancel)
 			    return;
-            if(has_new_config)    
+            if(has_valid_ota_version)    
             {
                 GUI::wxGetApp().CallAfter([] 
                 {

@@ -16,6 +16,7 @@
 #include <slic3r/GUI/Widgets/WebView.hpp>
 #include <wx/webview.h>
 #include "slic3r/Utils/PrintHost.hpp"
+#include "slic3r/Utils/Elegoo/IPCServer.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Utils.hpp"
@@ -36,6 +37,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
+#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
 
 #define FIRST_TAB_NAME _L("Connected Printer")
 #define TAB_MAX_WIDTH 200
@@ -57,8 +59,38 @@ static std::mutex s_tabStateMutex;
 class TabArt : public wxAuiSimpleTabArt
 {
 private:
+    struct TabMetrics {
+        int maxWidth;
+        int minWidth;
+        int padding;
+        int iconTextSpacing;
+        int closeButtonSize;
+        int closeButtonMargin;
+        int separatorWidth;
+        int height;
+        int borderWidth;
+    };
+
     bool isDarkMode() const {
         return GUI_App::dark_mode();
+    }
+
+    int scale(wxWindow* wnd, int value) const {
+        return wnd ? wnd->FromDIP(value) : value;
+    }
+
+    TabMetrics getMetrics(wxWindow* wnd) const {
+        TabMetrics metrics;
+        metrics.maxWidth = scale(wnd, TAB_MAX_WIDTH);
+        metrics.minWidth = scale(wnd, TAB_MIN_WIDTH);
+        metrics.padding = scale(wnd, TAB_PADDING);
+        metrics.iconTextSpacing = scale(wnd, TAB_ICON_TEXT_SPACING);
+        metrics.closeButtonSize = scale(wnd, TAB_CLOSE_BUTTON_SIZE);
+        metrics.closeButtonMargin = scale(wnd, TAB_CLOSE_BUTTON_MARGIN);
+        metrics.separatorWidth = std::max(1, scale(wnd, TAB_SEPARATOR_WIDTH));
+        metrics.height = scale(wnd, TAB_HEIGHT);
+        metrics.borderWidth = std::max(1, 1);
+        return metrics;
     }
 
     wxAuiNotebook* getNotebookFrom(wxWindow* wnd) const {
@@ -73,58 +105,82 @@ private:
     }
 
     int calculateTabWidth(wxWindow* wnd, bool isFirstTab) const {
+        const TabMetrics metrics = getMetrics(wnd);
+
         if (isFirstTab) {
-            return TAB_MAX_WIDTH;
+            return metrics.maxWidth;
         }
         
         wxAuiNotebook* notebook = getNotebookFrom(wnd);
         if (!notebook) {
-            return TAB_MAX_WIDTH;
+            return metrics.maxWidth;
         }
         
         const int totalPages = notebook->GetPageCount();
         const int otherPages = totalPages - 1; // Exclude first tab
         
         if (otherPages <= 0) {
-            return TAB_MAX_WIDTH;
+            return metrics.maxWidth;
         }
         
         const int totalWidth = notebook->GetClientSize().x;
-        const int availableWidth = totalWidth - TAB_MAX_WIDTH;
+        const int availableWidth = totalWidth - metrics.maxWidth;
         
         if (availableWidth <= 0) {
-            return TAB_MIN_WIDTH;
+            return metrics.minWidth;
         }
         
         const int avgWidth = availableWidth / otherPages;
-        return std::max(TAB_MIN_WIDTH, std::min(TAB_MAX_WIDTH, avgWidth));
+        return std::max(metrics.minWidth, std::min(metrics.maxWidth, avgWidth));
     }
 
-    void drawTabContent(wxDC& dc, const wxRect& tab_rect, const wxBitmap& icon, 
-                       const wxString& text, const wxColour& text_colour, bool isFirstTab) const {
-        dc.SetTextForeground(text_colour);
-        wxSize icon_size = icon.IsOk() ? icon.GetSize() : wxSize(0, 0);
-        if (isFirstTab) {
-            icon_size = wxSize(16, 16);
-        } else {
-            icon_size = wxSize(22, 12);
+    wxBitmap getTabIcon(const wxString& caption, wxWindow* wnd) const {
+        if (caption == FIRST_TAB_NAME) {
+            return create_scaled_bitmap("printer_manager", wnd, 16);
         }
-       
+
+        return create_scaled_bitmap("elegoo_tab", wnd, 12);
+    }
+
+    wxSize getBitmapDrawSize(const wxBitmap& bitmap) const {
+        if (!bitmap.IsOk()) {
+            return wxSize(0, 0);
+        }
+
+        return wxSize(static_cast<int>(bitmap.GetScaledWidth()),
+                      static_cast<int>(bitmap.GetScaledHeight()));
+    }
+
+    void drawTabContent(wxDC& dc,
+                        wxWindow* wnd,
+                        const wxRect& tab_rect,
+                        const wxBitmap& icon,
+                        const wxString& text,
+                        const wxColour& text_colour,
+                        bool isFirstTab) const {
+        const TabMetrics metrics = getMetrics(wnd);
+
+        if (wnd) {
+            dc.SetFont(wnd->GetFont());
+        }
+
+        dc.SetTextForeground(text_colour);
+        const wxSize icon_size = getBitmapDrawSize(icon);
         const wxSize text_size = dc.GetTextExtent(text);
         
         // Calculate positions
-        const int icon_x = tab_rect.x + TAB_PADDING;
-        const int text_x = icon_x + icon_size.x + (icon.IsOk() ? TAB_ICON_TEXT_SPACING : 0);
+        const int icon_x = tab_rect.x + metrics.padding;
+        const int text_x = icon_x + icon_size.x + (icon.IsOk() ? metrics.iconTextSpacing : 0);
         const int icon_y = tab_rect.y + (tab_rect.height - icon_size.y) / 2;
         const int text_y = tab_rect.y + (tab_rect.height - text_size.y) / 2;
         
         // Draw icon
         if (icon.IsOk()) {
-            dc.DrawBitmap(icon, icon_x, icon_y);
+            dc.DrawBitmap(icon, icon_x, icon_y, true);
         }
         
         // Draw text with clipping (no ellipsis)
-        const int close_button_space = isFirstTab ? 0 : (TAB_CLOSE_BUTTON_SIZE + TAB_CLOSE_BUTTON_MARGIN);
+        const int close_button_space = isFirstTab ? metrics.padding : (metrics.closeButtonSize + metrics.closeButtonMargin * 2);
         const int text_max_width = tab_rect.x + tab_rect.width - text_x - close_button_space;
         
         if (text_max_width > 0) {
@@ -135,21 +191,25 @@ private:
         }
     }
 
-    void drawCloseButton(wxDC& dc, const wxRect& tab_rect, int tabWidth, 
-                        int close_button_state, wxRect* out_button_rect) const {
+    void drawCloseButton(wxDC& dc,
+                         wxWindow* wnd,
+                         const wxRect& tab_rect,
+                         int close_button_state,
+                         wxRect* out_button_rect) const {
+        const TabMetrics metrics = getMetrics(wnd);
         wxRect close_rect(
-            tab_rect.x + tabWidth - TAB_CLOSE_BUTTON_SIZE - TAB_CLOSE_BUTTON_MARGIN,
-            tab_rect.y + (tab_rect.height - TAB_CLOSE_BUTTON_SIZE) / 2,
-            TAB_CLOSE_BUTTON_SIZE,
-            TAB_CLOSE_BUTTON_SIZE
+            tab_rect.x + tab_rect.width - metrics.closeButtonSize - metrics.closeButtonMargin,
+            tab_rect.y + (tab_rect.height - metrics.closeButtonSize) / 2,
+            metrics.closeButtonSize,
+            metrics.closeButtonSize
         );
         
         if (out_button_rect) *out_button_rect = close_rect;
         
         // Simple SVG with color modification
-        wxBitmap close_icon = create_scaled_bitmap("topbar_close", nullptr, TAB_CLOSE_BUTTON_SIZE);
+        wxBitmap close_icon = create_scaled_bitmap("topbar_close", wnd, TAB_CLOSE_BUTTON_SIZE);
         if (close_icon.IsOk()) {
-            auto close_icon_ = wxBitmap(close_icon.ConvertToImage().Rescale(TAB_CLOSE_BUTTON_SIZE, TAB_CLOSE_BUTTON_SIZE));
+            auto close_icon_ = wxBitmap(close_icon.ConvertToImage().Rescale(metrics.closeButtonSize, metrics.closeButtonSize));
             // Change color based on state
             if (close_button_state == wxAUI_BUTTON_STATE_HOVER || close_button_state == wxAUI_BUTTON_STATE_PRESSED) {
                 wxImage img = close_icon_.ConvertToImage();
@@ -165,10 +225,11 @@ private:
                 }
                 close_icon_ = wxBitmap(img);
             }
-            
-            const int icon_x = close_rect.x + (close_rect.width - close_icon_.GetWidth()) / 2;
-            const int icon_y = close_rect.y + (close_rect.height - close_icon_.GetHeight()) / 2;
-            dc.DrawBitmap(close_icon_, icon_x, icon_y);
+
+            const wxSize close_icon_size = getBitmapDrawSize(close_icon_);
+            const int icon_x = close_rect.x + (close_rect.width - close_icon_size.x) / 2;
+            const int icon_y = close_rect.y + (close_rect.height - close_icon_size.y) / 2;
+            dc.DrawBitmap(close_icon_, icon_x, icon_y, true);
         }
     }
 
@@ -200,21 +261,10 @@ private:
         }
     }
 
-    // Get icon for tab based on caption
-    wxBitmap getTabIcon(const wxString& caption) const {
-        if (caption == FIRST_TAB_NAME) {
-            return create_scaled_bitmap("printer_manager", nullptr, 16);  
-        } else {
-            return create_scaled_bitmap("elegoo_tab", nullptr, 12);  
-        }
-        return wxBitmap();
-    }
-
 public:
     TabArt() {
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
         getColorScheme(activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator);
-
         SetColour(inactiveTab);        // inactive tab background color
         SetActiveColour(activeTab);    // active tab background color
     }
@@ -232,6 +282,7 @@ public:
     {
         const bool isFirstTab = (page.caption == FIRST_TAB_NAME);
         const bool isActive = page.active;
+        const TabMetrics metrics = getMetrics(wnd);
 
         // Get color scheme
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
@@ -241,15 +292,12 @@ public:
         int tabWidth = calculateTabWidth(wnd, isFirstTab);
   
         wxRect tab_rect = in_rect;
-        tab_rect.y = in_rect.y + TAB_BORDER_WIDTH;
-        tab_rect.width = tabWidth - TAB_SEPARATOR_WIDTH;   
-        tab_rect.height = tab_rect.height - 1 - TAB_BORDER_WIDTH;
+        tab_rect.y = in_rect.y + metrics.borderWidth;
+        tab_rect.width = std::max(0, tabWidth - metrics.separatorWidth);
+        tab_rect.height = std::max(0, tab_rect.height - metrics.borderWidth);
         // Get icon and text
-        wxBitmap icon = getTabIcon(page.caption);
+        wxBitmap icon = getTabIcon(page.caption, wnd);
         wxString text = page.caption;
-        wxSize text_size = dc.GetTextExtent(text);
-        wxSize icon_size = icon.IsOk() ? icon.GetSize() : wxSize(0, 0);
-        
 
         // Check if mouse is over this tab
         wxPoint mousePos = wnd->ScreenToClient(wxGetMousePosition());
@@ -270,20 +318,21 @@ public:
         // Draw tab background for active tab or hovered tab except first tab is active
         dc.SetBrush(wxBrush(tab_colour));
         dc.SetPen(wxPen(tab_colour, 0)); 
+
         if ((!isFirstTab && isActive) || (mouseOverTab && !isActive)) {
             dc.DrawRectangle(tab_rect);
         }
         
         // Draw icon and text
-        drawTabContent(dc, tab_rect, icon, text, text_colour, isFirstTab);
+        drawTabContent(dc, wnd, tab_rect, icon, text, text_colour, isFirstTab);
 
         // Draw close button for non-first tabs when mouse is over the tab or tab is active
         if (!isFirstTab && (isActive || mouseOverTab)) {
-            drawCloseButton(dc, tab_rect, tabWidth, close_button_state, out_button_rect);
+            drawCloseButton(dc, wnd, tab_rect, close_button_state, out_button_rect);
         }
         
         // Draw separator
-        DrawTabSeparator(dc, tab_rect.x + tab_rect.width, tab_rect.y, tab_rect.height);
+        DrawTabSeparator(dc, wnd, tab_rect.x + tab_rect.width, tab_rect.y, tab_rect.height);
              
         // Set output parameters
         if (out_tab_rect) *out_tab_rect = tab_rect;
@@ -292,19 +341,20 @@ public:
     
     void DrawBackground(wxDC& dc, wxWindow* wnd, const wxRect& rect) override
     {
+        const TabMetrics metrics = getMetrics(wnd);
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
         getColorScheme(activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator);
 
         // Draw header background
         auto headerRect = rect;
-        headerRect.y = rect.y + TAB_BORDER_WIDTH;
+        headerRect.y = rect.y + metrics.borderWidth;
         dc.SetPen(wxPen(tabHeaderBackground, 0));
         dc.SetBrush(wxBrush(tabHeaderBackground));
         dc.DrawRectangle(headerRect);
 
         // Draw header bottom border
-        dc.SetPen(wxPen(border, TAB_BORDER_WIDTH));
-        dc.DrawLine(rect.x, rect.y + rect.height - TAB_BORDER_WIDTH, rect.x + rect.width, rect.y + rect.height - TAB_BORDER_WIDTH);
+        dc.SetPen(wxPen(border, metrics.borderWidth));
+        dc.DrawLine(rect.x, rect.y + rect.height - metrics.borderWidth, rect.x + rect.width, rect.y + rect.height - metrics.borderWidth);
     }
 
     int GetBorderWidth(wxWindow* wnd) override {
@@ -312,13 +362,19 @@ public:
     }
 
     wxSize GetTabSize(wxDC& dc, wxWindow* wnd, const wxString& caption, const wxBitmap& bitmap, bool active, int close_button_state, int* x_extent) override {
+        const TabMetrics metrics = getMetrics(wnd);
         // Get the default tab size
-        wxSize default_size = wxAuiSimpleTabArt::GetTabSize(dc, wnd, caption, bitmap, active, close_button_state, x_extent);  
+        wxAuiSimpleTabArt::GetTabSize(dc, wnd, caption, bitmap, active, close_button_state, x_extent);
+        const int tab_width = calculateTabWidth(wnd, caption == FIRST_TAB_NAME);
+        if (x_extent) {
+            *x_extent = tab_width;
+        }
         // Return custom size with modified height
-        return wxSize(default_size.x, TAB_HEIGHT);
+        return wxSize(tab_width, metrics.height);
     }
     void DrawBorder(wxDC& dc, wxWindow* wnd, const wxRect& rect) override
     {
+        const TabMetrics metrics = getMetrics(wnd);
         wxColour activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator;
         getColorScheme(activeTab, inactiveTab, hoverTab, activeText, inactiveText, background, border, tabHeaderBackground, separator);
 
@@ -328,22 +384,23 @@ public:
         dc.DrawRectangle(rect);
 
         auto headerRect = rect;
-        headerRect.height = TAB_HEIGHT + TAB_BORDER_WIDTH;
+        headerRect.height = metrics.height + metrics.borderWidth;
         if(headerRect.height <= rect.height) {
             dc.SetPen(wxPen(tabHeaderBackground, 0));
             dc.SetBrush(wxBrush(tabHeaderBackground));
             dc.DrawRectangle(headerRect);
         }
         // Draw header top border
-        dc.SetPen(wxPen(border, TAB_BORDER_WIDTH));
+        dc.SetPen(wxPen(border, metrics.borderWidth));
         dc.DrawLine(headerRect.x, headerRect.y, headerRect.x + headerRect.width, headerRect.y);
     }
 
     // Draw separator between tabs
-    void DrawTabSeparator(wxDC& dc, int x, int y, int height) const
+    void DrawTabSeparator(wxDC& dc, wxWindow* wnd, int x, int y, int height) const
     {
+        const TabMetrics metrics = getMetrics(wnd);
         wxColour separator_color = isDarkMode() ? wxColour(80, 80, 80) : wxColour(120, 120, 120);
-        dc.SetPen(wxPen(separator_color, TAB_SEPARATOR_WIDTH));
+        dc.SetPen(wxPen(separator_color, metrics.separatorWidth));
         dc.DrawLine(x, y, x, y + height);
     }
 };
@@ -362,7 +419,6 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     SetSizer(mainSizer);
     wxAuiManager *m = (wxAuiManager*)&mTabBar->GetAuiManager();
     m->GetArtProvider()->SetMetric(wxAUI_DOCKART_PANE_BORDER_SIZE, 0);
-
     // Delay creating and loading WebView until window is shown
     // This fixes macOS multi-display rendering issue where WKWebView fails to render
     // on extended displays if loaded before the window is fully displayed
@@ -376,6 +432,23 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     mTabBar->Bind(wxEVT_AUINOTEBOOK_DRAG_MOTION, &PrinterManagerView::onTabDragMotion, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_END_DRAG, &PrinterManagerView::onTabEndDrag, this);
     mTabBar->Bind(wxEVT_AUINOTEBOOK_PAGE_CHANGED, &PrinterManagerView::onTabChanged, this);
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: constructed (WebView deferred)";
+}
+
+void PrinterManagerView::msw_rescale()
+{
+    if (!mTabBar) {
+        return;
+    }
+
+    mTabBar->SetArtProvider(new TabArt());
+    mTabBar->InvalidateBestSize();
+    mTabBar->Layout();
+    mTabBar->Refresh();
+    mTabBar->Update();
+
+    Layout();
+    Refresh();
 }
 
 void PrinterManagerView::initializeWebView()
@@ -442,28 +515,53 @@ void PrinterManagerView::initializeWebView()
     loadTabState();
     
     Layout();
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView::initializeWebView: complete";
 }
 
 PrinterManagerView::~PrinterManagerView() {
+    BOOST_LOG_TRIVIAL(info) << "PrinterManagerView: destructor";
     // Save tab state before destruction
     saveTabState();
 
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnectAll();
-    PrinterNetworkEvent::getInstance()->eventRawChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->rtcTokenChanged.disconnectAll();
-    UserNetworkEvent::getInstance()->rtmMessageChanged.disconnectAll();
+    if (mConnectStatusChangedHandlerId != 0) {
+        PrinterNetworkEvent::getInstance()->connectStatusChanged.disconnect(mConnectStatusChangedHandlerId);
+        mConnectStatusChangedHandlerId = 0;
+    }
+    if (mEventRawChangedHandlerId != 0) {
+        PrinterNetworkEvent::getInstance()->eventRawChanged.disconnect(mEventRawChangedHandlerId);
+        mEventRawChangedHandlerId = 0;
+    }
+    if (mRtcTokenChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->rtcTokenChanged.disconnect(mRtcTokenChangedHandlerId);
+        mRtcTokenChangedHandlerId = 0;
+    }
+    if (mRtmMessageChangedHandlerId != 0) {
+        UserNetworkEvent::getInstance()->rtmMessageChanged.disconnect(mRtmMessageChangedHandlerId);
+        mRtmMessageChangedHandlerId = 0;
+    }
 
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     mPrinterViews.clear();
 }
 
-void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveState)
+void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveState, bool openDeviceAssistant)
 {
+    const auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count();
+
     PrinterWebView* existingView = findPrinterView(printerId);
     if (existingView) {
         int idx = mTabBar->GetPageIndex(existingView);
         if (idx != wxNOT_FOUND) {
             mTabBar->SetSelection(idx);
+            if (openDeviceAssistant) {
+                nlohmann::json data;
+                data["printerId"] = printerId;
+                data["openDeviceAssistant"] = true;
+                data["timestamp"] = nowMs;
+                existingView->onOpenDeviceAssistant(data);
+            }
             Layout();
             return;
         }
@@ -485,6 +583,15 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
     if(url.IsEmpty()) {
         return;
     }
+
+    auto appendUrlParam = [&url](const std::string& key, const std::string& value) {
+        if (url.Contains("?")) {
+            url += "&" + key + "=" + from_u8(value);
+        } else {
+            url += "?" + key + "=" + from_u8(value);
+        }
+    };
+
     PrinterWebView* view = new PrinterWebView(mTabBar);
 
     if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2")) 
@@ -498,24 +605,24 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
     if (!region.empty()) {
         // Convert region value to URL encoded format
         std::string region_encoded = wxGetApp().url_encode(region);
-        
-        // Check if the URL already contains parameters
-        if (url.Contains("?")) {
-            url += "&region=" + from_u8(region_encoded);
-        } else {
-            url += "?region=" + from_u8(region_encoded);
-        }
+
+        appendUrlParam("region", region_encoded);
     }
 
     // Add current language parameter
     wxString lang = wxGetApp().current_language_code_safe();
     if (!lang.empty()) {
-        if (url.Contains("?")) {
-            url += "&lang=" + lang;
-        } else {
-            url += "?lang=" + lang;
-        }
+        appendUrlParam("lang", lang.ToStdString());
     }
+
+    if(wxGetApp().app_config->get_bool("developer_mode")){
+        appendUrlParam("dev", "true");
+    }
+
+    if (openDeviceAssistant) {
+        appendUrlParam("openDeviceAssistant", "true");
+        appendUrlParam("timestamp", std::to_string(nowMs));
+    }  
 
     view->load_url(url);
     // Local network shows IP address, cloud printing shows printer name
@@ -625,46 +732,47 @@ void PrinterManagerView::setupIPCHandlers()
     if (!mIpc) return;
 
     // Handle request_printer_list
-    mIpc->onRequest("request_printer_list", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_printer_list", [this](const IPCRequest& request){
         return getPrinterList();
     });
 
     // Handle request_printer_model_list
-    mIpc->onRequest("request_printer_model_list", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_printer_model_list", [this](const IPCRequest& request){
         return getPrinterModelList();
     });
 
 
     // Handle request_printer_detail
-    mIpc->onRequest("request_printer_detail", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_printer_detail", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
+        bool openDeviceAssistant = params.value("openDeviceAssistant", false);
         if (!printerId.empty()) {
-            wxGetApp().CallAfter([this, printerId]() {
-                openPrinterTab(printerId);
+            wxGetApp().CallAfter([this, printerId, openDeviceAssistant]() {
+                openPrinterTab(printerId, true, openDeviceAssistant);
             });
         }
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
     // Handle request_discover_printers (async due to time-consuming operation)
-    mIpc->onRequestAsync("request_discover_printers", [this](const webviewIpc::IPCRequest& request, 
-                                                           std::function<void(const webviewIpc::IPCResult&)> sendResponse) {  
+    mIpc->onRequestAsync("request_discover_printers", [this](const IPCRequest& request, 
+                                                           std::function<void(const IPCResult&)> sendResponse) {  
         try {
             // Call the static method to avoid accessing this pointer
             auto result = this->discoverPrinter();
             sendResponse(result);
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("Discovery failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Discovery failed: ") + e.what()));
         }
     });
 
     // Handle request_add_printer (async)
-    mIpc->onRequestAsync("request_add_printer", [this](const webviewIpc::IPCRequest& request,
-                                                        std::function<void(const webviewIpc::IPCResult&)> sendResponse) {  
+    mIpc->onRequestAsync("request_add_printer", [this](const IPCRequest& request,
+                                                        std::function<void(const IPCResult&)> sendResponse) {  
         auto params = request.params;
         if (!params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("Missing printer parameter"));
+            sendResponse(IPCResult::error("Missing printer parameter"));
             return;
         }
         nlohmann::json printer = params["printer"];
@@ -673,18 +781,18 @@ void PrinterManagerView::setupIPCHandlers()
             auto result = addPrinter(printer);
             sendResponse(result);        
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("Add printer failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Add printer failed: ") + e.what()));
         } catch (...) {
-            sendResponse(webviewIpc::IPCResult::error("Add printer failed: Unknown error"));
+            sendResponse(IPCResult::error("Add printer failed: Unknown error"));
         }
     });
 
     // Handle request_cancel_add_printer
-    mIpc->onRequestAsync("request_cancel_add_printer", [this](const webviewIpc::IPCRequest& request,
-                                                                 std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_cancel_add_printer", [this](const IPCRequest& request,
+                                                                 std::function<void(const IPCResult&)> sendResponse) {
         auto params = request.params;
         if (!params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("Missing printer parameter"));
+            sendResponse(IPCResult::error("Missing printer parameter"));
             return;
         }
         nlohmann::json printer = params["printer"];
@@ -692,18 +800,18 @@ void PrinterManagerView::setupIPCHandlers()
             auto result = cancelBindPrinter(printer);
             sendResponse(result);
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("Cancel bind printer failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("Cancel bind printer failed: ") + e.what()));
         } catch (...) {
-            sendResponse(webviewIpc::IPCResult::error("Cancel bind printer failed: Unknown error"));
+            sendResponse(IPCResult::error("Cancel bind printer failed: Unknown error"));
         }
     });
     // Handle request_add_physical_printer (async)
-    mIpc->onRequestAsync("request_add_physical_printer", [this](const webviewIpc::IPCRequest& request,
-                                                                 std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_add_physical_printer", [this](const IPCRequest& request,
+                                                                 std::function<void(const IPCResult&)> sendResponse) {
       
         auto params = request.params;
         if (!params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("Missing printer parameter"));
+            sendResponse(IPCResult::error("Missing printer parameter"));
             return;
         }
         
@@ -712,14 +820,14 @@ void PrinterManagerView::setupIPCHandlers()
                 auto result = addPhysicalPrinter(printer);   
                 sendResponse(result);
             } catch (const std::exception& e) {
-                sendResponse(webviewIpc::IPCResult::error(std::string("Add physical printer failed: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Add physical printer failed: ") + e.what()));
             } catch (...) {
-                sendResponse(webviewIpc::IPCResult::error("Add physical printer failed: Unknown error"));
+                sendResponse(IPCResult::error("Add physical printer failed: Unknown error"));
             }
     });
 
     // Handle request_update_printer_name
-    mIpc->onRequest("request_update_printer_name", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_update_printer_name", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         std::string printerName = params.value("printerName", "");
@@ -727,11 +835,11 @@ void PrinterManagerView::setupIPCHandlers()
     });
 
     // Handle request_update_physical_printer
-    mIpc->onRequestAsync("request_update_physical_printer", [this](const webviewIpc::IPCRequest& request,
-                                                                    std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_update_physical_printer", [this](const IPCRequest& request,
+                                                                    std::function<void(const IPCResult&)> sendResponse) {
         auto params = request.params;
         if (!params.contains("printerId") || !params.contains("printer")) {
-            sendResponse(webviewIpc::IPCResult::error("missing printerId or printer parameter"));
+            sendResponse(IPCResult::error("missing printerId or printer parameter"));
             return;
         }
         
@@ -742,15 +850,15 @@ void PrinterManagerView::setupIPCHandlers()
             auto result = updatePhysicalPrinter(printerId, printer);
             sendResponse(result);
         } catch (const std::exception& e) {
-            sendResponse(webviewIpc::IPCResult::error(std::string("update physical printer failed: ") + e.what()));
+            sendResponse(IPCResult::error(std::string("update physical printer failed: ") + e.what()));
         } catch (...) {
-            sendResponse(webviewIpc::IPCResult::error("update physical printer failed: unknown error"));
+            sendResponse(IPCResult::error("update physical printer failed: unknown error"));
         }
     });
 
     // Handle request_update_printer_host
-    mIpc->onRequestAsync("request_update_printer_host", [this](const webviewIpc::IPCRequest& request,
-                                                                std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_update_printer_host", [this](const IPCRequest& request,
+                                                                std::function<void(const IPCResult&)> sendResponse) {
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         std::string host = params.value("host", "");
@@ -759,108 +867,202 @@ void PrinterManagerView::setupIPCHandlers()
                 auto result = updatePrinterHost(printerId, host);
                 sendResponse(result);
             } catch (const std::exception& e) {
-                sendResponse(webviewIpc::IPCResult::error(std::string("Update printer host failed: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Update printer host failed: ") + e.what()));
             } catch (...) {
-                sendResponse(webviewIpc::IPCResult::error("Update printer host failed: Unknown error"));    
+                sendResponse(IPCResult::error("Update printer host failed: Unknown error"));    
             }
     });
 
     // Handle request_delete_printer
-    mIpc->onRequest("request_delete_printer", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_delete_printer", [this](const IPCRequest& request){
         auto params = request.params;
         std::string printerId = params.value("printerId", "");
         return deletePrinter(printerId);
     });
 
     // Handle request_browse_ca_file (async because it shows a file dialog)
-    mIpc->onRequestAsync("request_browse_ca_file", [this](const webviewIpc::IPCRequest& request,
-                                                          std::function<void(const webviewIpc::IPCResult&)> sendResponse) {
+    mIpc->onRequestAsync("request_browse_ca_file", [this](const IPCRequest& request,
+                                                          std::function<void(const IPCResult&)> sendResponse) {
         wxGetApp().CallAfter([this, sendResponse]() {
             try {
-                webviewIpc::IPCResult result = browseCAFile();
+                IPCResult result = browseCAFile();
                 sendResponse(result);
             } catch (const std::exception& e) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << boost::format(": error in browseCAFile: %s") % e.what();
-                sendResponse(webviewIpc::IPCResult::error(std::string("Failed to browse CA file: ") + e.what()));
+                sendResponse(IPCResult::error(std::string("Failed to browse CA file: ") + e.what()));
             } catch (...) {
                 BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": unknown error in browseCAFile";
-                sendResponse(webviewIpc::IPCResult::error("Failed to browse CA file: Unknown error"));
+                sendResponse(IPCResult::error("Failed to browse CA file: Unknown error"));
             }
         });
     });
 
     // Handle request_refresh_printers
-    mIpc->onRequest("request_refresh_printers", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_refresh_printers", [this](const IPCRequest& request){
         // Implementation for refresh printers
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
+    // Handle request_refresh_wan_printers
+    mIpc->onRequest("request_refresh_wan_printers", [this](const IPCRequest& request){
+        PrinterManager::getInstance()->enqueueWanSyncRequest();
+        return IPCResult::success();
+    });
     // Handle request_logout_print_host
-    mIpc->onRequest("request_logout_print_host", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_logout_print_host", [this](const IPCRequest& request){
         // Implementation for logout print host
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
     // Handle request_connect_physical_printer
-    mIpc->onRequest("request_connect_physical_printer", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_connect_physical_printer", [this](const IPCRequest& request){
         // Implementation for connect physical printer
-        return webviewIpc::IPCResult::success();
+        return IPCResult::success();
     });
 
-    mIpc->onRequest("checkLoginStatus", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("checkLoginStatus", [this](const IPCRequest& request){
         return handleCheckLoginStatus();
     });
 
-    mIpc->onRequest("ready", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("ready", [this](const IPCRequest& request){
         return handleReady();
     });
 
-    mIpc->onRequest("request_user_info", [this](const webviewIpc::IPCRequest& request){
+    mIpc->onRequest("request_user_info", [this](const IPCRequest& request){
         UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();   
         nlohmann::json data = convertUserNetworkInfoToJson(userNetworkInfo);
-        return webviewIpc::IPCResult::success(data);
-    });
-    
-    PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        if (targetView) {
-            nlohmann::json data;
-            data["status"] = event.status;
-            targetView->onConnectionStatus(data);
-        }
-    });
-    PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        if (targetView) {
-            nlohmann::json data;
-            data["event"] = event.event;
-            targetView->onPrinterEventRaw(data);
-        }
+        return IPCResult::success(data);
     });
 
-    UserNetworkEvent::getInstance()->rtcTokenChanged.connect([this](const UserRtcTokenEvent& event) {
-        nlohmann::json data;
-        data["rtcToken"] = event.userInfo.rtcToken;
-        data["userId"] = event.userInfo.userId;
-        data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
-        forEachPrinterView([&data](const std::string&, PrinterWebView* view) {
-            view->onRtcTokenChanged(data);
+    mIpc->onRequest("get_license_expired_devices", [this](const IPCRequest& request){
+        auto licenseResult = PrinterManager::getInstance()->getLicenseExpiredDevices();
+        IPCResult result;
+        nlohmann::json devicesJson;
+        devicesJson["devices"] = nlohmann::json::array();
+        if (licenseResult.hasData()) {
+            for (const auto& device : licenseResult.data.value()) {
+                nlohmann::json deviceJson;
+                deviceJson["serialNumber"] = device.serialNumber;
+                deviceJson["status"] = device.status;
+                devicesJson["devices"].push_back(deviceJson);
+            }
+        }
+        result.data = devicesJson;
+        result.message = licenseResult.message;
+        result.code = licenseResult.isSuccess() ? 0 : static_cast<int>(licenseResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("renew_license", [this](const IPCRequest& request){
+        auto params = request.params;
+        std::string serialNumber = params.value("serialNumber", "");
+        auto renewResult = PrinterManager::getInstance()->renewLicense(serialNumber);
+        IPCResult result;
+        result.message = renewResult.message;
+        result.code = renewResult.isSuccess() ? 0 : static_cast<int>(renewResult.code);
+        return result;
+    });
+
+    mIpc->onRequest("get_license_expired_devices", [this](const IPCRequest& request){
+        auto licenseResult = PrinterManager::getInstance()->getLicenseExpiredDevices();
+        IPCResult result;
+        nlohmann::json devicesJson;
+        devicesJson["devices"] = nlohmann::json::array();
+        if (licenseResult.hasData()) {
+            for (const auto& device : licenseResult.data.value()) {
+                nlohmann::json deviceJson;
+                deviceJson["serialNumber"] = device.serialNumber;
+                deviceJson["status"] = device.status;
+                devicesJson["devices"].push_back(deviceJson);
+            }
+        }
+        result.data = devicesJson;
+        result.message = licenseResult.message;
+        result.code = licenseResult.isSuccess() ? 0 : static_cast<int>(licenseResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("renew_license", [this](const IPCRequest& request){
+        auto params = request.params;
+        std::string serialNumber = params.value("serialNumber", "");
+        auto renewResult = PrinterManager::getInstance()->renewLicense(serialNumber);
+        IPCResult result;
+        result.message = renewResult.message;
+        result.code = renewResult.isSuccess() ? 0 : static_cast<int>(renewResult.code);
+        return result;
+    });
+    
+    mIpc->onRequest("refresh_printer_status", [this](const IPCRequest& request){
+        IPCResult result;
+        auto printerList = PrinterManager::getInstance()->getPrinterList(); 
+        for (const auto& printer : printerList) {
+            auto refreshResult = PrinterManager::getInstance()->refreshPrinterStatus(printer.printerId);
+        }
+        result.code = 0;
+        return result;
+    });
+    
+    mConnectStatusChangedHandlerId = PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["status"] = event.status;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onConnectionStatus(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.connectStatusChanged", data, ""));
+            }
         });
     });
-    UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
-        PrinterWebView* targetView = findPrinterView(event.printerId);
-        if (targetView) {
+    mEventRawChangedHandlerId = PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
+            nlohmann::json data;
+            data["event"] = event.event;
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onPrinterEventRaw(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.eventRawChanged", data, ""));
+            }
+        });
+    });
+
+    mRtcTokenChangedHandlerId = UserNetworkEvent::getInstance()->rtcTokenChanged.connect([this](const UserRtcTokenEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            nlohmann::json data;
+            data["rtcToken"] = event.userInfo.rtcToken;
+            data["userId"] = event.userInfo.userId;
+            data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
+            forEachPrinterView([&data](const std::string&, PrinterWebView* view) { view->onRtcTokenChanged(data); });
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtcTokenChanged", data, ""));
+            }
+        });
+    });
+    mRtmMessageChangedHandlerId = UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
+        wxGetApp().CallAfter([this, event] {
+            PrinterWebView* targetView = findPrinterView(event.printerId);
             nlohmann::json data;
             data["message"] = event.message;
-            targetView->onRtmMessage(data);
-        }
+            data["printerId"] = event.printerId;
+            if (targetView) {
+                targetView->onRtmMessage(data);
+            }
+            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtmMessageChanged", data, ""));
+            }
+        });
     });
 
 }
 
-webviewIpc::IPCResult PrinterManagerView::deletePrinter(const std::string& printerId)
+IPCResult PrinterManagerView::deletePrinter(const std::string& printerId)
 { 
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto networkResult = PrinterManager::getInstance()->deletePrinter(printerId);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
@@ -904,9 +1106,9 @@ void PrinterManagerView::closeInvalidPrinterTab(std::vector<PrinterNetworkInfo>&
     });
 
 }
-webviewIpc::IPCResult PrinterManagerView::updatePrinterName(const std::string& printerId, const std::string& printerName)
+IPCResult PrinterManagerView::updatePrinterName(const std::string& printerId, const std::string& printerName)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     wxGetApp().CallAfter([this, printerId, printerName]() {
         PrinterWebView* view = findPrinterView(printerId);
         if (view) {
@@ -921,9 +1123,9 @@ webviewIpc::IPCResult PrinterManagerView::updatePrinterName(const std::string& p
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::updatePrinterHost(const std::string& printerId, const std::string& host)
+IPCResult PrinterManagerView::updatePrinterHost(const std::string& printerId, const std::string& host)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto networkResult = PrinterManager::getInstance()->updatePrinterHost(printerId, host);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
@@ -949,9 +1151,9 @@ webviewIpc::IPCResult PrinterManagerView::updatePrinterHost(const std::string& p
     return result;
 }
 
-webviewIpc::IPCResult PrinterManagerView::updatePhysicalPrinter(const std::string& printerId, const nlohmann::json& printer)
+IPCResult PrinterManagerView::updatePhysicalPrinter(const std::string& printerId, const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
 
     PrinterNetworkInfo oldPrinter =  PrinterManager::getInstance()->getPrinterNetworkInfo(printerId);
@@ -983,9 +1185,9 @@ webviewIpc::IPCResult PrinterManagerView::updatePhysicalPrinter(const std::strin
     return result;
 }
 
-webviewIpc::IPCResult PrinterManagerView::addPrinter(const nlohmann::json& printer)
+IPCResult PrinterManagerView::addPrinter(const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
     printerInfo.isPhysicalPrinter = false;
     auto networkResult = PrinterManager::getInstance()->addPrinter(printerInfo);
@@ -993,9 +1195,9 @@ webviewIpc::IPCResult PrinterManagerView::addPrinter(const nlohmann::json& print
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
+IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkErrorCode errorCode = PrinterNetworkErrorCode::SUCCESS;
     PrinterNetworkInfo printerInfo;
     try {
@@ -1013,18 +1215,18 @@ webviewIpc::IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::jso
     return result;
 }
 
-webviewIpc::IPCResult PrinterManagerView::cancelBindPrinter(const nlohmann::json& printer)
+IPCResult PrinterManagerView::cancelBindPrinter(const nlohmann::json& printer)
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
     auto networkResult = PrinterManager::getInstance()->cancelBindPrinter(printerInfo);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::discoverPrinter()
+IPCResult PrinterManagerView::discoverPrinter()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto printerListResult = PrinterManager::getInstance()->discoverPrinter();
     std::vector<PrinterNetworkInfo> printerList;
     if(printerListResult.hasData()) {
@@ -1045,9 +1247,9 @@ webviewIpc::IPCResult PrinterManagerView::discoverPrinter()
     result.message = printerListResult.message;
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::getPrinterList()
+IPCResult PrinterManagerView::getPrinterList()
 {  
-    webviewIpc::IPCResult result;
+    IPCResult result;
     // Cache for printer images (printerId -> base64 image data)
     static std::map<std::string, std::string> printerImageCache;
     auto printerList = PrinterManager::getInstance()->getPrinterList();
@@ -1087,15 +1289,14 @@ webviewIpc::IPCResult PrinterManagerView::getPrinterList()
     // Return object with printer list and main client status
     nlohmann::json resultData;
     resultData["printers"] = response;
-    resultData["isMainClient"] = MultiInstanceCoordinator::getInstance()->isMaster();
     result.data = resultData;
     result.code = 0;
     result.message = getErrorMessage(PrinterNetworkErrorCode::SUCCESS);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::browseCAFile()
+IPCResult PrinterManagerView::browseCAFile()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     PrinterNetworkErrorCode errorCode = PrinterNetworkErrorCode::SUCCESS;
     std::string path = "";
     try {
@@ -1113,7 +1314,7 @@ webviewIpc::IPCResult PrinterManagerView::browseCAFile()
     result.message = getErrorMessage(errorCode);
     return result;
 }
-webviewIpc::IPCResult PrinterManagerView::handleReady()
+IPCResult PrinterManagerView::handleReady()
 {
     lock_guard<mutex> lock(mUserInfoMutex);
     mIsReady = true;
@@ -1125,30 +1326,31 @@ webviewIpc::IPCResult PrinterManagerView::handleReady()
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": sent pending user info to WebView";
     }
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": ready";
-    return webviewIpc::IPCResult::success();
+    return IPCResult::success();
 }
-webviewIpc::IPCResult PrinterManagerView::handleCheckLoginStatus()
+IPCResult PrinterManagerView::handleCheckLoginStatus()
 {
     UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();
     auto            result          = UserNetworkManager::getInstance()->checkUserNeedReLogin();
     if (result.isSuccess()) {
         bool needReLogin = result.data.value();
         if (needReLogin) {
+            TelemetryReporter::getInstance()->reportEvent("login_click");
             // need re-login
             auto evt = new wxCommandEvent(EVT_USER_LOGIN);
             wxQueueEvent(wxGetApp().mainframe, evt);
-            return webviewIpc::IPCResult::success();
+            return IPCResult::success();
         }
     } else {
-        return webviewIpc::IPCResult::error(result.message);
+        return IPCResult::error(result.message);
     }
     // don't need to re-login, return user info
     nlohmann::json data = convertUserNetworkInfoToJson(userNetworkInfo);
-    return webviewIpc::IPCResult::success(data);
+    return IPCResult::success(data);
 }
-webviewIpc::IPCResult PrinterManagerView::getPrinterModelList()
+IPCResult PrinterManagerView::getPrinterModelList()
 {
-    webviewIpc::IPCResult result;
+    IPCResult result;
     auto vendorPrinterModelConfigMap = PrinterManager::getVendorPrinterModelConfig();   
     nlohmann::json response = nlohmann::json::array();
     for (auto& vendor : vendorPrinterModelConfigMap) {

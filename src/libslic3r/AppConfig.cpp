@@ -226,6 +226,10 @@ void AppConfig::set_defaults()
     if (get("show_outline").empty())
         set_bool("show_outline", true);
 
+    // Beginner Guide - default to false (not shown yet)
+    if (get("beginner_guide_shown").empty())
+        set_bool("beginner_guide_shown", false);
+
 #ifdef _WIN32
 
 //#ifdef SUPPORT_3D_CONNEXION

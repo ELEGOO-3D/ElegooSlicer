@@ -328,6 +328,11 @@ if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
     set(CURL_PKG dep_CURL)
 endif ()
 
+# Crashpad - Cross-platform crash reporting (Windows only)
+if (WIN32)
+    include(Crashpad/Crashpad.cmake)
+endif ()
+
 set(JPEG_PKG "")
 if (NOT JPEG_FOUND)
     include(JPEG/JPEG.cmake)
@@ -373,7 +378,11 @@ set(_dep_list
     dep_TBB
     ${OPENSSL_PKG}
     ${CURL_PKG}
-    ${WXWIDGETS_PKG}
+    ${WXWIDGETS_PKG})
+if (WIN32)
+    list(APPEND _dep_list dep_Crashpad)
+endif ()
+list(APPEND _dep_list
     dep_Cereal
     dep_NLopt
     dep_OpenVDB

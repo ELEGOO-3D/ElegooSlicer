@@ -33,7 +33,13 @@
         "65"
     ],
     "pressure_advance": [
-        "0.024"
+        "0.032"
+    ],
+    "enable_pressure_advance": [
+        "1"
+    ],
+    "filament_max_volumetric_speed": [
+        "16"
     ],
     "additional_cooling_fan_speed": [
 		"0"

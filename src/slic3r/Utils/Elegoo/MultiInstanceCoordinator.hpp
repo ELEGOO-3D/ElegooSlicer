@@ -4,6 +4,8 @@
 #include <atomic>
 #include <string>
 #include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <functional>
 
 namespace Slic3r {
@@ -37,13 +39,8 @@ public:
     bool isMaster() const { return mIsMaster.load(); }
     
     /**
-     * @brief Check if master instance is still alive
-     * @return true if master lock is still held (master is alive)
-     */
-    bool isMasterAlive() const;
-    
-    /**
      * @brief Get the path to the master lock file
+     * @note This method is thread-safe and can be called before init()
      */
     static std::string getMasterLockPath();
     
@@ -69,6 +66,10 @@ private:
     std::mutex mCallbackMutex;
     std::mutex mCvMutex;
     std::condition_variable mCv;
+    
+    mutable std::mutex mHandleMutex;  // Protects lock handle/fd access
+    
+    std::string mMasterLockPath;  // Cached lock file path
     
 #ifdef _WIN32
     void* mMasterLockHandle;

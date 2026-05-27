@@ -16,6 +16,7 @@
 #define ORCA_COMPATIBLE_VERSION "@ORCA_COMPATIBLE_VERSION@"
 #define ELEGOO_INTERNAL_TESTING @ELEGOO_INTERNAL_TESTING@
 #define BAMBU_COMPATIBLE_VERSION "@BAMBU_COMPATIBLE_VERSION@"
+#define ELEGOO_ENABLE_DEBUG_OUTPUT @ELEGOO_ENABLE_DEBUG_OUTPUT@
 
 
 #if ELEGOO_INTERNAL_TESTING
@@ -31,6 +32,8 @@
 #define ELEGOO_GLOBAL_PLUGIN_UPDATE_URL "@ELEGOO_GLOBAL_PLUGIN_UPDATE_URL@"
 #define ELEGOO_CHINA_PROFILE_UPDATE_URL "@ELEGOO_CHINA_PROFILE_UPDATE_URL@"
 #define ELEGOO_GLOBAL_PROFILE_UPDATE_URL "@ELEGOO_GLOBAL_PROFILE_UPDATE_URL@"
+#define ELEGOO_CHINA_TELEMETRY_URL "@ELEGOO_CHINA_TELEMETRY_URL@"
+#define ELEGOO_GLOBAL_TELEMETRY_URL "@ELEGOO_GLOBAL_TELEMETRY_URL@"
 
 #else
 // for production use
@@ -44,8 +47,10 @@
 #define ELEGOO_GLOBAL_ONLINE_MODEL_URL "https://www.nexprint.com/elegooSlicer"
 #define ELEGOO_CHINA_PLUGIN_UPDATE_URL ""
 #define ELEGOO_GLOBAL_PLUGIN_UPDATE_URL ""
-#define ELEGOO_CHINA_PROFILE_UPDATE_URL ""
-#define ELEGOO_GLOBAL_PROFILE_UPDATE_URL ""
+#define ELEGOO_CHINA_PROFILE_UPDATE_URL "https://device.elegoo.com.cn/device-api/v1/device-server/software/slicerParam/released/history"
+#define ELEGOO_GLOBAL_PROFILE_UPDATE_URL "https://eu-device.elegoo.com/device-api/v1/device-server/software/slicerParam/released/history"
+#define ELEGOO_CHINA_TELEMETRY_URL "https://www.nexprint.cn/gateway"
+#define ELEGOO_GLOBAL_TELEMETRY_URL "https://www.nexprint.com/gateway"
 #endif
 
 #endif /* __SLIC3R_VERSION_H */

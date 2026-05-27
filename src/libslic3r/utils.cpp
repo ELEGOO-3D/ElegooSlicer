@@ -47,11 +47,14 @@
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/sinks/text_file_backend.hpp>
+#include <boost/log/sinks/sync_frontend.hpp>
+#include <boost/log/sinks/basic_sink_backend.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/support/date_time.hpp>
+#include <sstream>
 
 #include <boost/locale.hpp>
 
@@ -112,8 +115,9 @@ static boost::log::trivial::severity_level level_to_boost(unsigned level)
 
 void set_logging_level(unsigned int level)
 {
-    logSeverity = level_to_boost(level);
-
+    //logSeverity = level_to_boost(level);
+	// force logging level to info
+	logSeverity = level_to_boost(3);
     boost::log::core::get()->set_filter
     (
         boost::log::trivial::severity >= logSeverity
@@ -327,6 +331,39 @@ namespace src = boost::log::sources;
 namespace expr = boost::log::expressions;
 namespace keywords = boost::log::keywords;
 namespace attrs = boost::log::attributes;
+namespace sinks = boost::log::sinks;
+
+#ifdef _WIN32
+#if defined(ELEGOO_ENABLE_DEBUG_OUTPUT) && ELEGOO_ENABLE_DEBUG_OUTPUT
+#include <iostream>
+#include <sstream>
+class DebugOutputBackend : public sinks::basic_sink_backend<sinks::synchronized_feeding>
+{
+public:
+    void consume(logging::record_view const& rec)
+    {
+        std::stringstream ss;
+        ss << "[" << rec[logging::trivial::severity] << "] ";
+        if (auto msg = rec[expr::smessage])
+            ss << msg;
+        ss << "\n";
+        
+        std::string str = ss.str();
+        
+        // Output to Windows debugger (captured by Visual Studio output window)
+        OutputDebugStringA(str.c_str());
+        
+        // Output to stderr only if console is attached (e.g., when debugging in IDE)
+        // Check if stderr is redirected to a console
+        if (GetFileType(GetStdHandle(STD_ERROR_HANDLE)) == FILE_TYPE_CHAR) {
+            std::cerr << str;
+            std::cerr.flush();
+        }
+    }
+};
+#endif
+#endif
+
 void set_log_path_and_level(const std::string& file, unsigned int level)
 {
 #ifdef __APPLE__
@@ -347,6 +384,7 @@ void set_log_path_and_level(const std::string& file, unsigned int level)
 	g_log_sink = boost::log::add_file_log(
 		keywords::file_name = full_path.string() + ".%N",
 		keywords::rotation_size = 100 * 1024 * 1024,
+		keywords::auto_flush = true,
 		keywords::format =
 		(
 			expr::stream
@@ -357,6 +395,15 @@ void set_log_path_and_level(const std::string& file, unsigned int level)
 		)
 	);
 
+#ifdef _WIN32
+#if defined(ELEGOO_ENABLE_DEBUG_OUTPUT) && ELEGOO_ENABLE_DEBUG_OUTPUT
+	boost::shared_ptr<DebugOutputBackend> backend(new DebugOutputBackend());
+	boost::shared_ptr<sinks::synchronous_sink<DebugOutputBackend>> sink(new sinks::synchronous_sink<DebugOutputBackend>(backend));
+	logging::core::get()->add_sink(sink);
+	BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer] Debug output sink initialized";
+#endif
+#endif
+
 	logging::add_common_attributes();
 
 	set_logging_level(level);
@@ -366,10 +413,10 @@ void set_log_path_and_level(const std::string& file, unsigned int level)
 
 void flush_logs()
 {
-	if (g_log_sink)
-		g_log_sink->flush();
+	// if (g_log_sink)
+	// 	g_log_sink->flush();
 
-	return;
+	// return;
 }
 
 #ifdef _WIN32

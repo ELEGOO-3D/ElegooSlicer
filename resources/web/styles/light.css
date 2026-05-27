@@ -88,6 +88,11 @@ body {
   padding: 0;
   overflow: hidden;
   box-sizing: border-box;
+  user-select: none;
+}
+
+img {
+  -webkit-user-drag: none;
 }
 
 *,
@@ -383,4 +388,29 @@ body {
   white-space: normal;
   max-width: 100%;
   overflow: visible;
+}
+
+.custom-dialog-helper .el-message-box__btns{
+  justify-content: flex-end !important;
+}
+.custom-dialog-helper .el-message-box__btns button{
+  min-width: 80px !important;
+  padding: 8px 16px !important;
+  font-size: 16px !important;
+  height: auto !important;
+  line-height: normal !important;
+}
+
+
+.custom-dialog-helper .el-message-box__header{
+  padding: 8px 0px 16px 0px !important;
+}
+
+.custom-dialog-helper .el-message-box__content{
+  min-height: 150px !important;
+  display: flex;
+  justify-content: center;
+  margin: 0 -12px;
+  border-bottom: 1px solid var(--border-secondary);
+  border-top: 1px solid var(--border-secondary);
 }

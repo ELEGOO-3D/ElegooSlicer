@@ -47,13 +47,13 @@ class PrintOptionsDialog : public DPIDialog
 {
 protected:
     // settings
-    CheckBox* m_cb_first_layer;
-    CheckBox* m_cb_ai_monitoring;
-    CheckBox* m_cb_plate_mark;
-    CheckBox* m_cb_auto_recovery;
-    CheckBox* m_cb_sup_sound;
-    CheckBox* m_cb_filament_tangle;
-    CheckBox* m_cb_nozzle_blob;
+    ::CheckBox* m_cb_first_layer;
+    ::CheckBox* m_cb_ai_monitoring;
+    ::CheckBox* m_cb_plate_mark;
+    ::CheckBox* m_cb_auto_recovery;
+    ::CheckBox* m_cb_sup_sound;
+    ::CheckBox* m_cb_filament_tangle;
+    ::CheckBox* m_cb_nozzle_blob;
     Label* text_first_layer;
     Label* text_ai_monitoring;
     Label* text_ai_monitoring_caption;

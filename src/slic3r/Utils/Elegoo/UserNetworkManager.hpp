@@ -4,6 +4,7 @@
 #include "Singleton.hpp"
 #include "PrinterNetwork.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -38,6 +39,8 @@ public:
     PrinterNetworkResult<bool>               unbindWANPrinter(const std::string& serialNumber);
     // printermanager get user bound printers
     PrinterNetworkResult<std::vector<PrinterNetworkInfo>> getUserBoundPrinters();
+    PrinterNetworkResult<std::vector<LicenseExpiredDevice>> getLicenseExpiredDevices();
+    PrinterNetworkResult<bool>                              renewLicense(const std::string& serialNumber);
     // check user network error and update user info login status
     void checkUserAuthStatus(const UserNetworkInfo& requestUserInfo, const PrinterNetworkErrorCode& errorCode);
 
@@ -67,7 +70,7 @@ private:
     mutable std::recursive_mutex mInitMutex;
     std::atomic<bool> mIsInitialized{false};
     
-    mutable std::mutex mUserMutex;
+    mutable std::recursive_mutex mUserMutex;
     UserNetworkInfo mUserInfo;
     std::shared_ptr<IUserNetwork> mUserNetwork;
     
@@ -75,6 +78,8 @@ private:
     std::atomic<bool> mRunning{false};
     std::thread mMonitorThread;
     std::chrono::steady_clock::time_point mLastLoopTime;
+    uint64_t mLoggedInElsewhereHandlerId{0};
+    uint64_t mOnlineStatusChangedHandlerId{0};
 };
 
 } // namespace Slic3r

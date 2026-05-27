@@ -218,7 +218,19 @@ void ProjectPanel::on_reload(wxCommandEvent& evt)
         m_Res["sequence_id"] = std::to_string(ProjectPanel::m_sequence_id++);
         m_Res["model"] = j;
 
-        wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', false, json::error_handler_t::ignore));
+        wxString strJS;
+        try {
+            std::string jsonStr = m_Res.dump(-1, ' ', true);
+            if (jsonStr.empty()) {
+                BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": JSON dump returned empty string";
+                return;
+            }
+            strJS = wxString::Format("HandleStudio(%s)", jsonStr);
+        }
+        catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": JSON dump error: " << e.what();
+            return;
+        }
 
         if (m_web_init_completed) {
             wxGetApp().CallAfter([this, strJS] {
@@ -311,7 +323,12 @@ void ProjectPanel::clear_model_info()
     m_Res["command"] = "clear_3mf_info";
     m_Res["sequence_id"] = std::to_string(ProjectPanel::m_sequence_id++);
 
-    wxString strJS = wxString::Format("HandleStudio(%s)", m_Res.dump(-1, ' ', false, json::error_handler_t::ignore));
+    std::string jsonStr = m_Res.dump(-1, ' ', true);
+    if (jsonStr.empty()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": JSON dump returned empty string";
+        return;
+    }
+    wxString strJS = wxString::Format("HandleStudio(%s)", jsonStr);
 
     wxGetApp().CallAfter([this, strJS] {
         RunScript(strJS.ToStdString());

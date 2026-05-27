@@ -7,6 +7,7 @@
 #include "Widgets/TextInput.hpp"
 #include "Widgets/AMSControl.hpp"
 #include "Widgets/ProgressBar.hpp"
+#include "Widgets/CheckBox.hpp"
 #include "wxExtensions.hpp"
 #include "PresetComboBoxes.hpp"
 
@@ -89,8 +90,8 @@ public:
     bool is_bbl_filament() { return m_is_bbl_filamnet; }
     std::string get_tray_name() { return m_tray_name; }
     CalibrateFilamentComboBox* GetComboBox() { return m_comboBox; }
-    CheckBox* GetCheckBox() { return m_checkBox; }
-    void SetCheckBox(CheckBox* cb) { m_checkBox = cb; }
+    ::CheckBox* GetCheckBox() { return m_checkBox; }
+    void SetCheckBox(::CheckBox* cb) { m_checkBox = cb; }
     wxRadioButton* GetRadioBox() { return m_radioBox; }
     void SetRadioBox(wxRadioButton* btn) { m_radioBox = btn; }
     virtual bool Show(bool show = true);
@@ -103,7 +104,7 @@ protected:
     std::string m_tray_name;
     bool m_is_bbl_filamnet{ false };
 
-    CheckBox* m_checkBox{ nullptr };
+    ::CheckBox* m_checkBox{ nullptr };
     wxRadioButton* m_radioBox{ nullptr };
     CalibrateFilamentComboBox* m_comboBox{ nullptr };
     CalibrationFilamentMode m_mode { CalibrationFilamentMode::CALI_MODEL_SINGLE };

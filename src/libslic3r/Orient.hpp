@@ -2,6 +2,11 @@
 #define ORIENT_HPP
 
 #include "libslic3r/Model.hpp"
+#include <cstring>
+#include <sstream>
+#include <iomanip>
+#include <memory>
+#include <functional>
 
 namespace Slic3r {
 
@@ -139,6 +144,48 @@ struct OrientParams {
 };
 
 using OrientMeshs = std::vector<OrientMesh>;
+
+struct CostItems {
+    float overhang;
+    float bottom;
+    float bottom_hull;
+    float contour;
+    float area_laf;  // area_of_low_angle_faces
+    float area_projected; // area of projected 2D profile
+    float volume;
+    float area_total;  // total area of all faces
+    float radius;    // radius of bounding box
+    float height_to_bottom_hull_ratio;  // affects stability, the lower the better
+    float unprintability;
+    
+    CostItems(CostItems const & other) = default;
+    CostItems() { memset(this, 0, sizeof(*this)); }
+    
+    static std::string field_names() {
+        return "                                      overhang, bottom, bothull, contour, A_laf, A_prj, unprintability";
+    }
+    
+    std::string field_values() {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1);
+        ss << overhang << ",\t" << bottom << ",\t" << bottom_hull << ",\t" << contour << ",\t" << area_laf << ",\t" << area_projected << ",\t" << unprintability;
+        return ss.str();
+    }
+};
+
+// Forward declaration
+class AutoOrienter;
+
+class AutoOrienterDelegate {
+public:
+    AutoOrienterDelegate(OrientMesh* orient_mesh_,
+                         const OrientParams &params_,
+                         std::function<void(unsigned)> progressind_,
+                         std::function<bool(void)> stopcond_);
+    CostItems get_features(Vec3f orientation, bool min_volume = true);
+private:
+    std::shared_ptr<AutoOrienter> orienter_delegate_;
+};
 
 /**
  * \brief Orients the input polygons.

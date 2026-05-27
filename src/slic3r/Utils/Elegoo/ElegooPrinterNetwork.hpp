@@ -21,15 +21,18 @@ public:
     virtual PrinterNetworkResult<PrinterMmsGroup> getPrinterMmsInfo() override;
     virtual PrinterNetworkResult<PrinterNetworkInfo> getPrinterAttributes() override;  
     virtual PrinterNetworkResult<PrinterNetworkInfo> getPrinterStatus() override;
+    virtual PrinterNetworkResult<bool>              refreshPrinterStatus() override;
+    virtual PrinterNetworkResult<std::string> getPrinterStatusRaw() override;
     virtual PrinterNetworkResult<PrinterPrintFileResponse> getFileList(int pageNumber, int pageSize) override;
     virtual PrinterNetworkResult<PrinterPrintTaskResponse> getPrintTaskList(int pageNumber, int pageSize) override;
+    virtual PrinterNetworkResult<PrinterExceptionResponse> getExceptionList(int pageNumber, int pageSize) override;
     virtual PrinterNetworkResult<bool> deletePrintTasks(const std::vector<std::string>& taskIds) override;
     virtual PrinterNetworkResult<bool> sendRtmMessage(const std::string& message) override;
     virtual PrinterNetworkResult<PrinterPrintFileResponse> getFileDetail(const std::string& fileName) override;
     virtual PrinterNetworkResult<bool> updatePrinterName(const std::string& printerName) override;
     virtual PrinterNetworkResult<bool> cancelBindPrinter(const std::string& serialNumber) override;
 
-    static void init(const std::string& region, std::string& iotUrl);
+    static void init(const std::string& region, std::string& iotUrl, const std::string& logLevel = "info");
     static void uninit();
 };
 

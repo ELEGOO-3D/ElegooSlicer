@@ -110,6 +110,7 @@ struct PrintFilamentMmsMapping
     int index;
     std::string filamentId;
     std::string settingId;
+    std::string vendor;
     std::string filamentName;
     std::string filamentAlias;
     std::string filamentColor;
@@ -126,6 +127,7 @@ struct PrintCapabilities
     bool supportsTimeLapse = false;          // Supports time-lapse printing
     bool supportsHeatedBedSwitching = false; // Supports heated bed switching
     bool supportsFilamentMapping = false;    // Supports filament mapping
+    bool supportsAutoRefill = false;         // Supports auto refill
 };
 
 struct SystemCapabilities
@@ -147,7 +149,27 @@ enum NetworkType {
     NETWORK_TYPE_WAN = 1,
 };
 
+enum class UploadTaskStatus {
+    UPLOADING = 0,      // Uploading file
+    SUCCESS = 1,        // Upload and send print both succeeded (if uploadAndStartPrint is true)
+    FAILED = -1,        // Upload or send print failed
+    CANCELLED = -2      // Task cancelled
+};
 
+struct UploadTaskInfo
+{
+    std::string taskId;
+    std::string printerId;
+    std::string fileName;
+    uint64_t    uploadedBytes{0};
+    uint64_t    totalBytes{0};
+    int         progress{0};
+    UploadTaskStatus status{UploadTaskStatus::UPLOADING};
+    PrinterNetworkErrorCode code{PrinterNetworkErrorCode::SUCCESS};
+    std::string message;
+    int64_t     beginTime{0};
+    int64_t     endTime{0};
+}; 
 
 struct PrinterPrintFile
 {
@@ -191,6 +213,21 @@ struct PrinterPrintFileResponse
     std::vector<PrinterPrintFile> fileList;
 };
 
+struct PrinterExceptionDetail
+{
+    std::string id;
+    std::string refId;
+    std::string code;
+    int         level{0};
+    int64_t     time{0};
+};
+
+struct PrinterExceptionResponse
+{
+    int total{0};
+    std::vector<PrinterExceptionDetail> exceptionList;
+};
+
 
 struct PrinterNetworkInfo
 {
@@ -224,6 +261,8 @@ struct PrinterNetworkInfo
     PrinterPrintTask     printTask;
     PrinterConnectStatus connectStatus{PRINTER_CONNECT_STATUS_DISCONNECTED};
     PrinterStatus        printerStatus{PRINTER_STATUS_IDLE};
+    std::vector<PrinterExceptionDetail> exceptions;
+    int                  deviceAssistantStatus{0};
     bool                 isAdded{false}; //only used for frontend to show the printer is added or not when discover printers
 };
 
@@ -277,6 +316,12 @@ struct PluginNetworkInfo
 
 
 
+struct LicenseExpiredDevice
+{
+    std::string serialNumber; // Device serial number
+    int status = 0;           // License status: 1=VALID, 2=EXPIRED, 3=need device confirm, 9=not found
+};
+
 struct PrinterNetworkParams
 {
     std::string printerId;
@@ -311,6 +356,27 @@ nlohmann::json convertPrintFilamentMmsMappingToJson(const PrintFilamentMmsMappin
 PrintFilamentMmsMapping convertJsonToPrintFilamentMmsMapping(const nlohmann::json& json);
 nlohmann::json convertUserNetworkInfoToJson(const UserNetworkInfo& userNetworkInfo);
 UserNetworkInfo convertJsonToUserNetworkInfo(const nlohmann::json& json);
+
+nlohmann::json convertPrinterPrintTaskToJson(const PrinterPrintTask& task);
+PrinterPrintTask convertJsonToPrinterPrintTask(const nlohmann::json& json);
+nlohmann::json convertPrinterPrintTaskResponseToJson(const PrinterPrintTaskResponse& response);
+PrinterPrintTaskResponse convertJsonToPrinterPrintTaskResponse(const nlohmann::json& json);
+
+nlohmann::json convertPrinterExceptionDetailToJson(const PrinterExceptionDetail& detail);
+PrinterExceptionDetail convertJsonToPrinterExceptionDetail(const nlohmann::json& json);
+nlohmann::json convertPrinterExceptionResponseToJson(const PrinterExceptionResponse& response);
+PrinterExceptionResponse convertJsonToPrinterExceptionResponse(const nlohmann::json& json);
+
+nlohmann::json convertUploadTaskInfoToJson(const UploadTaskInfo& task);
+UploadTaskInfo convertJsonToUploadTaskInfo(const nlohmann::json& json);
+
+nlohmann::json convertPrinterPrintFileToJson(const PrinterPrintFile& file);
+PrinterPrintFile convertJsonToPrinterPrintFile(const nlohmann::json& json);
+nlohmann::json convertPrinterPrintFileResponseToJson(const PrinterPrintFileResponse& response);
+PrinterPrintFileResponse convertJsonToPrinterPrintFileResponse(const nlohmann::json& json);
+
+nlohmann::json convertPrinterNetworkParamsToJson(const PrinterNetworkParams& params);
+PrinterNetworkParams convertJsonToPrinterNetworkParams(const nlohmann::json& json);
 
 LoginStatus parseLoginStatusByErrorCode(PrinterNetworkErrorCode resultCode);
 

@@ -147,7 +147,7 @@ private:
     void on_set_color_timer(wxTimerEvent& evt);
 
     // key MENU_ICON_NAME, value = ImtextureID
-    std::map<int, void*> icon_list;
+    static std::map<int, void*> icon_list;
 
     bool m_is_dark = false;
 
@@ -169,6 +169,8 @@ public:
         IC_TOOLBAR_RESET_ZERO_HOVER,
         IC_TOOLBAR_TOOLTIP,
         IC_TOOLBAR_TOOLTIP_HOVER,
+        IC_RESET_ZOOM,
+        IC_RESET_ZOOM_HOVER,
         IC_NAME_COUNT,
     };
 

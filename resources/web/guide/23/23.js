@@ -1,7 +1,21 @@
 var m_ProfileItem;
 
 var FilamentPriority=new Array( "pla","abs","pet","tpu","pc");
-var VendorPriority=new Array("generic");
+// Keep in sync with guide/22/22.js
+var VendorPriority=new Array("elegoo", "generic", "polymaker", "esun", "sunlu");
+
+function isVendorInPriorityList(vendor)
+{
+	if(!vendor)
+		return false;
+	var v=vendor.toLowerCase().trim();
+	for(var i=0;i<VendorPriority.length;i++)
+	{
+		if(v===VendorPriority[i].toLowerCase())
+			return true;
+	}
+	return false;
+}
 
 function OnInit()
 {
@@ -79,19 +93,26 @@ function SortUI()
 		$('#MachineList').hide();
 	}
 	
-	//Filament - Create sorted array with generic vendor first
-	let FilamentArray=new Array();
-	let GenericFilamentArray=new Array();
+	// Filaments: sort by VendorPriority (Elegoo first), then by vendor name
+	let SortedFilamentArray=new Array();
 	for( let key in m_ProfileItem['filament'] )
 	{
-		let OneFila=m_ProfileItem['filament'][key];
-		if(OneFila['vendor'].toLowerCase() === 'generic')
-			GenericFilamentArray.push({key: key, data: OneFila});
-		else
-			FilamentArray.push({key: key, data: OneFila});
+		SortedFilamentArray.push({key: key, data: m_ProfileItem['filament'][key]});
 	}
-	// Combine arrays with generic filaments first
-	let SortedFilamentArray = GenericFilamentArray.concat(FilamentArray);
+	SortedFilamentArray.sort(function(a,b){
+		var va=(a.data.vendor||'').toLowerCase();
+		var vb=(b.data.vendor||'').toLowerCase();
+		var ia=-1, ib=-1;
+		for(var i=0;i<VendorPriority.length;i++)
+		{
+			if(VendorPriority[i].toLowerCase()===va) ia=i;
+			if(VendorPriority[i].toLowerCase()===vb) ib=i;
+		}
+		if(ia<0) ia=1000;
+		if(ib<0) ib=1000;
+		if(ia!==ib) return ia-ib;
+		return va.localeCompare(vb);
+	});
 	
 	let HtmlFilament='';
 	let SelectNumber=0;
@@ -117,12 +138,7 @@ function SortUI()
 		//let bCheck=$("#MachineList input:first").prop("checked");
 		if( fModel=='')
 		{
-			//bFind=true;
-			if(fVendor.toLowerCase() === 'generic' || fVendor.toLowerCase() === 'elegoo') {
-				bFind = true;
-			} else {
-				bFind = false;  
-			}
+			bFind = isVendorInPriorityList(fVendor);
 		}
 		else
 		{
@@ -625,7 +641,7 @@ function OnClickCustomFilamentAdd()
 	SendWXMessage( JSON.stringify(tSend) );		
 }
 
-//编辑某一个自定义耗材
+// Edit one custom filament
 function CFEdit( fid )
 {
 	//alert(fid);

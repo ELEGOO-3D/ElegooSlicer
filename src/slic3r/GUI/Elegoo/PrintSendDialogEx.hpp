@@ -55,10 +55,10 @@ protected:
     BedType getCurrentBedType() const;
 private:
     void setupIPCHandlers();
-    webviewIpc::IPCResult getPrinterList();
-    webviewIpc::IPCResult preparePrintTask(const std::string &printerId);
-    webviewIpc::IPCResult getPrinterMmsInfo(const std::string &printerId);
-    webviewIpc::IPCResult onPrint(const nlohmann::json &printInfo);
+    IPCResult getPrinterList();
+    IPCResult preparePrintTask(const std::string &printerId);
+    IPCResult getPrinterMmsInfo(const std::string &printerId);
+    IPCResult onPrint(const nlohmann::json &printInfo);
     void onCancel();
     std::string getCurrentProjectName(); 
     BedType appBedType() const;
