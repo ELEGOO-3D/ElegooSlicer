@@ -3,8 +3,8 @@
 set -e
 
 GIT_TOKEN=""
-LAN_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260415/lan_service_web.zip"
-CLOUD_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260415/cloud_service_web.zip"
+LAN_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260526/lan_service_web.zip"
+CLOUD_WEB_URL="https://github.com/ELEGOO-3D/elegoo-fdm-web/releases/download/20260526/cloud_service_web.zip"
 LAN_WEB_NAME="lan_service_web"
 CLOUD_WEB_NAME="cloud_service_web"
 
