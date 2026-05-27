@@ -4,6 +4,7 @@
 #include "libslic3r/PrinterNetworkInfo.hpp"
 #include "elegoolink/elegoo_link.h"
 #include "libslic3r/Utils.hpp"
+#include <thread>
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
 #include "libslic3r_version.h"
