@@ -328,10 +328,8 @@ if (NOT OPENSSL_FOUND OR NOT CURL_FOUND)
     set(CURL_PKG dep_CURL)
 endif ()
 
-# Crashpad - Cross-platform crash reporting (Windows only)
-if (WIN32)
-    include(Crashpad/Crashpad.cmake)
-endif ()
+# Sentry Native SDK - Cross-platform crash reporting
+include(Sentry/Sentry.cmake)
 
 set(JPEG_PKG "")
 if (NOT JPEG_FOUND)
@@ -379,9 +377,7 @@ set(_dep_list
     ${OPENSSL_PKG}
     ${CURL_PKG}
     ${WXWIDGETS_PKG})
-if (WIN32)
-    list(APPEND _dep_list dep_Crashpad)
-endif ()
+list(APPEND _dep_list dep_Sentry)
 list(APPEND _dep_list
     dep_Cereal
     dep_NLopt

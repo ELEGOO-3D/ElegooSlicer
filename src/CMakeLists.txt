@@ -4,10 +4,8 @@ project(ElegooSlicer-native)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Find Crashpad before dev-utils (which needs it) - Windows only
-if (WIN32)
-    find_package(Crashpad REQUIRED MODULE)
-endif ()
+# Find Sentry Native SDK (cross-platform crash reporting)
+find_package(sentry CONFIG REQUIRED)
 
 # Include dev-utils for encoding check and other utilities
 add_subdirectory(dev-utils)
@@ -134,12 +132,9 @@ if (NOT WIN32 AND NOT APPLE)
 endif ()
 
 target_link_libraries(ElegooSlicer libslic3r cereal::cereal)
-if (WIN32)
-    target_include_directories(ElegooSlicer PRIVATE ${Crashpad_INCLUDE_DIR})
-    target_link_libraries(ElegooSlicer Crashpad::client)
-    # Setup crashpad_handler for Windows
-    elegooslicer_setup_crashpad_handler(ElegooSlicer)
-endif ()
+target_link_libraries(ElegooSlicer sentry::sentry)
+# Setup sentry crashpad_handler for all platforms
+elegooslicer_setup_sentry_handler(ElegooSlicer)
 
 # target_include_directories(ElegooSlicer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/slic3r)
 if (APPLE)
@@ -326,11 +321,14 @@ if (WIN32)
         install(TARGETS ElegooSlicer_app_gui RUNTIME DESTINATION ".")
     endif ()
     install(FILES ${output_dlls_${build_type}} DESTINATION ".")
-    if (Crashpad_FOUND)
-        elegooslicer_install_crashpad_handler()
+    if (sentry_FOUND)
+        elegooslicer_install_sentry_handler()
     endif ()
 else ()
     install(TARGETS ElegooSlicer RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR})
+    if (sentry_FOUND)
+        elegooslicer_install_sentry_handler()
+    endif ()
     
     # Install Agora shared libraries for Linux
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

@@ -2255,6 +2255,8 @@ int GUI_App::OnExit()
         BOOST_LOG_TRIVIAL(error) << "Failed to clean up encrypt bbl network log file";
     }
 
+    CrashReporter::close();
+
     return wxApp::OnExit();
 }
 
@@ -2301,10 +2303,8 @@ bool GUI_App::on_init_inner()
     g_object_set (gtk_settings_get_default (), "gtk-menu-images", TRUE, NULL);
 #endif
 
-#ifdef WIN32
-    // Initialize Crashpad crash reporter
+    // Initialize Sentry crash reporter
     CrashReporter::init(data_dir());
-#endif
 
     wxGetApp().Bind(wxEVT_QUERY_END_SESSION, [this](auto & e) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< "received wxEVT_QUERY_END_SESSION";

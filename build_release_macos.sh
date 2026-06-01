@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-while getopts ":dpa:snt:xbc:1ehw" opt; do
+while getopts ":dpa:snt:xbc:1ehwg" opt; do
   case "${opt}" in
     d )
         export BUILD_TARGET="deps"
@@ -43,6 +43,9 @@ while getopts ":dpa:snt:xbc:1ehw" opt; do
     w )
         export DOWNLOAD_WEB="1"
         ;;
+    g )
+        export SENTRY_UPLOAD="1"
+        ;;
     h ) echo "Usage: ./build_release_macos.sh [-d]"
         echo "   -d: Build deps only"
         echo "   -a: Set ARCHITECTURE (arm64 or x86_64 or universal)"
@@ -55,6 +58,7 @@ while getopts ":dpa:snt:xbc:1ehw" opt; do
         echo "   -1: Use single job for building"
         echo "   -e: Test environment"
         echo "   -w: Download web dependencies"
+        echo "   -g: Upload debug symbols (dSYM) to Sentry"
         exit 0
         ;;
     * )
@@ -187,6 +191,25 @@ function build_deps() {
             )
         fi
     done
+}
+
+function upload_pdb() {
+    echo "============================================================================"
+    echo "                     Uploading Debug Symbols to Sentry"
+    echo "============================================================================"
+    for _ARCH in x86_64 arm64; do
+        if [ "$ARCH" == "universal" ] || [ "$ARCH" == "$_ARCH" ]; then
+            _BUILD_DIR="$PROJECT_DIR/build/$_ARCH/src/$BUILD_CONFIG"
+            if [ -d "$_BUILD_DIR" ]; then
+                echo "[INFO] Uploading symbols from: $_BUILD_DIR"
+                python3 "$PROJECT_DIR/scripts/upload_sentry_pdbs.py" "$_BUILD_DIR"
+            else
+                echo "[WARNING] Build directory not found: $_BUILD_DIR"
+            fi
+        fi
+    done
+    echo "============================================================================"
+    echo
 }
 
 function pack_deps() {
@@ -339,6 +362,10 @@ case "${BUILD_TARGET}" in
         exit 1
         ;;
 esac
+
+if [ "1" == "${SENTRY_UPLOAD}" ] && [ "$BUILD_TARGET" != "deps" ]; then
+    upload_pdb
+fi
 
 if [ "$ARCH" = "universal" ] && [ "$BUILD_TARGET" != "deps" ]; then
     build_universal

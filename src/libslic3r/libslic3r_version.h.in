@@ -53,4 +53,8 @@
 #define ELEGOO_GLOBAL_TELEMETRY_URL "https://www.nexprint.com/gateway"
 #endif
 
+#define SENTRY_DSN_WIN "@SENTRY_DSN_WIN@"
+#define SENTRY_DSN_MAC "@SENTRY_DSN_MAC@"
+#define SENTRY_DSN_LINUX "@SENTRY_DSN_LINUX@"
+
 #endif /* __SLIC3R_VERSION_H */

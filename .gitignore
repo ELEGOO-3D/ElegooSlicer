@@ -46,6 +46,7 @@ compile_commands.json
 resources/web/elegoo-fdm-web/
 deps_src/build/
 .env.testing
+tools/sentry-cli/
 resources/plugins/
 work/
 example/

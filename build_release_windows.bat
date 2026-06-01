@@ -30,6 +30,7 @@ if "%1" == "help" (
     echo   debuginfo    - Build in RelWithDebInfo mode with debug symbols
     echo   pack         - Pack dependencies into zip file
     echo   dlweb        - Download web dependencies default: skip download
+echo   uploadpdb    - Upload PDB debug symbols to Sentry
     echo   vs2019       - Select Visual Studio vs2019 toolchain
     echo   vs2026       - Select Visual Studio vs2026 toolchain default is vs2022
     echo.
@@ -82,6 +83,7 @@ set only_pack=OFF
 set only_deps=OFF
 set sign=OFF
 set dlweb=OFF
+set sentry_upload=OFF
 set ELEGOO_INTERNAL_TESTING=0
 
 set count=1
@@ -107,6 +109,7 @@ if "%1"=="onlypack" set only_pack=ON
 if "%1"=="onlydeps" set only_deps=ON
 if "%1"=="sign" set sign=ON
 if "%1"=="dlweb" set dlweb=ON
+if "%1"=="uploadpdb" set sentry_upload=ON
 if "%1"=="test" set ELEGOO_INTERNAL_TESTING=1
 set /a count+=1
 shift
@@ -127,6 +130,7 @@ echo   Only Pack:           %only_pack%
 echo   Only Deps:           %only_deps%
 echo   Sign Binaries:       %sign%
 echo   Download Web Deps:   %dlweb%
+echo   Upload Sentry PDBs:  %sentry_upload%
 echo   Internal Testing:    %ELEGOO_INTERNAL_TESTING%
 echo ============================================================================
 echo.
@@ -303,6 +307,8 @@ if %ERRORLEVEL% neq 0 (
 echo.
 echo [OK] ElegooSlicer installation completed
 echo.
+
+if "%sentry_upload%"=="ON" call :upload_pdb
 
 if "%only_slicer%"=="ON" (
     echo [INFO] Only Slicer mode - Build complete, exiting
@@ -488,6 +494,35 @@ echo [OK] Installer package created: %INSTALL_NAME%
 echo [OK] Full path: %WP%\%build_dir%\%INSTALL_NAME%
 echo ============================================================================
 echo.
+
+:upload_pdb
+echo ----------------------------------------------------------------------------
+echo                     Uploading Debug Symbols to Sentry
+echo ----------------------------------------------------------------------------
+set PDB_DIR=%WP%\%build_dir%\src\%build_type%
+set DEPS_LIB_DIR=%WP%\deps\build\ElegooSlicer_dep\usr\local
+set DEPS_BIN_DIR=%DEPS_LIB_DIR%\bin
+set DEPS_LIB_PDB_DIR=%DEPS_LIB_DIR%\lib
+REM Extract version from install.ini
+set SENTRY_VER=unknown
+if exist "%WP%\%build_dir%\install.ini" (
+    for /f "tokens=1,* delims==" %%a in ('findstr "^ELEGOOSLICER_VERSION" "%WP%\%build_dir%\install.ini"') do set SENTRY_VER=%%b
+)
+if exist "%PDB_DIR%" (
+    echo [INFO] Uploading app PDB from: %PDB_DIR%
+    python "%WP%\scripts\upload_sentry_pdbs.py" "%PDB_DIR%" "%SENTRY_VER%"
+)
+if exist "%DEPS_BIN_DIR%" (
+    echo [INFO] Uploading deps PDB from: %DEPS_BIN_DIR%
+    python "%WP%\scripts\upload_sentry_pdbs.py" "%DEPS_BIN_DIR%" "%SENTRY_VER%"
+)
+if exist "%DEPS_LIB_PDB_DIR%" (
+    echo [INFO] Uploading deps PDB from: %DEPS_LIB_PDB_DIR%
+    python "%WP%\scripts\upload_sentry_pdbs.py" "%DEPS_LIB_PDB_DIR%" "%SENTRY_VER%"
+)
+echo ----------------------------------------------------------------------------
+echo.
+goto :eof
 
 :end
 exit /b 0

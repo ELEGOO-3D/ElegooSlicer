@@ -1,121 +1,47 @@
 #include "CrashReporter.h"
+
+#include <algorithm>
+#include <ctime>
+#include <vector>
+
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/log/trivial.hpp>
-#include <algorithm>
-#include <map>
-#include <vector>
 
-// Crashpad headers
-#include <client/crashpad_client.h>
-#include <client/crash_report_database.h>
-#include <client/settings.h>
-
-using namespace crashpad;
+#include <sentry.h>
+#include "libslic3r_version.h"
 
 #ifdef _WIN32
 #ifndef NOMINMAX
-#define NOMINMAX  // Prevent Windows.h from defining min/max macros
+#define NOMINMAX
 #endif
 #include <windows.h>
-#include <intrin.h>
-#endif
-
-#ifndef ELEGOOSLICER_VERSION
-#define ELEGOOSLICER_VERSION "Unknown"
 #endif
 
 static bool sInitialized = false;
 
-void CrashReporter::cleanupOldDmpFiles(const std::string& dataDir)
+static void pruneOldRuns(const boost::filesystem::path& sentryDir, int keepCount)
 {
     try {
-        boost::filesystem::path logDir = boost::filesystem::path(dataDir) / "log";
-        if (!boost::filesystem::exists(logDir))
+        std::vector<std::pair<std::time_t, boost::filesystem::path>> runs;
+        for (auto& entry : boost::filesystem::directory_iterator(sentryDir)) {
+            if (boost::filesystem::is_directory(entry)) {
+                runs.emplace_back(boost::filesystem::last_write_time(entry), entry.path());
+            }
+        }
+        if (runs.size() <= static_cast<size_t>(keepCount))
             return;
-        
-        size_t deleted_count = 0;
-        for (auto& entry : boost::filesystem::directory_iterator(logDir)) {
-            if (boost::filesystem::is_regular_file(entry)) {
-                std::string filename = entry.path().filename().string();
-                if (filename.size() >= 4 && 
-                    (filename.substr(filename.size() - 4) == ".dmp" || 
-                     filename.substr(filename.size() - 4) == ".DMP")) {
-                    try {
-                        boost::filesystem::remove(entry.path());
-                        deleted_count++;
-                    } catch (const std::exception& e) {
-                        BOOST_LOG_TRIVIAL(warning) << "Failed to delete " << entry.path() << ": " << e.what();
-                    }
-                }
-            }
-        }
-        
-        if (deleted_count > 0) {
-            BOOST_LOG_TRIVIAL(info) << "Cleaned up " << deleted_count << " old .dmp file(s) from log directory";
-        }
-    } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(warning) << "Error during old .dmp files cleanup: " << e.what();
-    }
-}
 
-size_t CrashReporter::cleanupOldCrashReports(void* database, int keepCount)
-{
-    if (!database || keepCount < 0) {
-        return 0;
-    }
-    
-    CrashReportDatabase* db = static_cast<CrashReportDatabase*>(database);
-    
-    std::vector<CrashReportDatabase::Report> all_reports;
-    
-    std::vector<CrashReportDatabase::Report> pending_reports;
-    db->GetPendingReports(&pending_reports);
-    all_reports.insert(all_reports.end(), pending_reports.begin(), pending_reports.end());
-    
-    std::vector<CrashReportDatabase::Report> completed_reports;
-    db->GetCompletedReports(&completed_reports);
-    all_reports.insert(all_reports.end(), completed_reports.begin(), completed_reports.end());
-    
-    if (all_reports.empty()) {
-        BOOST_LOG_TRIVIAL(info) << "No crash reports found (database is empty)";
-        return 0;
-    }
-    
-    std::sort(all_reports.begin(), all_reports.end(),
-        [](const CrashReportDatabase::Report& a, const CrashReportDatabase::Report& b) {
-            return a.creation_time > b.creation_time;
-        });
-    
-    size_t deleted_count = 0;
-    
-    if (all_reports.size() > static_cast<size_t>(keepCount)) {
-        for (size_t i = keepCount; i < all_reports.size(); ++i) {
-            CrashReportDatabase::OperationStatus status = db->DeleteReport(all_reports[i].uuid);
-            if (status == CrashReportDatabase::kNoError) {
-                deleted_count++;
-                BOOST_LOG_TRIVIAL(debug) << "Deleted old crash report: " << all_reports[i].uuid.ToString();
-            } else {
-                BOOST_LOG_TRIVIAL(warning) << "Failed to delete crash report: " << all_reports[i].uuid.ToString();
-            }
+        std::sort(runs.begin(), runs.end(), [](auto& a, auto& b) { return a.first > b.first; });
+        for (size_t i = keepCount; i < runs.size(); ++i) {
+            boost::filesystem::remove_all(runs[i].second);
+            BOOST_LOG_TRIVIAL(debug) << "Pruned old sentry run: " << runs[i].second.string();
         }
-        if (deleted_count > 0) {
-            BOOST_LOG_TRIVIAL(info) << "Cleaned up " << deleted_count << " old crash report(s), keeping latest " << keepCount;
-        }
+        BOOST_LOG_TRIVIAL(info) << "Pruned " << (runs.size() - keepCount) << " old sentry run(s), keeping latest " << keepCount;
+    } catch (...) {
+        BOOST_LOG_TRIVIAL(warning) << "Failed to prune old sentry runs";
     }
-    
-    // Use parentheses to prevent macro expansion of min
-    size_t remaining_count = (std::min)(all_reports.size(), static_cast<size_t>(keepCount));
-    BOOST_LOG_TRIVIAL(info) << "Found " << remaining_count << " crash report(s) (keeping latest " << keepCount << ")";
-    for (size_t i = 0; i < remaining_count; ++i) {
-        const auto& report = all_reports[i];
-        base::FilePath report_path = report.file_path;
-        BOOST_LOG_TRIVIAL(info) << "  Report: " << report_path.BaseName().value() 
-                                << " (UUID: " << report.uuid.ToString() << ")";
-    }
-    
-    return deleted_count;
 }
 
 bool CrashReporter::init(const std::string& dataDir)
@@ -124,117 +50,111 @@ bool CrashReporter::init(const std::string& dataDir)
         BOOST_LOG_TRIVIAL(warning) << "Crash reporter already initialized";
         return true;
     }
-    
-    boost::filesystem::path crashDir = boost::filesystem::path(dataDir) / "crashes";
-    try {
-        if (!boost::filesystem::exists(crashDir)) {
-            boost::filesystem::create_directories(crashDir);
-        }
-        
-        cleanupOldDmpFiles(dataDir);
-        
-    } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(error) << "Failed to create crash directory: " << e.what();
+
+    const char* dsn = nullptr;
+#ifdef _WIN32
+    dsn = SENTRY_DSN_WIN;
+#elif defined(__APPLE__)
+    dsn = SENTRY_DSN_MAC;
+#elif defined(__linux__)
+    dsn = SENTRY_DSN_LINUX;
+#endif
+    if (!dsn || dsn[0] == '\0') {
+        dsn = getenv("SENTRY_DSN");
+    }
+    if (!dsn || dsn[0] == '\0') {
+        BOOST_LOG_TRIVIAL(warning) << "Sentry DSN not configured, crash reporting disabled. "
+                                   << "Set SENTRY_DSN_WIN/MAC/LINUX in .env or SENTRY_DSN environment variable.";
         return false;
     }
-    
+
+    boost::filesystem::path sentryDir = boost::filesystem::path(dataDir) / "sentry";
+    try {
+        if (!boost::filesystem::exists(sentryDir)) {
+            boost::filesystem::create_directories(sentryDir);
+        }
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to create sentry directory: " << e.what();
+        return false;
+    }
+
+    boost::filesystem::path handlerPath;
     try {
 #ifdef _WIN32
         wchar_t exePath[MAX_PATH];
         GetModuleFileNameW(NULL, exePath, MAX_PATH);
         boost::filesystem::path exeDir = boost::filesystem::path(exePath).parent_path();
-        boost::filesystem::path handlerPath = exeDir / "crashpad" / "crashpad_handler.exe";
-        
+        handlerPath = exeDir / "crashpad" / "crashpad_handler.exe";
         if (!boost::filesystem::exists(handlerPath)) {
             handlerPath = exeDir / "crashpad_handler.exe";
         }
-        
-        if (!boost::filesystem::exists(handlerPath)) {
-            BOOST_LOG_TRIVIAL(warning) << "Crashpad handler not found: " << handlerPath.string();
-            return false;
-        }
-        
-        base::FilePath dbPath(crashDir.wstring());
 #else
-        boost::filesystem::path exePath = boost::dll::program_location();
-        boost::filesystem::path exeDir = exePath.parent_path();
-        boost::filesystem::path handlerPath = exeDir / "crashpad" / "crashpad_handler";
-        
+        boost::filesystem::path exeDir = boost::dll::program_location().parent_path();
+        handlerPath = exeDir / "crashpad" / "crashpad_handler";
         if (!boost::filesystem::exists(handlerPath)) {
             handlerPath = exeDir / "crashpad_handler";
         }
-        
-        if (!boost::filesystem::exists(handlerPath)) {
-            BOOST_LOG_TRIVIAL(warning) << "Crashpad handler not found: " << handlerPath.string();
-            return false;
-        }
-        
-        base::FilePath dbPath(crashDir.string());
 #endif
-        
-        std::unique_ptr<CrashReportDatabase> database = CrashReportDatabase::Initialize(dbPath);
-        if (!database) {
-            BOOST_LOG_TRIVIAL(error) << "Failed to initialize Crashpad database";
-            return false;
-        }
-        
-        Settings* settings = database->GetSettings();
-        if (settings) {
-            settings->SetUploadsEnabled(false);
-        }
-        
-        const int KEEP_REPORTS_COUNT = 3;
-        cleanupOldCrashReports(database.get(), KEEP_REPORTS_COUNT);
-        
-        static CrashpadClient client;
-#ifdef _WIN32
-        base::FilePath handler(handlerPath.wstring());
-#else
-        base::FilePath handler(handlerPath.string());
-#endif
-        
-        std::map<std::string, std::string> annotations;
-        annotations["product"] = "ElegooSlicer";
-        annotations["version"] = ELEGOOSLICER_VERSION;
-        
-        bool success = client.StartHandler(
-            handler,
-            dbPath,
-            base::FilePath(),
-            "",
-            annotations,
-            std::vector<std::string>(),
-            true,
-            true
-        );
-        
-        if (success) {
-            BOOST_LOG_TRIVIAL(info) << "Crashpad initialized successfully";
-            BOOST_LOG_TRIVIAL(info) << "  Crash dumps: " << crashDir.string();
-            sInitialized = true;
-        } else {
-            BOOST_LOG_TRIVIAL(error) << "Failed to start Crashpad";
-        }
-        
-        return success;
-        
     } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(error) << "Crashpad initialization error: " << e.what();
+        BOOST_LOG_TRIVIAL(error) << "Failed to locate crashpad_handler: " << e.what();
         return false;
     }
+
+    pruneOldRuns(sentryDir, 3);
+
+    sentry_options_t* options = sentry_options_new();
+    sentry_options_set_dsn(options, dsn);
+    sentry_options_set_database_path(options, sentryDir.string().c_str());
+    sentry_options_set_release(options, "elegoo-slicer@" ELEGOOSLICER_VERSION);
+    sentry_options_set_handler_path(options, handlerPath.string().c_str());
+#ifndef NDEBUG
+    sentry_options_set_debug(options, 1);
+#endif
+
+    int result = sentry_init(options);
+    if (result == 0) {
+        BOOST_LOG_TRIVIAL(info) << "Sentry crash reporter initialized successfully";
+        BOOST_LOG_TRIVIAL(info) << "  Database: " << sentryDir.string();
+        BOOST_LOG_TRIVIAL(info) << "  Handler: " << handlerPath.string();
+        BOOST_LOG_TRIVIAL(info) << "  Version: " << ELEGOOSLICER_VERSION;
+        sInitialized = true;
+        return true;
+    } else {
+        BOOST_LOG_TRIVIAL(error) << "Failed to initialize Sentry (error code: " << result << ")";
+        return false;
+    }
+}
+
+void CrashReporter::close()
+{
+    if (sInitialized) {
+        BOOST_LOG_TRIVIAL(info) << "Shutting down Sentry crash reporter";
+        sentry_close();
+        sInitialized = false;
+    }
+}
+
+void CrashReporter::addBreadcrumb(const std::string& message, const std::string& category)
+{
+    if (!sInitialized)
+        return;
+
+    sentry_value_t crumb = sentry_value_new_breadcrumb("default", message.c_str());
+    sentry_value_set_by_key(crumb, "category", sentry_value_new_string(category.c_str()));
+    sentry_add_breadcrumb(crumb);
 }
 
 #ifdef _WIN32
 void CrashReporter::triggerTestCrash()
 {
-    BOOST_LOG_TRIVIAL(info) << "Triggering test crash for crash reporting verification";
+    BOOST_LOG_TRIVIAL(info) << "Triggering test crash for Sentry crash reporting verification";
     volatile int* ptr = nullptr;
     *ptr = 42;
 }
 #else
 void CrashReporter::triggerTestCrash()
 {
-    BOOST_LOG_TRIVIAL(info) << "Triggering test crash for crash reporting verification";
+    BOOST_LOG_TRIVIAL(info) << "Triggering test crash for Sentry crash reporting verification";
     abort();
 }
 #endif

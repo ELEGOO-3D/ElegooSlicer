@@ -25,6 +25,7 @@ function usage() {
     echo "   -L: use ld.lld as linker (if available)"
     echo "   -w: download web dependencies"
     echo "   -e: test environment (for internal testing)"
+    echo "   -g: Upload ELF debug symbols to Sentry after build"
     echo "For a first use, you want to './${SCRIPT_NAME} -u'"
     echo "   and then './${SCRIPT_NAME} -dsi'"
     echo "To build with tests: './${SCRIPT_NAME} -st' or './${SCRIPT_NAME} -dst'"
@@ -39,7 +40,7 @@ SLIC3R_PRECOMPILED_HEADERS="ON"
 COLORED_OUTPUT_ARGS=()
 
 unset name
-while getopts ":1j:bcCdhiprstulLwe" opt ; do
+while getopts ":1j:bcCdhiprstulLweg" opt ; do
   case ${opt} in
     1 )
         export CMAKE_BUILD_PARALLEL_LEVEL=1
@@ -91,6 +92,9 @@ while getopts ":1j:bcCdhiprstulLwe" opt ; do
         ;;
     e )
         ELEGOO_INTERNAL_TESTING="1"
+        ;;
+    g )
+        SENTRY_UPLOAD="1"
         ;;
     * )
 	echo "Unknown argument '${opt}', aborting."
@@ -299,6 +303,10 @@ if [[ -n "${BUILD_ELEGOO}" ]] ; then
     echo "done"
 fi
 
+if [[ -n "${BUILD_ELEGOO}" && "1" == "${SENTRY_UPLOAD}" ]] ; then
+    upload_pdb
+fi
+
 if [[ -n "${BUILD_IMAGE}" || -n "${BUILD_ELEGOO}" ]] ; then
     pushd build > /dev/null
     echo "[9/9] Generating Linux app..."
@@ -315,5 +323,22 @@ if [[ -n "${BUILD_IMAGE}" || -n "${BUILD_ELEGOO}" ]] ; then
     fi
     popd > /dev/null # build
 fi
+
+function upload_pdb() {
+    BUILD_CONFIG="${BUILD_DEBUG:+Debug}"
+    BUILD_CONFIG="${BUILD_CONFIG:-Release}"
+    BUILD_OUT_DIR="build/src/${BUILD_CONFIG}"
+    echo "============================================================================"
+    echo "                     Uploading Debug Symbols to Sentry"
+    echo "============================================================================"
+    if [ -d "${BUILD_OUT_DIR}" ]; then
+        echo "[INFO] Uploading symbols from: ${BUILD_OUT_DIR}"
+        python3 "${SCRIPT_PATH}/scripts/upload_sentry_pdbs.py" "${BUILD_OUT_DIR}"
+    else
+        echo "[WARNING] Build directory not found: ${BUILD_OUT_DIR}"
+    fi
+    echo "============================================================================"
+    echo
+}
 
 popd > /dev/null # ${SCRIPT_PATH}

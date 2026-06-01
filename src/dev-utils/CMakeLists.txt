@@ -48,101 +48,96 @@ function(encoding_check TARGET)
     endif()
 endfunction()
 
-# Function to add POST_BUILD commands for copying crashpad_handler
-function(elegooslicer_setup_crashpad_handler TARGET)
+# Function to add POST_BUILD commands for copying sentry crashpad_handler
+function(elegooslicer_setup_sentry_handler TARGET)
     if (WIN32)
-        if (CMAKE_CONFIGURATION_TYPES)
-            # Multi-config generator (Visual Studio)
-            foreach (CONF ${CMAKE_CONFIGURATION_TYPES})
-                add_custom_command(TARGET ${TARGET} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${CONF}/crashpad"
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        "${CMAKE_PREFIX_PATH}/bin/crashpad/handler.exe"
-                        "${CMAKE_CURRENT_BINARY_DIR}/${CONF}/crashpad/crashpad_handler.exe"
-                    COMMENT "Copying crashpad_handler.exe to build directory"
-                    VERBATIM
-                )
-            endforeach ()
-        else ()
-            # Single-config generator
+        set(_handler_name "crashpad_handler.exe")
+    else ()
+        set(_handler_name "crashpad_handler")
+    endif ()
+
+    set(_handler_src "")
+    foreach (_p IN LISTS CMAKE_PREFIX_PATH)
+        if (NOT _handler_src)
+            file(TO_CMAKE_PATH "${_p}" _norm_prefix)
+            set(_candidate "${_norm_prefix}/bin/${_handler_name}")
+            if (EXISTS "${_candidate}")
+                set(_handler_src "${_candidate}")
+            endif ()
+        endif ()
+    endforeach ()
+
+    if (NOT _handler_src)
+        message(WARNING "sentry crashpad_handler not found, skipping setup")
+        return()
+    endif ()
+
+    if (CMAKE_CONFIGURATION_TYPES)
+        foreach (CONF ${CMAKE_CONFIGURATION_TYPES})
             add_custom_command(TARGET ${TARGET} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${TARGET}>/crashpad"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/${CONF}/crashpad"
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${CMAKE_PREFIX_PATH}/bin/crashpad/handler.exe"
-                    "$<TARGET_FILE_DIR:${TARGET}>/crashpad/crashpad_handler.exe"
-                COMMENT "Copying crashpad_handler.exe to build directory"
+                    "${_handler_src}"
+                    "${CMAKE_CURRENT_BINARY_DIR}/${CONF}/crashpad/${_handler_name}"
+                COMMENT "Copying sentry crashpad_handler to build directory"
                 VERBATIM
             )
-        endif ()
+        endforeach ()
     else ()
-        # macOS / Linux
         add_custom_command(TARGET ${TARGET} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${TARGET}>/crashpad"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${CMAKE_PREFIX_PATH}/bin/crashpad/handler"
-                "$<TARGET_FILE_DIR:${TARGET}>/crashpad/crashpad_handler"
-            COMMENT "Copying crashpad_handler to build directory"
+                "${_handler_src}"
+                "$<TARGET_FILE_DIR:${TARGET}>/crashpad/${_handler_name}"
+            COMMENT "Copying sentry crashpad_handler to build directory"
             VERBATIM
         )
-        
-        # For macOS bundle, also copy to MacOS/crashpad
         if (CMAKE_MACOSX_BUNDLE)
             add_custom_command(TARGET ${TARGET} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_CONTENT_DIR:${TARGET}>/MacOS/crashpad"
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    "${CMAKE_PREFIX_PATH}/bin/crashpad/handler"
-                    "$<TARGET_BUNDLE_CONTENT_DIR:${TARGET}>/MacOS/crashpad/crashpad_handler"
-                COMMENT "Copying crashpad_handler to macOS app bundle"
+                    "${_handler_src}"
+                    "$<TARGET_BUNDLE_CONTENT_DIR:${TARGET}>/MacOS/crashpad/${_handler_name}"
+                COMMENT "Copying sentry crashpad_handler to macOS app bundle"
                 VERBATIM
             )
         endif ()
     endif ()
 endfunction()
 
-# Function to add install commands for crashpad_handler
-function(elegooslicer_install_crashpad_handler)
+# Function to add install commands for sentry crashpad_handler
+function(elegooslicer_install_sentry_handler)
     if (WIN32)
-        # Use CMake-style paths (forward slashes): backslashes in FILES paths break
-        # generated cmake_install.cmake on Windows (\E is interpreted as escape).
-        set(_crashpad_handler_src "")
-        foreach (_p IN LISTS CMAKE_PREFIX_PATH)
-            if (NOT _crashpad_handler_src)
-                file(TO_CMAKE_PATH "${_p}" _norm_prefix)
-                set(_candidate "${_norm_prefix}/bin/crashpad/handler.exe")
-                if (EXISTS "${_candidate}")
-                    set(_crashpad_handler_src "${_candidate}")
-                endif ()
-            endif ()
-        endforeach ()
-        if (_crashpad_handler_src)
-            install(FILES "${_crashpad_handler_src}" DESTINATION "crashpad" RENAME "crashpad_handler.exe")
-        endif ()
-        unset(_crashpad_handler_src)
+        set(_handler_name "crashpad_handler.exe")
     else ()
-        # macOS / Linux — same rationale for consistency on odd path formats
-        set(_crashpad_handler_src "")
-        foreach (_p IN LISTS CMAKE_PREFIX_PATH)
-            if (NOT _crashpad_handler_src)
-                file(TO_CMAKE_PATH "${_p}" _norm_prefix)
-                set(_candidate "${_norm_prefix}/bin/crashpad/handler")
-                if (EXISTS "${_candidate}")
-                    set(_crashpad_handler_src "${_candidate}")
-                endif ()
-            endif ()
-        endforeach ()
-        if (_crashpad_handler_src)
-            if (CMAKE_MACOSX_BUNDLE)
-                install(FILES "${_crashpad_handler_src}"
-                    DESTINATION "ElegooSlicer.app/Contents/MacOS/crashpad"
-                    RENAME "crashpad_handler"
-                )
-            else ()
-                install(FILES "${_crashpad_handler_src}"
-                    DESTINATION "${CMAKE_INSTALL_BINDIR}/crashpad"
-                    RENAME "crashpad_handler"
-                )
+        set(_handler_name "crashpad_handler")
+    endif ()
+
+    set(_handler_src "")
+    foreach (_p IN LISTS CMAKE_PREFIX_PATH)
+        if (NOT _handler_src)
+            file(TO_CMAKE_PATH "${_p}" _norm_prefix)
+            set(_candidate "${_norm_prefix}/bin/${_handler_name}")
+            if (EXISTS "${_candidate}")
+                set(_handler_src "${_candidate}")
             endif ()
         endif ()
-        unset(_crashpad_handler_src)
+    endforeach ()
+
+    if (_handler_src)
+        if (WIN32)
+            install(FILES "${_handler_src}" DESTINATION "crashpad" RENAME "${_handler_name}")
+        elseif (CMAKE_MACOSX_BUNDLE)
+            install(FILES "${_handler_src}"
+                DESTINATION "ElegooSlicer.app/Contents/MacOS/crashpad"
+                RENAME "${_handler_name}"
+            )
+        else ()
+            install(FILES "${_handler_src}"
+                DESTINATION "${CMAKE_INSTALL_BINDIR}/crashpad"
+                RENAME "${_handler_name}"
+            )
+        endif ()
     endif ()
+    unset(_handler_src)
 endfunction()

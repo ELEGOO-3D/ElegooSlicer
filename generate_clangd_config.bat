@@ -17,6 +17,7 @@ if "%1" == "help" (
     echo Parameters:
     echo   debug        - Build in Debug mode
     echo   debuginfo    - Build in RelWithDebInfo mode with debug symbols
+    echo   release      - Build in Release mode
     echo   test         - Build internal testing version with ELEGOO_INTERNAL_TESTING=1
     echo.
     echo Examples:
@@ -37,12 +38,14 @@ echo.
 rem Parse arguments
 set debug=OFF
 set debuginfo=OFF
+set release=OFF
 set ELEGOO_INTERNAL_TESTING=0
 
 :loop
 if "%1"=="" goto end
 if /I "%1"=="debug" set debug=ON
 if /I "%1"=="debuginfo" set debuginfo=ON
+if /I "%1"=="release" set release=ON
 if /I "%1"=="test" set ELEGOO_INTERNAL_TESTING=1
 shift
 goto loop
@@ -54,7 +57,11 @@ if "%debug%"=="ON" (
     set BUILD_DIR=build-ninja-dbg
     set DEPS_BUILD_DIR=build-dbg
 ) else (
-    if "%debuginfo%"=="ON" (
+    if "%release%"=="ON" (
+        set BUILD_TYPE=Release
+        set BUILD_DIR=build-ninja-release
+        set DEPS_BUILD_DIR=build
+    ) else if "%debuginfo%"=="ON" (
         set BUILD_TYPE=RelWithDebInfo
         set BUILD_DIR=build-ninja-dbginfo
         set DEPS_BUILD_DIR=build-dbginfo
