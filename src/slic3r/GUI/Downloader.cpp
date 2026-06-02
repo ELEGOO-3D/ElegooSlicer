@@ -4,6 +4,7 @@
 #include "NotificationManager.hpp"
 #include "format.hpp"
 #include "MainFrame.hpp"
+#include "slic3r/Utils/Http.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <boost/log/trivial.hpp>
@@ -90,19 +91,49 @@ void        Downloader::close()
 }
 std::string process_url(const std::string& full_url)
 {
-    boost::regex  re(R"(^(elegooslicer|orcaslicer|prusaslicer|bambustudio|cura):\/\/open[\/]?\?file=|https?:\/\/.*|http?:\/\/.*)",
-                     boost::regbase::icase);
-    boost::smatch results;
+    if (boost::istarts_with(full_url, "http://") || boost::istarts_with(full_url, "https://")) {
+        return full_url;
+    }
 
-    if (!boost::regex_search(full_url, results, re)) {
+    if (!is_supported_open_protocol(full_url)) {
         BOOST_LOG_TRIVIAL(error) << "Could not process URL: " << full_url;
         return "";
     }
 
-    if (results[1].matched) {
-        return full_url.substr(results.length());
+    const size_t query_pos = full_url.find('?');
+    if (query_pos == std::string::npos || query_pos + 1 >= full_url.size()) {
+        BOOST_LOG_TRIVIAL(error) << "Could not process open URL without query string: " << full_url;
+        return "";
     }
-    return full_url;
+
+    const std::string query = full_url.substr(query_pos + 1);
+    std::string encoded_file_url;
+    size_t token_pos = 0;
+    while (token_pos <= query.size()) {
+        const size_t next_amp = query.find('&', token_pos);
+        const std::string token = query.substr(token_pos, next_amp == std::string::npos ? std::string::npos : next_amp - token_pos);
+        if (boost::istarts_with(token, "file=")) {
+            encoded_file_url = token.substr(5);
+            break;
+        }
+        if (next_amp == std::string::npos)
+            break;
+        token_pos = next_amp + 1;
+    }
+
+    if (encoded_file_url.empty()) {
+        BOOST_LOG_TRIVIAL(error) << "Could not find file parameter in open URL: " << full_url;
+        return "";
+    }
+
+    const std::string decoded_file_url = Http::url_decode(encoded_file_url);
+    const std::string normalized_url = decoded_file_url.empty() ? encoded_file_url : decoded_file_url;
+    if (!boost::istarts_with(normalized_url, "http://") && !boost::istarts_with(normalized_url, "https://")) {
+        BOOST_LOG_TRIVIAL(error) << "Could not process malformed file URL: " << normalized_url;
+        return "";
+    }
+
+    return normalized_url;
 }
 void Downloader::start_download(const std::string& full_url)
 {
