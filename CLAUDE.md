@@ -176,20 +176,22 @@ fix(network): resolve timeout in printer discovery
 # Full release build
 .\build_release_windows.bat
 
-# Debug symbols
+# Debug / RelWithDebInfo
 .\build_release_windows.bat debug
-
-# RelWithDebInfo
 .\build_release_windows.bat debuginfo
 
 # Dependencies only
 .\build_release_windows.bat onlydeps
 
-# Slicer only (after deps built)
+# Slicer only
 .\build_release_windows.bat slicer
 
 # Build + package installer
 .\build_release_windows.bat packinstall
+
+# Build + upload PDB to Sentry
+.\build_release_windows.bat slicer uploadpdb
+.\build_release_windows.bat packinstall uploadpdb
 ```
 
 ### clangd Config (Windows)
@@ -205,19 +207,33 @@ fix(network): resolve timeout in printer discovery
 ./build_release_macos.sh -d     # Deps only
 ./build_release_macos.sh -s     # Slicer only
 ./build_release_macos.sh -x     # Use Ninja
+./build_release_macos.sh -s -g  # Build + upload dSYM to Sentry
 ```
 
 ### Linux Build
 ```bash
-sudo ./BuildLinux.sh -u         # Full build with deps
-./BuildLinux.sh -d              # Deps only
-./BuildLinux.sh -s              # Slicer only
-./BuildLinux.sh -dsi            # Deps + slicer + AppImage
+./build_linux.sh -u             # Install system deps (requires sudo)
+./build_linux.sh -d             # Deps only
+./build_linux.sh -s             # Slicer only
+./build_linux.sh -dsi           # Deps + slicer + AppImage
+./build_linux.sh -dsig          # Deps + slicer + AppImage + upload symbols
 ```
 
 ### Build Output
 - Windows: `build/` or `build-dbginfo/`
 - macOS / Linux: `build/`
+
+### Sentry Debug Symbols Upload
+
+Crash reports use Sentry Native SDK (Crashpad backend). To get symbolicated stack traces, upload debug symbols at build time:
+
+| Platform | Flag | Uploads |
+|----------|------|---------|
+| Windows | `uploadpdb` | `.pdb` from `build\src\Release\` and `deps\...\usr\local\` |
+| macOS | `-g` | `.dSYM` from `build/<arch>/src/<config>/` |
+| Linux | `-g` | ELF debug info from `build/src/<config>/` |
+
+The upload script (`scripts/upload_sentry_pdbs.py`) auto-downloads sentry-cli on first run (cached in `tools/sentry-cli/`, gitignored). Requires `SENTRY_AUTH_TOKEN` in `.env`.
 
 ### Testing
 - Test on target platform before committing.
