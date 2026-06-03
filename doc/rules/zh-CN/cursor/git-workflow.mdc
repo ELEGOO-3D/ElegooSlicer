@@ -8,6 +8,7 @@ description: 当用户提到 git、commit、push、merge、rebase、conflict 或
 ## 注意事项
 - 提交消息使用英文
 - 保持线性历史：始终使用 `git pull --rebase`，禁止使用 `git pull` 或 `git merge`（会创建合并提交）。
+- 不要在提交中添加 `Co-Authored-By` 行
 
 ## 标准工作流
 

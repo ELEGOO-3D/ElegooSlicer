@@ -22,7 +22,7 @@ def setup_rules(workspace, ide_type, lang='zh-CN'):
     if ide_type == 'cursor':
         target_dir = workspace / '.cursor' / 'rules'
         target_dir.mkdir(parents=True, exist_ok=True)
-        
+
         for source_file in rule_files:
             if source_file.is_file():
                 target_file = target_dir / source_file.name
@@ -32,7 +32,7 @@ def setup_rules(workspace, ide_type, lang='zh-CN'):
                 except Exception as e:
                     print(f'[WARNING] failed to copy {source_file.name}: {e}')
                     success = False
-        
+
         if copied_count > 0:
             print(f'[OK] copied {copied_count} rule file(s) for Cursor')
             print(f'     target: {target_dir}')
@@ -68,9 +68,9 @@ def setup_rules(workspace, ide_type, lang='zh-CN'):
             print(f'[OK] copied {copied_count - 1} reference file(s) to .vscode/rules/')
     
     elif ide_type == 'claude':
-        target_dir = workspace / 'claude-docs'
+        target_dir = workspace
         target_dir.mkdir(parents=True, exist_ok=True)
-        
+
         for source_file in rule_files:
             if source_file.is_file():
                 target_file = target_dir / source_file.name
@@ -80,7 +80,7 @@ def setup_rules(workspace, ide_type, lang='zh-CN'):
                 except Exception as e:
                     print(f'[WARNING] failed to copy {source_file.name}: {e}')
                     success = False
-        
+
         if copied_count > 0:
             print(f'[OK] copied {copied_count} rule file(s) for Claude')
             print(f'     target: {target_dir}')

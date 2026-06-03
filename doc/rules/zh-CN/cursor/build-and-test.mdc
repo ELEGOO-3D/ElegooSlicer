@@ -102,6 +102,18 @@ generate_clangd_config.bat debuginfo
 generate_clangd_config.bat test
 ```
 
+## Sentry 调试符号上传
+
+崩溃报告使用 Sentry Native SDK（Crashpad 后端）。要获取符号化的堆栈跟踪，需在构建时上传调试符号：
+
+| 平台 | 标志 | 上传内容 |
+|------|------|----------|
+| Windows | `uploadpdb` | `build\src\Release\` 和 `deps\...\usr\local\` 中的 `.pdb` |
+| macOS | `-g` | `build/<arch>/src/<config>/` 中的 `.dSYM` |
+| Linux | `-g` | `build/src/<config>/` 中的 ELF 调试信息 |
+
+上传脚本（`scripts/upload_sentry_pdbs.py`）首次运行时自动下载 sentry-cli（缓存在 `tools/sentry-cli/`，已 gitignore）。需要在 `.env` 中设置 `SENTRY_AUTH_TOKEN`。
+
 ## 测试指南
 
 - 提交前在目标平台上测试

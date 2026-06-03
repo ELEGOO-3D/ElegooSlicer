@@ -1,33 +1,264 @@
 {
     "version": 8,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 22,
+        "patch": 0
+    },
     "configurePresets": [
         {
-            "name": "Visual Studio Community 2022 Release - amd64",
-            "displayName": "Visual Studio Community 2022 Release - amd64",
-            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture)",
+            "name": "Visual Studio Community 2022 RelWithDebInfo - amd64",
+            "displayName": "Visual Studio Community 2022 RelWithDebInfo - amd64",
+            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture, RelWithDebInfo)",
             "generator": "Visual Studio 17 2022",
             "architecture": "x64",
             "binaryDir": "${sourceDir}/build-dbginfo",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
             "cacheVariables": {
-                "BBL_RELEASE_TO_PUBLIC":"1",
-                "CMAKE_INSTALL_PREFIX":"./ElegooSlicer",
-                "WIN10SDK_PATH":"C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0",
-                "CMAKE_PREFIX_PATH":"${sourceDir}/deps/build-dbginfo/ElegooSlicer_dep/usr/local",
+                "BBL_RELEASE_TO_PUBLIC": "1",
+                "CMAKE_INSTALL_PREFIX": "./ElegooSlicer",
+                "WIN10SDK_PATH": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build-dbginfo/ElegooSlicer_dep/usr/local",
                 "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-                "ELEGOO_INTERNAL_TESTING":"0",
-                "ELEGOO_ENABLE_DEBUG_OUTPUT":"1"
+                "ELEGOO_INTERNAL_TESTING": "0",
+                "ELEGOO_ENABLE_DEBUG_OUTPUT": "1"
+            }
+        },
+        {
+            "name": "Visual Studio Community 2022 Release - amd64",
+            "displayName": "Visual Studio Community 2022 Release - amd64",
+            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture, Release)",
+            "generator": "Visual Studio 17 2022",
+            "architecture": "x64",
+            "binaryDir": "${sourceDir}/build",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "BBL_RELEASE_TO_PUBLIC": "1",
+                "CMAKE_INSTALL_PREFIX": "./ElegooSlicer",
+                "WIN10SDK_PATH": "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.22621.0",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build/ElegooSlicer_dep/usr/local",
+                "CMAKE_BUILD_TYPE": "Release",
+                "ELEGOO_INTERNAL_TESTING": "1",
+                "ELEGOO_ENABLE_DEBUG_OUTPUT": "1"
+            }
+        },
+        {
+            "name": "Xcode generator - RelWithDebInfo",
+            "displayName": "Xcode generator - RelWithDebInfo",
+            "description": "Xcode generator (arm64, RelWithDebInfo)",
+            "generator": "Xcode",
+            "binaryDir": "${sourceDir}/build/arm64/",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/arm64/ElegooSlicer/",
+                "CMAKE_MACOSX_RPATH": "ON",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build/arm64/ElegooSlicer_dep/usr/local",
+                "CMAKE_INSTALL_RPATH": "${sourceDir}/deps/build/arm64/ElegooSlicer_dep/usr/local",
+                "BBL_RELEASE_TO_PUBLIC": "1",
+                "CMAKE_MACOSX_BUNDLE": "ON",
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.3",
+                "CMAKE_C_COMPILER": "/usr/bin/clang",
+                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+                "ELEGOO_INTERNAL_TESTING": "1"
+            }
+        },
+        {
+            "name": "Xcode generator - Release",
+            "displayName": "Xcode generator - Release",
+            "description": "Xcode generator (arm64, Release)",
+            "generator": "Xcode",
+            "binaryDir": "${sourceDir}/build/arm64-release/",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_TOOLCHAIN_FILE": "",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/arm64-release/ElegooSlicer/",
+                "CMAKE_MACOSX_RPATH": "ON",
+                "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build/arm64/ElegooSlicer_dep/usr/local",
+                "CMAKE_INSTALL_RPATH": "${sourceDir}/deps/build/arm64/ElegooSlicer_dep/usr/local",
+                "BBL_RELEASE_TO_PUBLIC": "1",
+                "CMAKE_MACOSX_BUNDLE": "ON",
+                "CMAKE_OSX_ARCHITECTURES": "arm64",
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.3",
+                "CMAKE_C_COMPILER": "/usr/bin/clang",
+                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+                "ELEGOO_INTERNAL_TESTING": "0"
+            }
+        },
+        {
+            "name": "Linux Ninja Multi-Config - RelWithDebInfo",
+            "displayName": "Linux Ninja Multi-Config - RelWithDebInfo",
+            "description": "Linux Ninja Multi-Config RelWithDebInfo build (Clang + lld)",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build-dbginfo",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build-dbginfo/destdir/usr/local",
+                "CMAKE_C_COMPILER": "/usr/bin/clang",
+                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_CONFIGURATION_TYPES": "RelWithDebInfo",
+                "CMAKE_LINKER": "/usr/bin/ld.lld",
+                "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld",
+                "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld",
+                "CMAKE_MODULE_LINKER_FLAGS": "-fuse-ld=lld",
+                "CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO": "Release;RelWithDebInfo;NONE;NOCONFIG;Debug",
+                "CMAKE_MAP_IMPORTED_CONFIG_RELEASE": "Release;NONE;NOCONFIG;Debug",
+                "CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL": "Release;NONE;NOCONFIG;Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "SLIC3R_PCH": "ON",
+                "SLIC3R_STATIC": "1",
+                "ORCA_TOOLS": "ON",
+                "SLIC3R_GTK": "3",
+                "BBL_RELEASE_TO_PUBLIC": "1",
+                "BBL_INTERNAL_TESTING": "0",
+                "ELEGOO_INTERNAL_TESTING": "0",
+                "ELEGOO_ENABLE_DEBUG_OUTPUT": "1"
+            },
+            "environment": {
+                "PATH": "${sourceDir}/deps/build-dbginfo/destdir/usr/local/bin:$penv{PATH}"
+            }
+        },
+        {
+            "name": "Linux Ninja Multi-Config - Release",
+            "displayName": "Linux Ninja Multi-Config - Release",
+            "description": "Linux Ninja Multi-Config Release build (Clang + lld)",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "cacheVariables": {
+                "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build/destdir/usr/local",
+                "CMAKE_C_COMPILER": "/usr/bin/clang",
+                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_CONFIGURATION_TYPES": "Release",
+                "CMAKE_LINKER": "/usr/bin/ld.lld",
+                "CMAKE_EXE_LINKER_FLAGS": "-fuse-ld=lld",
+                "CMAKE_SHARED_LINKER_FLAGS": "-fuse-ld=lld",
+                "CMAKE_MODULE_LINKER_FLAGS": "-fuse-ld=lld",
+                "CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO": "Release;RelWithDebInfo;NONE;NOCONFIG;Debug",
+                "CMAKE_MAP_IMPORTED_CONFIG_RELEASE": "Release;NONE;NOCONFIG;Debug",
+                "CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL": "Release;NONE;NOCONFIG;Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "SLIC3R_PCH": "ON",
+                "SLIC3R_STATIC": "1",
+                "ORCA_TOOLS": "ON",
+                "SLIC3R_GTK": "3",
+                "BBL_RELEASE_TO_PUBLIC": "1",
+                "BBL_INTERNAL_TESTING": "0",
+                "ELEGOO_INTERNAL_TESTING": "0",
+                "ELEGOO_ENABLE_DEBUG_OUTPUT": "1"
+            },
+            "environment": {
+                "PATH": "${sourceDir}/deps/build/destdir/usr/local/bin:$penv{PATH}"
             }
         }
     ],
     "buildPresets": [
         {
+            "name": "Visual Studio Community 2022 RelWithDebInfo - amd64",
+            "displayName": "Visual Studio Community 2022 RelWithDebInfo - amd64",
+            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture, RelWithDebInfo)",
+            "configurePreset": "Visual Studio Community 2022 RelWithDebInfo - amd64",
+            "configuration": "RelWithDebInfo",
+            "jobs": 16,
+            "nativeToolOptions": ["-m"],
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
             "name": "Visual Studio Community 2022 Release - amd64",
             "displayName": "Visual Studio Community 2022 Release - amd64",
-            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture)",
+            "description": "Using compilers for Visual Studio 17 2022 (x64 architecture, Release)",
             "configurePreset": "Visual Studio Community 2022 Release - amd64",
+            "configuration": "Release",
+            "jobs": 16,
+            "nativeToolOptions": ["-m"],
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "Xcode generator - RelWithDebInfo",
+            "description": "Build using Xcode generator (RelWithDebInfo)",
+            "configurePreset": "Xcode generator - RelWithDebInfo",
+            "targets": ["ALL_BUILD"],
+            "configuration": "RelWithDebInfo",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "Xcode generator - Release",
+            "description": "Build using Xcode generator (Release)",
+            "configurePreset": "Xcode generator - Release",
+            "targets": ["ALL_BUILD"],
+            "configuration": "Release",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "Linux Ninja Multi-Config - RelWithDebInfo",
+            "displayName": "Linux Ninja Multi-Config - RelWithDebInfo",
+            "description": "Linux Ninja Multi-Config RelWithDebInfo build",
+            "configurePreset": "Linux Ninja Multi-Config - RelWithDebInfo",
             "configuration": "RelWithDebInfo",
             "jobs": 8,
-            "nativeToolOptions": ["-m"]
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+        {
+            "name": "Linux Ninja Multi-Config - Release",
+            "displayName": "Linux Ninja Multi-Config - Release",
+            "description": "Linux Ninja Multi-Config Release build",
+            "configurePreset": "Linux Ninja Multi-Config - Release",
+            "configuration": "Release",
+            "jobs": 8,
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
         }
     ]
 }

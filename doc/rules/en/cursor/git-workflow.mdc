@@ -8,6 +8,7 @@ description: Applied when user mentions git, commit, push, merge, rebase, confli
 ## Important Notes
 - Commit messages in English
 - Maintain linear history: always use `git pull --rebase`, prohibit using `git pull` or `git merge` (creates merge commits).
+- Do NOT add `Co-Authored-By` lines to commits
 
 ## Standard Workflow
 

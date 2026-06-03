@@ -102,6 +102,18 @@ generate_clangd_config.bat debuginfo
 generate_clangd_config.bat test
 ```
 
+## Sentry Debug Symbols Upload
+
+Crash reports use Sentry Native SDK (Crashpad backend). To get symbolicated stack traces, upload debug symbols at build time:
+
+| Platform | Flag | Uploads |
+|----------|------|---------|
+| Windows | `uploadpdb` | `.pdb` from `build\src\Release\` and `deps\...\usr\local\` |
+| macOS | `-g` | `.dSYM` from `build/<arch>/src/<config>/` |
+| Linux | `-g` | ELF debug info from `build/src/<config>/` |
+
+The upload script (`scripts/upload_sentry_pdbs.py`) auto-downloads sentry-cli on first run (cached in `tools/sentry-cli/`, gitignored). Requires `SENTRY_AUTH_TOKEN` in `.env`.
+
 ## Testing Guidelines
 
 - Test on target platform before committing
