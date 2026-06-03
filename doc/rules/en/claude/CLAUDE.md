@@ -35,29 +35,115 @@ You are an AI coding assistant in Claude Code, helping with ElegooSlicer develop
 - **Conversation**: Chinese (中文)
 - **Code, comments, commit messages**: English
 
-### Code Changes
-- Always read current file state before editing — never rely on stale conversation context.
-- Minimize changes: modify only what is necessary.
-- Prefer adding new functions/classes/overloads over rewriting existing code (avoid merge conflicts).
-- Do NOT generate documentation or test cases unless explicitly asked.
-- When referencing code locations, use the format `filepath:startLine-endLine`.
+### Task Classification
+
+Before starting, classify the task into one of three tiers. Each tier has different workflow requirements.
+
+| Tier | Scope | Examples | Workflow |
+|------|-------|----------|----------|
+| **Trivial** | Single location, obvious fix | Typo, single-line fix, rename one variable, add a getter | Do it → explain after |
+| **Standard** | Single module, clear requirement | Add a config field, fix a null check, add a UI button, modify one function | Analyze → implement → self-review |
+| **Complex** | Multi-file, cross-module, architecture | New feature, refactor, cross-module change, performance optimization | Full analysis → confirm → implement → self-review |
+
+When in doubt, treat as the higher tier. The user can always say "直接改" to downgrade.
+
+### Workflow: Standard Tier (most tasks)
+
+#### 1. Analyze
+State the following before editing:
+- **What**: What needs to change and why
+- **Where**: Which files/functions are affected (use search tools to verify, don't guess)
+- **How**: Brief description of the approach
+
+Use tools to support analysis — don't rely on assumptions:
+- `grep` / `find references` to locate all callers
+- `read` the actual file to understand current structure
+- `go to definition` to trace dependencies
+
+Present as a concise plan:
+```
+Plan:
+- FileA.cpp:100 — add timeout parameter to `onConnect()`
+- FileB.hpp:50 — declare new parameter with default value
+
+Reason: current connect has no timeout, causing hangs on slow networks.
+```
+
+#### 2. Implement
+- Read the current file state before editing — never rely on stale context
+- **Before editing each file**: briefly describe what you will change in that file
+- Edit surgically: change only what the plan requires
+- Prefer adding new functions/classes/overloads over rewriting existing code
+- If implementation reveals the plan was wrong: stop, re-analyze, present updated plan
+
+#### 3. Self-Review
+After all edits are done, check:
+- **Plan match**: Does the code match the stated plan?
+- **Orphans**: Any unused includes/variables/functions introduced?
+- **Consistency**: Naming and style match surrounding code?
+- **Build risk**: Missing declarations, header issues, platform concerns?
+- Fix problems found, then summarize what changed.
+
+### Workflow: Complex Tier
+
+Same as Standard, with these additions:
+
+#### Before Step 1: Scope Confirmation
+- List all affected files/modules
+- Identify cross-module dependencies and risks
+- Present the scope to the user and wait for confirmation before proceeding
+
+#### Step 1 Enhanced: Deep Analysis
+- Trace the full call chain: entry point → intermediate functions → target
+- Map data flow: how data transforms through the chain
+- Identify side effects: downstream callers, related features, platform differences
+- Present as a structured modification plan with file:line references
+
+#### Step 3 Enhanced: Review by File
+- After implementing each file, briefly state what changed
+- After all files, present a summary of all changes for user review
+
+### Workflow: Trivial Tier
+
+Just do it. After the change, one-line summary of what was changed and why.
 
 ### Dangerous Operations — Confirm First
-Before executing any of the following, ask for user confirmation:
+
+These operations require explicit user confirmation before execution:
 - Deleting files or large blocks of code
-- Modifying core architecture or critical logic
-- Batch renaming or large-scale refactoring
-- Changing build configuration or dependencies
-- Full-file formatting (risk of merge conflicts)
-- Any other operation that could impact project stability
+- Modifying core architecture (e.g., changing class hierarchies, module boundaries)
+- Batch renaming affecting 5+ locations
+- Changing build configuration (CMakeLists.txt, build scripts)
+- Changing third-party dependencies
+- Full-file formatting or reformatting
+
+### Code Style Rules
+
+- Minimize changes: modify only what is necessary
+- Do NOT generate documentation or test cases unless explicitly asked
+- When referencing code locations, use the format `filepath:startLine-endLine`
+- Match existing file style even if you'd do it differently
+- Don't "improve" adjacent code, comments, or formatting
+- Don't refactor things that aren't broken
+- If you notice unrelated dead code, mention it — don't delete it
+- When your changes create orphans: remove only what YOUR changes made unused
+
+### Simplicity Principle
+
+- No features beyond what was asked
+- No abstractions for single-use code
+- No "flexibility" or "configurability" that wasn't requested
+- No error handling for impossible scenarios
+- If you write 200 lines and it could be 50, rewrite it
 
 ### Interaction Style
-- When raising questions or issues, present options/solutions for quick decision-making.
-- For complex requirements (multi-file, multi-step, architecture changes), first confirm scope, create a task list noting affected files/modules, clarify priorities and dependencies.
-- Edit code directly — don't just offer suggestions.
-- When the user points out an error, fix it immediately and update relevant memory or rules.
+
+- When raising questions or issues, present options/solutions for quick decision-making
+- For complex requirements, create a task list noting affected files/modules, clarify priorities and dependencies
+- When the user points out an error, fix it immediately and update relevant memory or rules
 
 ### Rule Reference
+
 - Git operations: see the Git Workflow section below
 - Coding standards: see the Coding Standards section below
 - Build & test: see the Build and Test section below

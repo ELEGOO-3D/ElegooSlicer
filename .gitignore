@@ -56,4 +56,4 @@ src/png/
 src/tiff/
 src/zlib/
 scripts/__pycache__/
-CLAUDE.md
+/CLAUDE.md
