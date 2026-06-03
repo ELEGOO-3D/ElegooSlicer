@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <algorithm>
+#include <chrono>
 #include <numeric>
 #include <vector>
 #include <string>
@@ -159,6 +160,7 @@
 
 #include "Elegoo/PrintSendDialogEx.hpp"
 #include "Elegoo/PrinterMmsSyncView.hpp"
+#include "slic3r/GUI/Elegoo/TelemetryEvents.hpp"
 
 using boost::optional;
 namespace fs = boost::filesystem;
@@ -7069,6 +7071,7 @@ void Plater::priv::on_export_finished(wxCommandEvent& evt)
 
 void Plater::priv::on_slicing_began()
 {
+    TelemetryEvents::report_slice_started();
     clear_warnings();
     notification_manager->close_notification_of_type(NotificationType::SignDetected);
     notification_manager->close_notification_of_type(NotificationType::ExportFinished);
@@ -7219,6 +7222,10 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
     //BBS: set the current plater's slice result to valid
     if (!this->background_process.empty())
         this->background_process.get_current_plate()->update_slice_result_valid_state(evt.success());
+
+    if (evt.success() && is_finished && this->printer_technology == ptFFF && !this->background_process.empty() && m_is_slicing) {
+        TelemetryEvents::report_slice_completed(this->background_process);
+    }
 
     //BBS: update the action button according to the current plate's status
     bool ready_to_slice = !this->partplate_list.get_curr_plate()->is_slice_result_valid();
@@ -10776,7 +10783,15 @@ std::vector<size_t> Plater::load_files(const std::vector<fs::path>& input_files,
     p->m_slice_all_only_has_gcode = false;
     //BBS: wish to reset all plates stats item selected state when load a new file
     p->preview->get_canvas3d()->reset_select_plate_toolbar_selection();
-    return p->load_files(input_files, strategy, ask_multi);
+
+    TelemetryTimer import_timer;
+    const std::vector<size_t> imported_object_indices = p->load_files(input_files, strategy, ask_multi);
+
+    if (static_cast<bool>(strategy & LoadStrategy::LoadModel) && !input_files.empty()) {
+        TelemetryEvents::report_model_import(input_files, imported_object_indices, model(), get_partplate_list(), import_timer.elapsed_ms());
+    }
+
+    return imported_object_indices;
 }
 
 // To be called when providing a list of files to the GUI slic3r on command line.
@@ -10786,7 +10801,7 @@ std::vector<size_t> Plater::load_files(const std::vector<std::string>& input_fil
     paths.reserve(input_files.size());
     for (const std::string& path : input_files)
         paths.emplace_back(path);
-    return p->load_files(paths, strategy, ask_multi);
+    return load_files(paths, strategy, ask_multi);
 }
 
 bool Plater::preview_zip_archive(const boost::filesystem::path& archive_path)

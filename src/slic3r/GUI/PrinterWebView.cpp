@@ -19,7 +19,7 @@
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 #include "slic3r/Utils/Elegoo/PrinterUploadManager.hpp"
 #include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
-#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
+#include "Elegoo/TelemetryEvents.hpp"
 #include <nlohmann/json.hpp>
 #include <thread>
 #include <mutex>
@@ -567,40 +567,57 @@ void PrinterWebView::setupIPCHandlers()
     });
     // Telemetry: printer command delivery; reported after the web page confirms delivery (channel vs business errors)
     mIpc->onRequest("printer_command_delivery", [](const IPCRequest& request) {
-        auto params = request.params;
+        auto           params = request.params;
         nlohmann::json content;
-        content["result"]               = params.value("result", "");               // delivery result, e.g. "success"
-        content["network_type"]         = params.value("network_type", "");         // "wan" | "lan"
-        content["command_method"]       = params.value("command_method", "");       // command method code, e.g. "2005"
-        content["printer_model"]        = params.value("printer_model", "");
-        content["serial_number"]        = params.value("serial_number", "");
+        content["result"]         = params.value("result", "");         // delivery result, e.g. "success"
+        content["network_type"]   = params.value("network_type", "");   // "wan" | "lan"
+        content["command_method"] = params.value("command_method", ""); // command method code, e.g. "2005"
+        content["printer_model"]  = params.value("printer_model", "");
+        content["serial_number"]  = params.value("serial_number", "");
         // error_code: request ok (response received, no throw) -> 0; failed / timeout -> -1
-        content["error_code"]           = params.value("error_code", 0);
+        int errorCode = params.value("error_code", 0);
+        if (errorCode == -1) {
+            content["error_code"] = PrinterNetworkErrorCode::OPERATION_TIMEOUT;
+        } else if (errorCode == 0) {
+            content["error_code"] = 0;
+        } else {
+            content["error_code"] = PrinterNetworkErrorCode::PRINTER_UNKNOWN_ERROR; // other error codes from backend
+        }
         // error_msg: success -> ''; failure -> Error.message
-        content["error_msg"]            = params.value("error_msg", "");
+        // content["error_msg"]            = params.value("error_msg", "");
         // original_error_code: channel ok -> result.error_code if non-zero else 0; channel failed / timeout -> -1
-        content["original_error_code"]  = params.value("original_error_code", 0);
-        TelemetryReporter::getInstance()->reportEvent("printer_command_delivery", content);
+        // content["original_error_code"] = params.value("original_error_code", 0);
+        TelemetryEvents::report_printer_command_delivery(content);
         return IPCResult::success();
     });
     // Telemetry: print job start from web UI
     mIpc->onRequest("print_job_start", [](const IPCRequest& request) {
-        auto params = request.params;
+        auto           params = request.params;
         nlohmann::json content;
-        content["print_source"]              = params.value("print_source", "");              // e.g. "webui"
-        content["network_type"]              = params.value("network_type", "");              // "wan" | "lan"
-        content["printer_model"]             = params.value("printer_model", "");
-        content["serial_number"]             = params.value("serial_number", "");
-        content["file_type"]                 = params.value("file_type", "");
-        content["file_size_bytes"]           = params.value("file_size_bytes", 0);
-        content["layer_count"]               = params.value("layer_count", 0);
-        content["estimated_time_sec"]        = params.value("estimated_time_sec", 0);
-        content["total_filament_used_g"]     = params.value("total_filament_used_g", 0);
-        content["total_filament_used_mm"]    = params.value("total_filament_used_mm", 0);
-        content["filament_colour"]           = params.value("filament_colour", "");
-        content["filament_type"]             = params.value("filament_type", "");
-        content["filament_name"]             = params.value("filament_name", "");
-        TelemetryReporter::getInstance()->reportEvent("print_job_start", content);
+        content["result"]         = params.value("result", "");         // delivery result, e.g. "success"
+        content["print_source"]  = "webui";                          // e.g. "webui"
+        content["network_type"]  = params.value("network_type", ""); // "wan" | "lan"
+        content["printer_model"] = params.value("printer_model", "");
+        content["serial_number"] = params.value("serial_number", "");
+        int errorCode            = params.value("error_code", 0);
+        if (errorCode == -1) {
+            content["error_code"] = PrinterNetworkErrorCode::OPERATION_TIMEOUT;
+        } else if (errorCode == 0) {
+            content["error_code"] = 0;
+        } else {
+            content["error_code"] = PrinterNetworkErrorCode::PRINTER_UNKNOWN_ERROR; // other error codes from backend
+        }
+        // content["original_error_code"] = params.value("original_error_code", 0);
+        // content["file_type"]                 = params.value("file_type", "");
+        // content["file_size_bytes"]           = params.value("file_size_bytes", 0);
+        // content["layer_count"]               = params.value("layer_count", 0);
+        // content["estimated_time_sec"]        = params.value("estimated_time_sec", 0);
+        // content["total_filament_used_g"]     = params.value("total_filament_used_g", 0);
+        // content["total_filament_used_mm"]    = params.value("total_filament_used_mm", 0);
+        // content["filament_colour"]           = params.value("filament_colour", "");
+        // content["filament_type"]             = params.value("filament_type", "");
+        // content["filament_name"]             = params.value("filament_name", "");
+        TelemetryEvents::report_print_job_start(content);
         return IPCResult::success();
     });
     mIpc->onRequest("deletePrintTasks", [this](const IPCRequest& request){

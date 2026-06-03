@@ -11,14 +11,19 @@ template <typename T>
 class Singleton {
 public:
     static T* getInstance() {
-        T* expected = nullptr;
-        if (s_instance.compare_exchange_strong(expected, nullptr)) {
-            std::lock_guard<std::mutex> lock(s_mutex);
-            if (s_instance.load() == nullptr) {
-                s_instance.store(new T);
-            }
+        // Double-checked locking: fast path avoids mutex on subsequent calls.
+        T* instance = s_instance.load(std::memory_order_acquire);
+        if (instance != nullptr) {
+            return instance;
         }
-        return s_instance.load();
+
+        std::lock_guard<std::mutex> lock(s_mutex);
+        instance = s_instance.load(std::memory_order_relaxed);
+        if (instance == nullptr) {
+            instance = new T;
+            s_instance.store(instance, std::memory_order_release);
+        }
+        return instance;
     }
 
     static void destroy() {

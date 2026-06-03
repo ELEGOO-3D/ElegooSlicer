@@ -37,7 +37,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
 #include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
-#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
+#include "TelemetryEvents.hpp"
 
 #define FIRST_TAB_NAME _L("Connected Printer")
 #define TAB_MAX_WIDTH 200
@@ -1190,9 +1190,13 @@ IPCResult PrinterManagerView::addPrinter(const nlohmann::json& printer)
     IPCResult result;
     PrinterNetworkInfo printerInfo = convertJsonToPrinterNetworkInfo(printer);
     printerInfo.isPhysicalPrinter = false;
+    TelemetryTimer connect_timer;
     auto networkResult = PrinterManager::getInstance()->addPrinter(printerInfo);
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
+
+    TelemetryEvents::report_printer_manual_connect(printerInfo, result.code, connect_timer.elapsed_ms());
+
     return result;
 }
 IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
@@ -1200,6 +1204,7 @@ IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
     IPCResult result;
     PrinterNetworkErrorCode errorCode = PrinterNetworkErrorCode::SUCCESS;
     PrinterNetworkInfo printerInfo;
+    TelemetryTimer connect_timer;
     try {
         printerInfo = convertJsonToPrinterNetworkInfo(printer);
         printerInfo.isPhysicalPrinter = true;
@@ -1212,6 +1217,9 @@ IPCResult PrinterManagerView::addPhysicalPrinter(const nlohmann::json& printer)
         result.message = getErrorMessage(errorCode);
     }
     result.code = errorCode == PrinterNetworkErrorCode::SUCCESS ? 0 : static_cast<int>(errorCode);
+
+    TelemetryEvents::report_printer_manual_connect(printerInfo, result.code, connect_timer.elapsed_ms());
+
     return result;
 }
 
@@ -1253,6 +1261,17 @@ IPCResult PrinterManagerView::getPrinterList()
     // Cache for printer images (printerId -> base64 image data)
     static std::map<std::string, std::string> printerImageCache;
     auto printerList = PrinterManager::getInstance()->getPrinterList();
+    bool shouldReportSnapshot = false;
+
+    {
+        std::lock_guard<std::mutex> lock(mPrinterSnapshotMutex);
+        const std::size_t currentPrinterCount = printerList.size();
+        if (!mHasObservedPrinterCount || mLastObservedPrinterCount != currentPrinterCount) {
+            mLastObservedPrinterCount = currentPrinterCount;
+            mHasObservedPrinterCount = true;
+            shouldReportSnapshot = true;
+        }
+    }
     
     // Build set of current printer IDs and process printers in one pass
     std::set<std::string> currentPrinterIds;
@@ -1286,6 +1305,11 @@ IPCResult PrinterManagerView::getPrinterList()
     }
     
     closeInvalidPrinterTab(printerList);
+
+    if (shouldReportSnapshot) {
+        TelemetryEvents::report_printer_list_snapshot(printerList);
+    }
+
     // Return object with printer list and main client status
     nlohmann::json resultData;
     resultData["printers"] = response;
@@ -1335,7 +1359,7 @@ IPCResult PrinterManagerView::handleCheckLoginStatus()
     if (result.isSuccess()) {
         bool needReLogin = result.data.value();
         if (needReLogin) {
-            TelemetryReporter::getInstance()->reportEvent("login_click");
+            TelemetryEvents::report_login_click();
             // need re-login
             auto evt = new wxCommandEvent(EVT_USER_LOGIN);
             wxQueueEvent(wxGetApp().mainframe, evt);

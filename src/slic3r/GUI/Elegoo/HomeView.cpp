@@ -16,7 +16,7 @@
 #include <wx/url.h>
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
-#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
+#include "TelemetryEvents.hpp"
 namespace Slic3r { namespace GUI {
 
 namespace {
@@ -350,7 +350,7 @@ IPCResult HomeView::handleCheckLoginStatus()
     if(result.isSuccess()) {
         bool needReLogin = result.data.value();
         if(needReLogin) {
-            TelemetryReporter::getInstance()->reportEvent("login_click");
+            TelemetryEvents::report_login_click();
             //need re-login
             auto evt = new wxCommandEvent(EVT_USER_LOGIN);
             wxQueueEvent(wxGetApp().mainframe, evt);

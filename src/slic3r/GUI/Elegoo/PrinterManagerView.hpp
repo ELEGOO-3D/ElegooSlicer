@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <functional>
@@ -80,6 +81,9 @@ private:
     UserNetworkInfo mRefreshUserInfo; // User info
     std::atomic<bool> mIsReady{false};
     std::atomic<bool> mWebViewInitialized{false};
+    std::mutex mPrinterSnapshotMutex;
+    std::size_t mLastObservedPrinterCount{0};
+    bool mHasObservedPrinterCount{false};
 
     uint64_t mConnectStatusChangedHandlerId{0};
     uint64_t mEventRawChangedHandlerId{0};

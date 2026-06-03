@@ -692,6 +692,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Elegoo/PrinterManagerView.hpp
     GUI/Elegoo/PrinterMmsSyncView.cpp
     GUI/Elegoo/PrinterMmsSyncView.hpp
+    GUI/Elegoo/TelemetryEvents.cpp
+    GUI/Elegoo/TelemetryEvents.hpp
     Utils/TCPConsole.cpp
     Utils/TCPConsole.hpp
     Utils/UndoRedo.cpp

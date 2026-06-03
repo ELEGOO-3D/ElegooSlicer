@@ -5,6 +5,7 @@
 #include "PrinterCache.hpp"
 #include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
 #include "slic3r/GUI/I18N.hpp"
+#include "slic3r/GUI/Elegoo/TelemetryEvents.hpp"
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -214,7 +215,8 @@ PrinterNetworkResult<bool> PrinterUploadManager::executeUpload(const PrinterNetw
     auto printer = PrinterCache::getInstance()->getPrinter(params.printerId);
     PrinterNetworkResult<bool> result(PrinterNetworkErrorCode::SUCCESS, false);
     bool isSendPrintTaskFailed = false;
-    
+    GUI::TelemetryTimer upload_timer;
+
     do {
         if (!printer.has_value()) {
             BOOST_LOG_TRIVIAL(error) << "executeUpload: printer not found, file name: " << params.fileName;
@@ -250,6 +252,7 @@ PrinterNetworkResult<bool> PrinterUploadManager::executeUpload(const PrinterNetw
         
         UserNetworkInfo requestUserInfo = UserNetworkManager::getInstance()->getUserInfo();
         result = network->sendPrintFile(params);
+        GUI::TelemetryEvents::report_printer_file_transfer(params.filePath, printer.value(), upload_timer.elapsed_ms(), static_cast<int>(result.code));
         
         if (result.isError()) {
             PrinterManager::getInstance()->checkUserAuthStatus(printer.value(), result, requestUserInfo);
@@ -267,6 +270,7 @@ PrinterNetworkResult<bool> PrinterUploadManager::executeUpload(const PrinterNetw
             
             if (params.uploadAndStartPrint) {
                 result = network->sendPrintTask(params);
+                GUI::TelemetryEvents::report_print_job_start("slicer", printer.value(), static_cast<int>(result.code));
                 if (result.isError()) {
                     PrinterManager::getInstance()->checkUserAuthStatus(printer.value(), result, requestUserInfo);
                     isSendPrintTaskFailed = true;

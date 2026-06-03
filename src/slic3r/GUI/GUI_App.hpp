@@ -18,6 +18,7 @@
 #include "slic3r/GUI/Jobs/UpgradeNetworkJob.hpp"
 #include "slic3r/GUI/HttpServer.hpp"
 #include "../Utils/PrintHost.hpp"
+#include "Elegoo/TelemetryEvents.hpp"
 
 #include <wx/app.h>
 #include <wx/colour.h>
@@ -26,6 +27,7 @@
 #include <wx/snglinst.h>
 #include <wx/msgdlg.h>
 
+#include <chrono>
 #include <mutex>
 #include <stack>
 

@@ -75,6 +75,8 @@
 #include "Plater.hpp"
 #include "GLCanvas3D.hpp"
 #include "GeneratedConfig.hpp"
+#include "Elegoo/TelemetryEvents.hpp"
+#include "slic3r/Utils/Elegoo/TelemetryReporter.hpp"
 
 #include "../Utils/PresetUpdater.hpp"
 #include "../Utils/PrintHost.hpp"
@@ -811,6 +813,7 @@ void GUI_App::post_init()
         throw Slic3r::RuntimeError("Calling post_init() while not yet initialized");
 
     m_open_method = "double_click";
+    std::string telemetry_launch_target;
     bool switch_to_3d = false;
 
     if (!this->init_params->input_files.empty()) {
@@ -820,6 +823,7 @@ void GUI_App::post_init()
         const auto first_url = this->init_params->input_files.front();
         if (this->init_params->input_files.size() == 1 && is_supported_open_protocol(first_url)) {
             switch_to_3d = true;
+            telemetry_launch_target = first_url;
             if (m_app_conf_exists && !preset_bundle->printers.only_default_printers()) {
                 start_download(first_url);
                 m_open_method = "url";
@@ -860,6 +864,7 @@ void GUI_App::post_init()
         slow_bootup = true;
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", slow bootup, won't render gl here.";
     }
+    bool telemetry_graphics_ready = false;
     if (!switch_to_3d) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", begin load_gl_resources";
         mainframe->Freeze();
@@ -874,6 +879,8 @@ void GUI_App::post_init()
             wxGetApp().imgui()->set_display_size(static_cast<float>(canvas_size.get_width()), static_cast<float>(canvas_size.get_height()));
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", start to init opengl";
             wxGetApp().init_opengl();
+            TelemetryReporter::getInstance()->updateGraphicsContext();
+            telemetry_graphics_ready = true;
 
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", finished init opengl";
             plater_->canvas3D()->init();
@@ -904,6 +911,15 @@ void GUI_App::post_init()
         plater_->trigger_restore_project(1);
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ", end load_gl_resources";
     }
+
+    if (!telemetry_graphics_ready && plater_ != nullptr && plater_->canvas3D() != nullptr &&
+        plater_->canvas3D()->get_wxglcanvas() != nullptr &&
+        plater_->canvas3D()->get_wxglcanvas()->IsShownOnScreen() &&
+        plater_->canvas3D()->make_current_for_postinit()) {
+        TelemetryReporter::getInstance()->updateGraphicsContext();
+    }
+    TelemetryEvents::report_app_open_source(telemetry_launch_target);
+    TelemetryEvents::report_app_launch();
 //#endif
 
     //BBS: remove GCodeViewer as seperate APP logic
@@ -1042,6 +1058,7 @@ void GUI_App::post_init()
     //     });
 
     CallAfter([this] {
+        TelemetryEvents::report_app_launch_performance();
         check_message();
     });
 
