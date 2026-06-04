@@ -1,10 +1,11 @@
-{
+﻿{
 	"type": "filament",
 	"name": "Elegoo PLA Basic @System",
 	"inherits": "Elegoo PLA @base",
 	"from": "system",
 	"setting_id": "OEPLABASICS00",
 	"instantiation": "true",
+	"renamed_from": "Elegoo PLA Basic",
 	"nozzle_temperature": [
 		"220"
 	],

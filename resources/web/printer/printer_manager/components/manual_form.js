@@ -220,6 +220,7 @@ const ManualFormComponent = {
             // Priority printer models list (in order)
             priorityModels: [
                 'Elegoo Centauri Carbon 2',
+                'Elegoo Centauri 2',
                 'Elegoo Centauri Carbon',
                 'Elegoo Centauri',
                 'Elegoo OrangeStorm Giga',

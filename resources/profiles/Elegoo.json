@@ -1,4 +1,4 @@
-{
+﻿{
 	"name": "Elegoo",
 	"version": "01.05.01.03",
 	"force_update": "0",
@@ -7,6 +7,10 @@
 		{
 			"name": "Elegoo Centauri Carbon 2",
 			"sub_path": "machine/ECC2/Elegoo Centauri Carbon 2.json"
+		},
+		{
+			"name": "Elegoo Centauri 2",
+			"sub_path": "machine/EC2/Elegoo Centauri 2.json"
 		},
 		{
 			"name": "Elegoo Centauri Carbon",
@@ -107,84 +111,168 @@
 			"sub_path": "process/ECC2/0.20mm Standard @Elegoo CC2 0.4 nozzle.json"
 		},
 		{
+			"name": "0.20mm Standard @Elegoo C2 0.4 nozzle",
+			"sub_path": "process/EC2/0.20mm Standard @Elegoo C2 0.4 nozzle.json"
+		},
+		{
 			"name": "0.10mm Standard @Elegoo CC2 0.2 nozzle",
 			"sub_path": "process/ECC2/0.10mm Standard @Elegoo CC2 0.2 nozzle.json"
+		},
+		{
+			"name": "0.10mm Standard @Elegoo C2 0.2 nozzle",
+			"sub_path": "process/EC2/0.10mm Standard @Elegoo C2 0.2 nozzle.json"
 		},
 		{
 			"name": "0.30mm Standard @Elegoo CC2 0.6 nozzle",
 			"sub_path": "process/ECC2/0.30mm Standard @Elegoo CC2 0.6 nozzle.json"
 		},
 		{
+			"name": "0.30mm Standard @Elegoo C2 0.6 nozzle",
+			"sub_path": "process/EC2/0.30mm Standard @Elegoo C2 0.6 nozzle.json"
+		},
+		{
 			"name": "0.40mm Standard @Elegoo CC2 0.8 nozzle",
 			"sub_path": "process/ECC2/0.40mm Standard @Elegoo CC2 0.8 nozzle.json"
+		},
+		{
+			"name": "0.40mm Standard @Elegoo C2 0.8 nozzle",
+			"sub_path": "process/EC2/0.40mm Standard @Elegoo C2 0.8 nozzle.json"
 		},
 		{
 			"name": "0.48mm Draft @Elegoo CC2 0.8 nozzle",
 			"sub_path": "process/ECC2/0.48mm Draft @Elegoo CC2 0.8 nozzle.json"
 		},
 		{
+			"name": "0.48mm Draft @Elegoo C2 0.8 nozzle",
+			"sub_path": "process/EC2/0.48mm Draft @Elegoo C2 0.8 nozzle.json"
+		},
+		{
 			"name": "0.42mm Extra Draft @Elegoo CC2 0.6 nozzle",
 			"sub_path": "process/ECC2/0.42mm Extra Draft @Elegoo CC2 0.6 nozzle.json"
+		},
+		{
+			"name": "0.42mm Extra Draft @Elegoo C2 0.6 nozzle",
+			"sub_path": "process/EC2/0.42mm Extra Draft @Elegoo C2 0.6 nozzle.json"
 		},
 		{
 			"name": "0.36mm Draft @Elegoo CC2 0.6 nozzle",
 			"sub_path": "process/ECC2/0.36mm Draft @Elegoo CC2 0.6 nozzle.json"
 		},
 		{
+			"name": "0.36mm Draft @Elegoo C2 0.6 nozzle",
+			"sub_path": "process/EC2/0.36mm Draft @Elegoo C2 0.6 nozzle.json"
+		},
+		{
 			"name": "0.32mm Optimal @Elegoo CC2 0.8 nozzle",
 			"sub_path": "process/ECC2/0.32mm Optimal @Elegoo CC2 0.8 nozzle.json"
+		},
+		{
+			"name": "0.32mm Optimal @Elegoo C2 0.8 nozzle",
+			"sub_path": "process/EC2/0.32mm Optimal @Elegoo C2 0.8 nozzle.json"
 		},
 		{
 			"name": "0.30mm Strength @Elegoo CC2 0.6 nozzle",
 			"sub_path": "process/ECC2/0.30mm Strength @Elegoo CC2 0.6 nozzle.json"
 		},
 		{
+			"name": "0.30mm Strength @Elegoo C2 0.6 nozzle",
+			"sub_path": "process/EC2/0.30mm Strength @Elegoo C2 0.6 nozzle.json"
+		},
+		{
 			"name": "0.28mm Extra Draft @Elegoo CC2 0.4 nozzle",
 			"sub_path": "process/ECC2/0.28mm Extra Draft @Elegoo CC2 0.4 nozzle.json"
+		},
+		{
+			"name": "0.28mm Extra Draft @Elegoo C2 0.4 nozzle",
+			"sub_path": "process/EC2/0.28mm Extra Draft @Elegoo C2 0.4 nozzle.json"
 		},
 		{
 			"name": "0.24mm Optimal @Elegoo CC2 0.6 nozzle",
 			"sub_path": "process/ECC2/0.24mm Optimal @Elegoo CC2 0.6 nozzle.json"
 		},
 		{
+			"name": "0.24mm Optimal @Elegoo C2 0.6 nozzle",
+			"sub_path": "process/EC2/0.24mm Optimal @Elegoo C2 0.6 nozzle.json"
+		},
+		{
 			"name": "0.24mm Fine @Elegoo CC2 0.8 nozzle",
 			"sub_path": "process/ECC2/0.24mm Fine @Elegoo CC2 0.8 nozzle.json"
+		},
+		{
+			"name": "0.24mm Fine @Elegoo C2 0.8 nozzle",
+			"sub_path": "process/EC2/0.24mm Fine @Elegoo C2 0.8 nozzle.json"
 		},
 		{
 			"name": "0.24mm Draft @Elegoo CC2 0.4 nozzle",
 			"sub_path": "process/ECC2/0.24mm Draft @Elegoo CC2 0.4 nozzle.json"
 		},
 		{
+			"name": "0.24mm Draft @Elegoo C2 0.4 nozzle",
+			"sub_path": "process/EC2/0.24mm Draft @Elegoo C2 0.4 nozzle.json"
+		},
+		{
 			"name": "0.20mm Strength @Elegoo CC2 0.4 nozzle",
 			"sub_path": "process/ECC2/0.20mm Strength @Elegoo CC2 0.4 nozzle.json"
+		},
+		{
+			"name": "0.20mm Strength @Elegoo C2 0.4 nozzle",
+			"sub_path": "process/EC2/0.20mm Strength @Elegoo C2 0.4 nozzle.json"
 		},
 		{
 			"name": "0.18mm Fine @Elegoo CC2 0.6 nozzle",
 			"sub_path": "process/ECC2/0.18mm Fine @Elegoo CC2 0.6 nozzle.json"
 		},
 		{
+			"name": "0.18mm Fine @Elegoo C2 0.6 nozzle",
+			"sub_path": "process/EC2/0.18mm Fine @Elegoo C2 0.6 nozzle.json"
+		},
+		{
 			"name": "0.16mm Optimal @Elegoo CC2 0.4 nozzle",
 			"sub_path": "process/ECC2/0.16mm Optimal @Elegoo CC2 0.4 nozzle.json"
+		},
+		{
+			"name": "0.16mm Optimal @Elegoo C2 0.4 nozzle",
+			"sub_path": "process/EC2/0.16mm Optimal @Elegoo C2 0.4 nozzle.json"
 		},
 		{
 			"name": "0.16mm Extra Fine @Elegoo CC2 0.8 nozzle",
 			"sub_path": "process/ECC2/0.16mm Extra Fine @Elegoo CC2 0.8 nozzle.json"
 		},
 		{
+			"name": "0.16mm Extra Fine @Elegoo C2 0.8 nozzle",
+			"sub_path": "process/EC2/0.16mm Extra Fine @Elegoo C2 0.8 nozzle.json"
+		},
+		{
 			"name": "0.14mm Extra Draft @Elegoo CC2 0.2 nozzle",
 			"sub_path": "process/ECC2/0.14mm Extra Draft @Elegoo CC2 0.2 nozzle.json"
+		},
+		{
+			"name": "0.14mm Extra Draft @Elegoo C2 0.2 nozzle",
+			"sub_path": "process/EC2/0.14mm Extra Draft @Elegoo C2 0.2 nozzle.json"
 		},
 		{
 			"name": "0.12mm Fine @Elegoo CC2 0.4 nozzle",
 			"sub_path": "process/ECC2/0.12mm Fine @Elegoo CC2 0.4 nozzle.json"
 		},
 		{
+			"name": "0.12mm Fine @Elegoo C2 0.4 nozzle",
+			"sub_path": "process/EC2/0.12mm Fine @Elegoo C2 0.4 nozzle.json"
+		},
+		{
 			"name": "0.12mm Draft @Elegoo CC2 0.2 nozzle",
 			"sub_path": "process/ECC2/0.12mm Draft @Elegoo CC2 0.2 nozzle.json"
 		},
 		{
+			"name": "0.12mm Draft @Elegoo C2 0.2 nozzle",
+			"sub_path": "process/EC2/0.12mm Draft @Elegoo C2 0.2 nozzle.json"
+		},
+		{
 			"name": "0.08mm Optimal @Elegoo CC2 0.2 nozzle",
 			"sub_path": "process/ECC2/0.08mm Optimal @Elegoo CC2 0.2 nozzle.json"
+		},
+		{
+			"name": "0.08mm Optimal @Elegoo C2 0.2 nozzle",
+			"sub_path": "process/EC2/0.08mm Optimal @Elegoo C2 0.2 nozzle.json"
 		},
 		{
 			"name": "0.20mm Standard @Elegoo CC 0.4 nozzle",
@@ -1441,120 +1529,240 @@
 			"sub_path": "filament/ECC2/Elegoo PLA @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA @EC2.json"
+		},
+		{
 			"name": "Elegoo PLA PRO @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA PRO @ECC2.json"
+		},
+		{
+			"name": "Elegoo PLA PRO @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA PRO @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA+ @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA+ @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA+ @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA+ @EC2.json"
+		},
+		{
 			"name": "Elegoo Rapid PLA+ @ECC2",
 			"sub_path": "filament/ECC2/Elegoo Rapid PLA+ @ECC2.json"
+		},
+		{
+			"name": "Elegoo Rapid PLA+ @EC2",
+			"sub_path": "filament/EC2/Elegoo Rapid PLA+ @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA Silk @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Silk @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA Silk @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Silk @EC2.json"
+		},
+		{
 			"name": "Elegoo PLA Matte @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Matte @ECC2.json"
+		},
+		{
+			"name": "Elegoo PLA Matte @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Matte @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA-CF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA-CF @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA-CF @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA-CF @EC2.json"
+		},
+		{
 			"name": "Elegoo PETG @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PETG @ECC2.json"
+		},
+		{
+			"name": "Elegoo PETG @EC2",
+			"sub_path": "filament/EC2/Elegoo PETG @EC2.json"
 		},
 		{
 			"name": "Elegoo PETG PRO @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PETG PRO @ECC2.json"
 		},
 		{
+			"name": "Elegoo PETG PRO @EC2",
+			"sub_path": "filament/EC2/Elegoo PETG PRO @EC2.json"
+		},
+		{
 			"name": "Elegoo Rapid PETG @ECC2",
 			"sub_path": "filament/ECC2/Elegoo Rapid PETG @ECC2.json"
+		},
+		{
+			"name": "Elegoo Rapid PETG @EC2",
+			"sub_path": "filament/EC2/Elegoo Rapid PETG @EC2.json"
 		},
 		{
 			"name": "Elegoo TPU 95A @ECC2",
 			"sub_path": "filament/ECC2/Elegoo TPU 95A @ECC2.json"
 		},
 		{
+			"name": "Elegoo TPU 95A @EC2",
+			"sub_path": "filament/EC2/Elegoo TPU 95A @EC2.json"
+		},
+		{
 			"name": "Elegoo ASA @ECC2",
 			"sub_path": "filament/ECC2/Elegoo ASA @ECC2.json"
+		},
+		{
+			"name": "Elegoo ASA @EC2",
+			"sub_path": "filament/EC2/Elegoo ASA @EC2.json"
 		},
 		{
 			"name": "Elegoo ABS @ECC2",
 			"sub_path": "filament/ECC2/Elegoo ABS @ECC2.json"
 		},
 		{
+			"name": "Elegoo ABS @EC2",
+			"sub_path": "filament/EC2/Elegoo ABS @EC2.json"
+		},
+		{
 			"name": "Elegoo PLA Galaxy @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Galaxy @ECC2.json"
+		},
+		{
+			"name": "Elegoo PLA Galaxy @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Galaxy @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA Basic @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Basic @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA Basic @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Basic @EC2.json"
+		},
+		{
 			"name": "Elegoo PLA Marble @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Marble @ECC2.json"
+		},
+		{
+			"name": "Elegoo PLA Marble @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Marble @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA Sparkle @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Sparkle @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA Sparkle @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Sparkle @EC2.json"
+		},
+		{
 			"name": "Elegoo PLA Wood @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Wood @ECC2.json"
+		},
+		{
+			"name": "Elegoo PLA Wood @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Wood @EC2.json"
 		},
 		{
 			"name": "Elegoo PAHT-CF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PAHT-CF @ECC2.json"
 		},
 		{
+			"name": "Elegoo PAHT-CF @EC2",
+			"sub_path": "filament/EC2/Elegoo PAHT-CF @EC2.json"
+		},
+		{
 			"name": "Elegoo PC @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PC @ECC2.json"
+		},
+		{
+			"name": "Elegoo PC @EC2",
+			"sub_path": "filament/EC2/Elegoo PC @EC2.json"
 		},
 		{
 			"name": "Elegoo PC-FR @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PC-FR @ECC2.json"
 		},
 		{
+			"name": "Elegoo PC-FR @EC2",
+			"sub_path": "filament/EC2/Elegoo PC-FR @EC2.json"
+		},
+		{
 			"name": "Elegoo PETG-CF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PETG-CF @ECC2.json"
+		},
+		{
+			"name": "Elegoo PETG-CF @EC2",
+			"sub_path": "filament/EC2/Elegoo PETG-CF @EC2.json"
 		},
 		{
 			"name": "Elegoo PETG-GF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PETG-GF @ECC2.json"
 		},
 		{
+			"name": "Elegoo PETG-GF @EC2",
+			"sub_path": "filament/EC2/Elegoo PETG-GF @EC2.json"
+		},
+		{
 			"name": "Elegoo PETG Translucent @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PETG Translucent @ECC2.json"
+		},
+		{
+			"name": "Elegoo PETG Translucent @EC2",
+			"sub_path": "filament/EC2/Elegoo PETG Translucent @EC2.json"
 		},
 		{
 			"name": "Elegoo ASA-CF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo ASA-CF @ECC2.json"
 		},
 		{
+			"name": "Elegoo ASA-CF @EC2",
+			"sub_path": "filament/EC2/Elegoo ASA-CF @EC2.json"
+		},
+		{
 			"name": "Elegoo PET-CF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PET-CF @ECC2.json"
+		},
+		{
+			"name": "Elegoo PET-CF @EC2",
+			"sub_path": "filament/EC2/Elegoo PET-CF @EC2.json"
 		},
 		{
 			"name": "Elegoo PETG HF @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PETG HF @ECC2.json"
 		},
 		{
+			"name": "Elegoo PETG HF @EC2",
+			"sub_path": "filament/EC2/Elegoo PETG HF @EC2.json"
+		},
+		{
 			"name": "Elegoo PLA Glow @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Glow @ECC2.json"
+		},
+		{
+			"name": "Elegoo PLA Glow @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Glow @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA Translucent2 @ECC2",
 			"sub_path": "filament/ECC2/Elegoo PLA Translucent2 @ECC2.json"
 		},
 		{
+			"name": "Elegoo PLA Translucent2 @EC2",
+			"sub_path": "filament/EC2/Elegoo PLA Translucent2 @EC2.json"
+		},
+		{
 			"name": "Elegoo Rapid TPU 95A @ECC2",
 			"sub_path": "filament/ECC2/Elegoo Rapid TPU 95A @ECC2.json"
+		},
+		{
+			"name": "Elegoo Rapid TPU 95A @EC2",
+			"sub_path": "filament/EC2/Elegoo Rapid TPU 95A @EC2.json"
 		},
 		{
 			"name": "Elegoo PLA @EN4 Series",
@@ -1987,16 +2195,32 @@
 			"sub_path": "machine/ECC2/Elegoo Centauri Carbon 2 0.4 nozzle.json"
 		},
 		{
+			"name": "Elegoo Centauri 2 0.4 nozzle",
+			"sub_path": "machine/EC2/Elegoo Centauri 2 0.4 nozzle.json"
+		},
+		{
 			"name": "Elegoo Centauri Carbon 2 0.2 nozzle",
 			"sub_path": "machine/ECC2/Elegoo Centauri Carbon 2 0.2 nozzle.json"
+		},
+		{
+			"name": "Elegoo Centauri 2 0.2 nozzle",
+			"sub_path": "machine/EC2/Elegoo Centauri 2 0.2 nozzle.json"
 		},
 		{
 			"name": "Elegoo Centauri Carbon 2 0.6 nozzle",
 			"sub_path": "machine/ECC2/Elegoo Centauri Carbon 2 0.6 nozzle.json"
 		},
 		{
+			"name": "Elegoo Centauri 2 0.6 nozzle",
+			"sub_path": "machine/EC2/Elegoo Centauri 2 0.6 nozzle.json"
+		},
+		{
 			"name": "Elegoo Centauri Carbon 2 0.8 nozzle",
 			"sub_path": "machine/ECC2/Elegoo Centauri Carbon 2 0.8 nozzle.json"
+		},
+		{
+			"name": "Elegoo Centauri 2 0.8 nozzle",
+			"sub_path": "machine/EC2/Elegoo Centauri 2 0.8 nozzle.json"
 		},
 		{
 			"name": "Elegoo Neptune 4 0.4 nozzle",
