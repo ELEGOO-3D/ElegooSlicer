@@ -189,12 +189,18 @@ Http::priv::priv(const std::string &url)
 	::curl_easy_setopt(curl, CURLOPT_URL, url.c_str());   // curl makes a copy internally
 	::curl_easy_setopt(curl, CURLOPT_USERAGENT, SLIC3R_APP_NAME "/" ELEGOOSLICER_VERSION);
 	::curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buffer.front());
-#ifdef __WINDOWS__
-	::curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
-#endif
-	::curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+// #ifdef __WINDOWS__
+// 	::curl_easy_setopt(curl, CURLOPT_SSLVERSION, CURL_SSLVERSION_MAX_TLSv1_2);
+// #endif
+	// ::curl_easy_setopt(curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 	// ::curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 	// ::curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+
+#ifdef WIN32
+	// Windows certificate revocation list check can cause very long SSL connection times if the CRL server is unreachable.
+	// As a workaround, enable best effort CRL checking, which allows the SSL connection to proceed even if the CRL cannot be reached.
+	::curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_REVOKE_BEST_EFFORT);
+#endif // WIN32
 
 	// https://everything.curl.dev/http/post/expect100.html
 	// remove the Expect: header, it will add a second delay to each request,
@@ -805,12 +811,9 @@ Http& Http::form_add_file(const std::string &name, const fs::path &path, const s
 // This option is only supported for Schannel (the native Windows SSL library).
 Http& Http::ssl_revoke_best_effort(bool set)
 {
-	// BBS
-#if 0
 	if(p && set){
 		::curl_easy_setopt(p->curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_REVOKE_BEST_EFFORT);
 	}
-#endif
 	return *this;
 }
 #endif // WIN32
