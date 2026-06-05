@@ -83,6 +83,17 @@ function(elegooslicer_setup_sentry_handler TARGET)
                 VERBATIM
             )
         endforeach ()
+        # Xcode multi-config: also install handler next to the app binary inside the bundle.
+        if (CMAKE_MACOSX_BUNDLE)
+            add_custom_command(TARGET ${TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_CONTENT_DIR:${TARGET}>/MacOS/crashpad"
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${_handler_src}"
+                    "$<TARGET_BUNDLE_CONTENT_DIR:${TARGET}>/MacOS/crashpad/${_handler_name}"
+                COMMENT "Copying sentry crashpad_handler to macOS app bundle"
+                VERBATIM
+            )
+        endif ()
     else ()
         add_custom_command(TARGET ${TARGET} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${TARGET}>/crashpad"

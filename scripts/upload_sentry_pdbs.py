@@ -111,14 +111,18 @@ def _ensure_executable(cli_path: Path):
 
 
 def find_debug_files(debug_dir: Path) -> list:
-    """Find all debug symbol files in the directory."""
+    """Find all debug symbol files in the directory (PDB / dSYM / .sym / .debug)."""
     files = []
     for pat in ("*.pdb", "*.dSYM", "*.sym", "*.debug"):
         files.extend(debug_dir.glob(pat))
     if debug_dir.is_dir():
+        # dSYM bundles are directories, glob catches them as files — ensure coverage
         for d in debug_dir.iterdir():
             if d.is_dir() and d.suffix == ".dSYM":
                 files.append(d)
+        for dsym in debug_dir.rglob("*.dSYM"):
+            if dsym.is_dir():
+                files.append(dsym)
     return sorted(set(files))
 
 
@@ -146,8 +150,8 @@ def main():
 
     system = platform.system()
     project_map = {"Windows": "elegoo-slicer-win", "Darwin": "elegoo-slicer-mac", "Linux": "elegoo-slicer-linux"}
-    org = "elegoo-uk"
-    project = project_map.get(system, f"elegoo-slicer-{system.lower()}")
+    org = env.get("SENTRY_ORG", "elegoo-uk").strip() or "elegoo-uk"
+    project = env.get("SENTRY_PROJECT", "").strip() or project_map.get(system, f"elegoo-slicer-{system.lower()}")
 
     if not debug_dir.exists():
         print(f"[WARNING] {debug_dir} not found, skipping.")
@@ -156,6 +160,9 @@ def main():
     debug_files = find_debug_files(debug_dir)
     if not debug_files:
         print(f"[WARNING] No debug symbols found in {debug_dir}, skipping.")
+        sys.exit(0)
+    if system == "Darwin" and not any(p.suffix == ".dSYM" for p in debug_files):
+        print(f"[WARNING] No .dSYM in {debug_dir}. Rebuild with -g so CMake enables dSYM generation.")
         sys.exit(0)
 
     cache_dir = project_root / "tools" / "sentry-cli"
@@ -178,15 +185,20 @@ def main():
     print("=" * 75)
     print()
 
-    print(f"[INFO] Uploading debug symbols to Sentry...")
+    # Native debug files are matched by UUID/debug id, not --release (not supported on
+    # `debug-files upload` in sentry-cli 3.x). Version is logged for traceability only.
+    release = version if version.startswith("elegoo-slicer@") else f"elegoo-slicer@{version}"
+
+    print(f"[INFO] Uploading {len(debug_files)} debug symbol file(s) to Sentry (app release tag: {release})...")
     cmd = [
         str(cli_path), "debug-files", "upload",
         "--auth-token", auth_token,
         "--org", org,
         "--project", project,
         "--log-level", "info",
-        str(debug_dir),
     ]
+    # Pass only known debug symbol files, not the whole directory
+    cmd.extend(str(f) for f in debug_files)
 
     try:
         result = subprocess.run(cmd, timeout=1800)

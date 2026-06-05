@@ -53,9 +53,9 @@
 #include "Widgets/ProgressDialog.hpp"
 #include "BindDialog.hpp"
 #include "../Utils/MacDarkMode.hpp"
-#ifdef WIN32
+
 #include "dev-utils/CrashReporter.h"
-#endif
+
 
 #include <fstream>
 #include <string_view>
@@ -2530,16 +2530,12 @@ static wxMenu* generate_help_menu()
             dlg.ShowModal();
         });
 
-#if ELEGOO_INTERNAL_TESTING
-#ifdef WIN32
     // Test crash (for testing crash reporting)
     helpMenu->AppendSeparator();
     append_menu_item(helpMenu, wxID_ANY, _L("Test Crash Report"), _L("Trigger a test crash to verify crash reporting"),
-        [](wxCommandEvent&) { 
+        [](wxCommandEvent&) {
             CrashReporter::triggerTestCrash();
         });
-#endif
-#endif
 
     // About
 #ifndef __APPLE__

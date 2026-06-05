@@ -150,9 +150,7 @@ typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS2)(
 #include <boost/dll/runtime_symbol_info.hpp>
 #endif
 
-#ifdef WIN32
 #include "dev-utils/CrashReporter.h"
-#endif
 
 #if ENABLE_THUMBNAIL_GENERATOR_DEBUG
 #include <boost/beast/core/detail/base64.hpp>

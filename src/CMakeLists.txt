@@ -116,13 +116,23 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dev-utils/platform/osx/Info.plist.in 
 if (WIN32)
     add_library(ElegooSlicer SHARED ElegooSlicer.cpp ElegooSlicer.hpp dev-utils/CrashReporter.cpp dev-utils/CrashReporter.h)
 else ()
-    add_executable(ElegooSlicer ElegooSlicer.cpp ElegooSlicer.hpp)
+    add_executable(ElegooSlicer ElegooSlicer.cpp ElegooSlicer.hpp dev-utils/CrashReporter.cpp dev-utils/CrashReporter.h)
 endif ()
 
 if (MINGW)
     target_link_options(ElegooSlicer PUBLIC "-Wl,-allow-multiple-definition")
     set_target_properties(ElegooSlicer PROPERTIES PREFIX "")
 endif (MINGW)
+
+if (APPLE AND ELEGOO_SENTRY_SYMBOLS)
+    message(STATUS "ElegooSlicer: dSYM enabled for Sentry symbol upload (-g)")
+    foreach(_sentry_cfg Release RelWithDebInfo Debug MinSizeRel)
+        set_target_properties(ElegooSlicer PROPERTIES
+            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=${_sentry_cfg}] "dwarf-with-dsym"
+            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=${_sentry_cfg}] "YES"
+        )
+    endforeach()
+endif()
 
 if (NOT WIN32 AND NOT APPLE)
     # Binary name on unix like systems (Linux, Unix)

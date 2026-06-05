@@ -71,7 +71,7 @@
                 "BBL_RELEASE_TO_PUBLIC": "1",
                 "CMAKE_MACOSX_BUNDLE": "ON",
                 "CMAKE_OSX_ARCHITECTURES": "arm64",
-                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.3",
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "12.0",
                 "CMAKE_C_COMPILER": "/usr/bin/clang",
                 "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
                 "ELEGOO_INTERNAL_TESTING": "1"
@@ -82,7 +82,7 @@
             "displayName": "Xcode generator - Release",
             "description": "Xcode generator (arm64, Release)",
             "generator": "Xcode",
-            "binaryDir": "${sourceDir}/build/arm64-release/",
+            "binaryDir": "${sourceDir}/build/arm64/",
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -91,14 +91,14 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_TOOLCHAIN_FILE": "",
-                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/arm64-release/ElegooSlicer/",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/arm64/ElegooSlicer/",
                 "CMAKE_MACOSX_RPATH": "ON",
                 "CMAKE_PREFIX_PATH": "${sourceDir}/deps/build/arm64/ElegooSlicer_dep/usr/local",
                 "CMAKE_INSTALL_RPATH": "${sourceDir}/deps/build/arm64/ElegooSlicer_dep/usr/local",
                 "BBL_RELEASE_TO_PUBLIC": "1",
                 "CMAKE_MACOSX_BUNDLE": "ON",
                 "CMAKE_OSX_ARCHITECTURES": "arm64",
-                "CMAKE_OSX_DEPLOYMENT_TARGET": "11.3",
+                "CMAKE_OSX_DEPLOYMENT_TARGET": "12.0",
                 "CMAKE_C_COMPILER": "/usr/bin/clang",
                 "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
                 "ELEGOO_INTERNAL_TESTING": "0"

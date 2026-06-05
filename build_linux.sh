@@ -328,12 +328,17 @@ function upload_pdb() {
     BUILD_CONFIG="${BUILD_DEBUG:+Debug}"
     BUILD_CONFIG="${BUILD_CONFIG:-Release}"
     BUILD_OUT_DIR="build/src/${BUILD_CONFIG}"
+    INSTALL_INI="build/install.ini"
+    SENTRY_VER="unknown"
+    if [ -f "${INSTALL_INI}" ]; then
+        SENTRY_VER="$(grep '^ELEGOOSLICER_VERSION=' "${INSTALL_INI}" | cut -d= -f2- | tr -d '\r')"
+    fi
     echo "============================================================================"
     echo "                     Uploading Debug Symbols to Sentry"
     echo "============================================================================"
     if [ -d "${BUILD_OUT_DIR}" ]; then
-        echo "[INFO] Uploading symbols from: ${BUILD_OUT_DIR}"
-        python3 "${SCRIPT_PATH}/scripts/upload_sentry_pdbs.py" "${BUILD_OUT_DIR}"
+        echo "[INFO] Uploading symbols from: ${BUILD_OUT_DIR} (release: elegoo-slicer@${SENTRY_VER})"
+        python3 "${SCRIPT_PATH}/scripts/upload_sentry_pdbs.py" "${BUILD_OUT_DIR}" "${SENTRY_VER}"
     else
         echo "[WARNING] Build directory not found: ${BUILD_OUT_DIR}"
     fi

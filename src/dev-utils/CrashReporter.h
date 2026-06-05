@@ -24,13 +24,6 @@ public:
     static void close();
 
     /**
-     * @brief Add a breadcrumb for crash context
-     * @param message Human-readable description
-     * @param category Category tag (e.g. "ui.action", "export", "slice")
-     */
-    static void addBreadcrumb(const std::string& message, const std::string& category = "default");
-
-    /**
      * @brief Trigger a test crash for debugging crash reporting
      */
     static void triggerTestCrash();

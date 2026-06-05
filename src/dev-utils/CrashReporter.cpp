@@ -107,6 +107,7 @@ bool CrashReporter::init(const std::string& dataDir)
     sentry_options_set_database_path(options, sentryDir.string().c_str());
     sentry_options_set_release(options, "elegoo-slicer@" ELEGOOSLICER_VERSION);
     sentry_options_set_handler_path(options, handlerPath.string().c_str());
+    sentry_options_set_shutdown_timeout(options, 5000);
 #ifndef NDEBUG
     sentry_options_set_debug(options, 1);
 #endif
@@ -134,27 +135,9 @@ void CrashReporter::close()
     }
 }
 
-void CrashReporter::addBreadcrumb(const std::string& message, const std::string& category)
-{
-    if (!sInitialized)
-        return;
-
-    sentry_value_t crumb = sentry_value_new_breadcrumb("default", message.c_str());
-    sentry_value_set_by_key(crumb, "category", sentry_value_new_string(category.c_str()));
-    sentry_add_breadcrumb(crumb);
-}
-
-#ifdef _WIN32
 void CrashReporter::triggerTestCrash()
 {
     BOOST_LOG_TRIVIAL(info) << "Triggering test crash for Sentry crash reporting verification";
     volatile int* ptr = nullptr;
     *ptr = 42;
 }
-#else
-void CrashReporter::triggerTestCrash()
-{
-    BOOST_LOG_TRIVIAL(info) << "Triggering test crash for Sentry crash reporting verification";
-    abort();
-}
-#endif

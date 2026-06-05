@@ -51,7 +51,7 @@ while getopts ":dpa:snt:xbc:1ehwg" opt; do
         echo "   -a: Set ARCHITECTURE (arm64 or x86_64 or universal)"
         echo "   -s: Build slicer only"
         echo "   -n: Nightly build"
-        echo "   -t: Specify minimum version of the target platform, default is 11.3"
+        echo "   -t: Specify minimum version of the target platform, default is 12.0"
         echo "   -x: Use Ninja Multi-Config CMake generator, default is Xcode"
         echo "   -b: Build without reconfiguring CMake"
         echo "   -c: Set CMake build configuration, default is Release"
@@ -94,7 +94,7 @@ if [ -z "$DEPS_CMAKE_GENERATOR" ]; then
 fi
 
 if [ -z "$OSX_DEPLOYMENT_TARGET" ]; then
-  export OSX_DEPLOYMENT_TARGET="11.3"
+  export OSX_DEPLOYMENT_TARGET="12.0"
 fi
 
 if [ -z "$ELEGOO_INTERNAL_TESTING" ]; then
@@ -108,6 +108,7 @@ echo " - CMAKE_GENERATOR: $SLICER_CMAKE_GENERATOR for Slicer, $DEPS_CMAKE_GENERA
 echo " - OSX_DEPLOYMENT_TARGET: $OSX_DEPLOYMENT_TARGET"
 echo " - ELEGOO_INTERNAL_TESTING: $ELEGOO_INTERNAL_TESTING"
 echo " - DOWNLOAD_WEB: ${DOWNLOAD_WEB:-0}"
+echo " - SENTRY_UPLOAD: ${SENTRY_UPLOAD:-0}"
 echo
 
 # Download web dependencies if requested
@@ -200,9 +201,14 @@ function upload_pdb() {
     for _ARCH in x86_64 arm64; do
         if [ "$ARCH" == "universal" ] || [ "$ARCH" == "$_ARCH" ]; then
             _BUILD_DIR="$PROJECT_DIR/build/$_ARCH/src/$BUILD_CONFIG"
+            _INSTALL_INI="$PROJECT_DIR/build/$_ARCH/install.ini"
+            _SENTRY_VER="unknown"
+            if [ -f "$_INSTALL_INI" ]; then
+                _SENTRY_VER="$(grep '^ELEGOOSLICER_VERSION=' "$_INSTALL_INI" | cut -d= -f2- | tr -d '\r')"
+            fi
             if [ -d "$_BUILD_DIR" ]; then
-                echo "[INFO] Uploading symbols from: $_BUILD_DIR"
-                python3 "$PROJECT_DIR/scripts/upload_sentry_pdbs.py" "$_BUILD_DIR"
+                echo "[INFO] Uploading symbols from: $_BUILD_DIR (release: elegoo-slicer@${_SENTRY_VER})"
+                python3 "$PROJECT_DIR/scripts/upload_sentry_pdbs.py" "$_BUILD_DIR" "$_SENTRY_VER"
             else
                 echo "[WARNING] Build directory not found: $_BUILD_DIR"
             fi
@@ -249,7 +255,8 @@ function build_slicer() {
                     -DCMAKE_MACOSX_BUNDLE=ON \
                     -DCMAKE_OSX_ARCHITECTURES="${_ARCH}" \
                     -DCMAKE_OSX_DEPLOYMENT_TARGET="${OSX_DEPLOYMENT_TARGET}" \
-                    -DELEGOO_INTERNAL_TESTING="${ELEGOO_INTERNAL_TESTING}"
+                    -DELEGOO_INTERNAL_TESTING="${ELEGOO_INTERNAL_TESTING}" \
+                    -DELEGOO_SENTRY_SYMBOLS="$([ "${SENTRY_UPLOAD:-0}" = "1" ] && echo ON || echo OFF)"
             fi
             cmake --build . --config "$BUILD_CONFIG" --target "$SLICER_BUILD_TARGET" --parallel 
         )
@@ -269,6 +276,13 @@ function build_slicer() {
             rm -rf ./ElegooSlicer.app
             # fully copy newly built app
             cp -pR "../src$BUILD_DIR_CONFIG_SUBDIR/ElegooSlicer.app" ./ElegooSlicer.app
+            # crashpad_handler must live beside the main binary (Contents/MacOS/crashpad/)
+            if [ -f "../src$BUILD_DIR_CONFIG_SUBDIR/crashpad/crashpad_handler" ]; then
+                mkdir -p ./ElegooSlicer.app/Contents/MacOS/crashpad
+                cp -f "../src$BUILD_DIR_CONFIG_SUBDIR/crashpad/crashpad_handler" \
+                    ./ElegooSlicer.app/Contents/MacOS/crashpad/crashpad_handler
+                chmod +x ./ElegooSlicer.app/Contents/MacOS/crashpad/crashpad_handler
+            fi
             # fix resources
             resources_path=$(readlink ./ElegooSlicer.app/Contents/Resources)
             rm ./ElegooSlicer.app/Contents/Resources
