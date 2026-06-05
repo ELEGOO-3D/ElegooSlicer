@@ -74,6 +74,7 @@ private:
     bool advanced_matches_simple();
     int calc_flushing_volume(const wxColour& from, const wxColour& to,int min_flush_volume);
     void update_warning_texts();
+    void sync_flush_edit_widths();
         
     std::vector<wxSpinCtrl*> m_old;
     std::vector<wxSpinCtrl*> m_new;

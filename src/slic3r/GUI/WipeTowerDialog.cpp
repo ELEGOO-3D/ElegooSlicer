@@ -25,7 +25,25 @@ using namespace Slic3r;
 using namespace Slic3r::GUI;
 
 int scale(const int val) { return val * Slic3r::GUI::wxGetApp().em_unit() / 10; }
-int ITEM_WIDTH() { return scale(30); }
+int ITEM_WIDTH() { return scale(32); }
+
+static int count_display_digits(const wxString& str)
+{
+    int n = 0;
+    for (size_t k = 0; k < str.length(); ++k) {
+        if (wxIsdigit(str[k]))
+            ++n;
+    }
+    return std::max(1, n);
+}
+
+static int flush_edit_width_for_digits(int digits)
+{
+    return scale(digits <= 3 ? 32 : 40);
+}
+
+static int max_flush_edit_width() { return scale(40); }
+
 static const wxColour g_text_color = wxColour(107, 107, 107, 255);
 
 #undef  ICON_SIZE
@@ -473,7 +491,7 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
         Slic3r::decode_color(color, rgb);
         m_colours.push_back(wxColor(rgb.r_uchar(), rgb.g_uchar(), rgb.b_uchar()));
     }
-    auto sizer_width = (int)((sqrt(matrix.size())) * ITEM_WIDTH() + (sqrt(matrix.size()) + 1) * HEADER_BEG_PADDING);
+    auto sizer_width = (int)((sqrt(matrix.size())) * max_flush_edit_width() + (sqrt(matrix.size()) + 1) * HEADER_BEG_PADDING);
     sizer_width = sizer_width > MIN_WIPING_DIALOG_WIDTH ? sizer_width : MIN_WIPING_DIALOG_WIDTH;
     // Two pages on this panel; only one Shown so min size matches visible mode (avoids wxSimplebook max-page width).
     m_sizer_simple          = new wxBoxSizer(wxVERTICAL);
@@ -520,6 +538,7 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
                     else if (value < 0) {
                         edit_boxes[i][j]->SetValue(wxString("0"));
                     }
+                    this->sync_flush_edit_widths();
                     });
 
                 auto on_apply_text_modify = [this, i, j](wxEvent &e) {
@@ -581,6 +600,7 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
     m_sizer_advanced->Add(header_line_panel, 0, wxEXPAND | wxRIGHT | wxLEFT, TABLE_BORDER);
     
     create_panels(m_page_advanced, m_number_of_extruders);
+    sync_flush_edit_widths();
 
     //m_sizer_advanced->AddSpacer(BTN_SIZE.y);
 
@@ -612,6 +632,7 @@ WipingPanel::WipingPanel(wxWindow* parent, const std::vector<float>& matrix, con
                 }
             }
 
+            this->sync_flush_edit_widths();
             this->update_warning_texts();
             e.Skip();
         };
@@ -779,6 +800,28 @@ int WipingPanel::calc_flushing_volume(const wxColour& from_, const wxColour& to_
                                      &preset_config);
 }
 
+void WipingPanel::sync_flush_edit_widths()
+{
+    if (edit_boxes.empty())
+        return;
+
+    for (unsigned int j = 0; j < m_number_of_extruders; ++j) {
+        int max_digits = 1;
+        for (unsigned int i = 0; i < m_number_of_extruders; ++i)
+            max_digits = std::max(max_digits, count_display_digits(edit_boxes[j][i]->GetValue()));
+
+        const int w = flush_edit_width_for_digits(max_digits);
+        for (unsigned int i = 0; i < m_number_of_extruders; ++i) {
+            edit_boxes[j][i]->SetMinSize(wxSize(w, -1));
+            edit_boxes[j][i]->SetSize(wxSize(w, -1));
+        }
+    }
+
+    if (m_page_advanced)
+        m_page_advanced->Layout();
+    Layout();
+}
+
 void WipingPanel::update_warning_texts()
 {
     static const wxColour g_warning_color = *wxRED;
@@ -879,6 +922,7 @@ void WipingPanel::calc_flushing_volumes()
         }
     }
 
+    this->sync_flush_edit_widths();
     this->update_warning_texts();
 }
 
@@ -889,6 +933,7 @@ void WipingPanel::msw_rescale()
         icon_list1[i]->SetBitmap(bitmap);
         icon_list2[i]->SetBitmap(bitmap);
     }
+    sync_flush_edit_widths();
 }
 
 // Reads values from the (advanced) wiping matrix:
@@ -930,6 +975,7 @@ void WipingPanel::fill_in_matrix() {
                 edit_boxes[j][i]->SetValue(wxString("")<< (m_old[i]->GetValue() + m_new[j]->GetValue()));
         }
     }
+    sync_flush_edit_widths();
 }
 
 
