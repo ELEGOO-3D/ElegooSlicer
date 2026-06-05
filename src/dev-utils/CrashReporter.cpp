@@ -20,6 +20,20 @@
 #endif
 
 static bool sInitialized = false;
+static bool sEnabled      = false;
+
+static sentry_value_t beforeSend(sentry_value_t event, void* hint, void* closure)
+{
+    (void)hint;
+    (void)closure;
+    if (!sEnabled) {
+        BOOST_LOG_TRIVIAL(info) << "Crash report suppressed (not logged in)";
+        return sentry_value_new_null();
+    } else {
+        BOOST_LOG_TRIVIAL(info) << "Crash report captured and will be sent to Sentry";
+    }
+    return event;
+}
 
 static void pruneOldRuns(const boost::filesystem::path& sentryDir, int keepCount)
 {
@@ -107,6 +121,7 @@ bool CrashReporter::init(const std::string& dataDir)
     sentry_options_set_database_path(options, sentryDir.string().c_str());
     sentry_options_set_release(options, "elegoo-slicer@" ELEGOOSLICER_VERSION);
     sentry_options_set_handler_path(options, handlerPath.string().c_str());
+    sentry_options_set_before_send(options, beforeSend, nullptr);
     sentry_options_set_shutdown_timeout(options, 5000);
 #ifndef NDEBUG
     sentry_options_set_debug(options, 1);
@@ -132,6 +147,14 @@ void CrashReporter::close()
         BOOST_LOG_TRIVIAL(info) << "Shutting down Sentry crash reporter";
         sentry_close();
         sInitialized = false;
+    }
+}
+
+void CrashReporter::setEnabled(bool enabled)
+{
+    if (sEnabled != enabled) {
+        sEnabled = enabled;
+        BOOST_LOG_TRIVIAL(info) << "Crash reporter " << (enabled ? "enabled" : "disabled");
     }
 }
 

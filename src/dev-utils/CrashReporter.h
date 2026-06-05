@@ -24,6 +24,14 @@ public:
     static void close();
 
     /**
+     * @brief Enable or disable crash report sending
+     *
+     * Crash events are silently dropped when disabled.
+     * @param enabled true to allow sending, false to suppress
+     */
+    static void setEnabled(bool enabled);
+
+    /**
      * @brief Trigger a test crash for debugging crash reporting
      */
     static void triggerTestCrash();

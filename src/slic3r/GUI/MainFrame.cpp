@@ -414,6 +414,8 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     });
     Bind(EVT_USER_INFO_UPDATED, [this](wxCommandEvent&) {
         wxGetApp().CallAfter([this]() {
+            auto info = UserNetworkManager::getInstance()->getUserInfo();
+            CrashReporter::setEnabled(info.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS);
             if (m_home_view) {
                 m_home_view->refreshUserInfo();
             }
