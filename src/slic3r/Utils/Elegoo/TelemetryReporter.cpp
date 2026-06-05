@@ -947,8 +947,7 @@ void TelemetryReporter::runWorker()
         {
             std::unique_lock<std::mutex> lock(mQueueMutex);
             mQueueCv.wait_for(lock, std::chrono::milliseconds(kFlushIntervalMs), [this]() {
-                return !mAccepting.load(std::memory_order_acquire)
-                       || (mRetrySkipCount <= 0 && !mQueue.empty());
+                return !mAccepting.load(std::memory_order_acquire);
             });
 
             if (!mAccepting.load(std::memory_order_acquire)) {
@@ -969,7 +968,7 @@ void TelemetryReporter::runWorker()
 
         // Upload batch
         if (sendBatch(batch)) {
-            mRetrySkipCount = 0;
+            mUploadFailureCount = 0;
             mCacheDirty.store(true, std::memory_order_release);
             BOOST_LOG_TRIVIAL(debug) << "TelemetryReporter: successfully uploaded " << batch.size() << " events";
         } else {
@@ -979,9 +978,10 @@ void TelemetryReporter::runWorker()
                 mQueue.push_front(std::move(*it));
             }
             mCacheDirty.store(true, std::memory_order_release);
+            ++mUploadFailureCount;
 
-            // Exponential backoff: 1, 2, 4, 8, ... loop iterations (each ~1s), capped
-            mRetrySkipCount = mRetrySkipCount == 0 ? 1 : std::min(mRetrySkipCount * 2, kMaxRetrySkipCount);
+            // Exponential backoff: skip more upload attempts for subsequent failures, up to a limit
+            mRetrySkipCount = std::min(mUploadFailureCount * 4, kMaxRetrySkipCount);
             BOOST_LOG_TRIVIAL(info) << "TelemetryReporter: will skip " << mRetrySkipCount << " upload attempts before retry";
         }
     }

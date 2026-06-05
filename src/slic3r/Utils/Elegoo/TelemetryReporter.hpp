@@ -106,6 +106,7 @@ private:
     std::deque<std::string> mQueue;  // Pre-serialized JSON strings
     std::thread             mWorkerThread;
     long                    mRetrySkipCount{0};
+    long                    mUploadFailureCount{0};
 
     // Offline cache
     bool isUserLoggedIn() const;
