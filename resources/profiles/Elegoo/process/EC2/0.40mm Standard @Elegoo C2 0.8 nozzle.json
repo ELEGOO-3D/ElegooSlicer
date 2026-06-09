@@ -1,4 +1,4 @@
-﻿{
+{
 	"type": "process",
 	"name": "0.40mm Standard @Elegoo C2 0.8 nozzle",
 	"inherits": "fdm_process_elegoo_08040",

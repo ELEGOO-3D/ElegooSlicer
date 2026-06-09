@@ -54,8 +54,7 @@
 	"fan_speedup_time": "0",
 	"from": "system",
 	"gcode_flavor": "klipper",
-	"head_wrap_detect_zone": [
-	],
+	"head_wrap_detect_zone": [],
 	"high_current_on_filament_swap": "0",
 	"host_type": "octoprint",
 	"inherits": "Flashforge Adventurer 5M Pro 0.4 Nozzle",
@@ -282,8 +281,7 @@
 		"3",
 		"3"
 	],
-	"upward_compatible_machine": [
-	],
+	"upward_compatible_machine": [],
 	"use_firmware_retraction": "0",
 	"use_relative_e_distances": "1",
 	"version": "2.1.1.0",
