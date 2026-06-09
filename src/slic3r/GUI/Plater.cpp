@@ -161,6 +161,7 @@
 #include "Elegoo/PrintSendDialogEx.hpp"
 #include "Elegoo/PrinterMmsSyncView.hpp"
 #include "slic3r/GUI/Elegoo/TelemetryEvents.hpp"
+#include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 
 using boost::optional;
 namespace fs = boost::filesystem;
@@ -1283,6 +1284,27 @@ void Sidebar::update_all_preset_comboboxes()
         auto print_btn_type = MainFrame::PrintSelectType::eExportGcode;
         wxString url = cfg.opt_string("print_host_webui").empty() ? cfg.opt_string("print_host") : cfg.opt_string("print_host_webui");
         wxString apikey;
+
+        // Check if there are printers available via PrinterManager
+        auto printer_list = PrinterManager::getInstance()->getPrinterList();
+        if (!printer_list.empty()) {
+            // Check if the current printer model is in the list
+            std::string printer_model;
+            auto printer_model_opt = cfg.option<ConfigOptionString>("printer_model");
+            if (printer_model_opt)
+                printer_model = printer_model_opt->value;
+
+            bool found_model = false;
+            for (const auto& printer : printer_list) {
+                if (printer.printerModel == printer_model) {
+                    found_model = true;
+                    break;
+                }
+            }
+            // If current printer model found, use SendGcode; otherwise use ExportGcode
+            print_btn_type = found_model ? MainFrame::PrintSelectType::eSendGcode : MainFrame::PrintSelectType::eExportGcode;
+        }
+
         if(url.empty())
             url = wxString::Format("file://%s/web/orca/missing_connection.html", from_u8(resources_dir()));
         else {
