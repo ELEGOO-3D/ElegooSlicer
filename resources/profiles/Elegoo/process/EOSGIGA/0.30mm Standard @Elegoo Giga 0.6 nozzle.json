@@ -1,6 +1,7 @@
 {
 	"type": "process",
 	"name": "0.30mm Standard @Elegoo Giga 0.6 nozzle",
+	"renamed_from": "0.30mm Standard @EOS Giga 0.6 nozzle",
 	"inherits": "fdm_process_elegoo_06030",
 	"from": "system",
 	"setting_id": "PEOSG06030",

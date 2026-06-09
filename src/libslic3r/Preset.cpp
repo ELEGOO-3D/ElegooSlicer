@@ -1866,6 +1866,10 @@ bool PresetCollection::validate_preset(const std::string &preset_name, std::stri
         if (!inherit_name.empty()) {
             it    = this->find_preset_internal(inherit_name);
             found = it != m_presets.end() && it->name == inherit_name && (it->is_system || it->is_default);
+            if (!found) {
+                it    = this->find_preset_renamed(inherit_name);
+                found = it != m_presets.end() && (it->is_system || it->is_default);
+            }
             if (found)
                 BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": preset_name %1%, inherit_name %2%, found inherit in list")%preset_name %inherit_name;
             else
@@ -1952,7 +1956,9 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
     }
     if (!inherits.empty() && (different_settings_list.size() > 0)) {
         auto iter = this->find_preset_internal(inherits);
-        if (iter != m_presets.end() && iter->name == inherits) {
+        if (iter == m_presets.end() || iter->name != inherits)
+            iter = this->find_preset_renamed(inherits);
+        if (iter != m_presets.end()) {
             //std::vector<std::string> dirty_options = cfg.diff(iter->config);
             for (auto &opt : keys) {
                 if (different_settings_list.find(opt) != different_settings_list.end())
@@ -2022,7 +2028,9 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
         // and override its settings with the loaded ones.
         assert(it == m_presets.end());
         it    = this->find_preset_internal(inherits);
-        found = it != m_presets.end() && it->name == inherits;
+        if (it == m_presets.end() || it->name != inherits)
+            it = this->find_preset_renamed(inherits);
+        found = it != m_presets.end();
         if (found && profile_print_params_same(it->config, cfg)) {
             // The system preset exists and it matches the values stored inside config.
             if (select == LoadAndSelect::Always)
