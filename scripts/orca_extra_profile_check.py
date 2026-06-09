@@ -1,7 +1,21 @@
 import os
 import json
 import argparse
+import sys
 from pathlib import Path
+
+BOM = b'\xef\xbb\xbf'
+
+
+def _check_bom(file_path):
+    """Check if file has UTF-8 BOM. If so, print error and return True."""
+    with open(file_path, 'rb') as f:
+        if f.read(3) == BOM:
+            print_error(f"{file_path}: file contains UTF-8 BOM. "
+                        f"Please re-save the file without BOM.")
+            return True
+    return False
+
 
 OBSOLETE_KEYS = {
     "acceleration", "scale", "rotate", "duplicate", "duplicate_grid",
@@ -65,6 +79,9 @@ def check_filament_compatible_printers(vendor_folder):
     # Use rglob to recursively find .json files.
     for file_path in vendor_path.rglob("*.json"):
         try:
+            if _check_bom(file_path):
+                error += 1
+                continue
             with open(file_path, 'r', encoding='UTF-8') as fp:
                 # Use custom hook to detect duplicates.
                 data = json.load(fp, object_pairs_hook=no_duplicates_object_pairs_hook)
@@ -142,6 +159,8 @@ def load_available_filament_profiles(profiles_dir, vendor_name):
     
     for file_path in vendor_path.rglob("*.json"):
         try:
+            if _check_bom(file_path):
+                continue
             with open(file_path, 'r', encoding='UTF-8') as fp:
                 data = json.load(fp)
                 if "name" in data:
@@ -179,9 +198,12 @@ def check_machine_default_materials(profiles_dir, vendor_name):
     # Check each machine profile
     for file_path in machine_dir.rglob("*.json"):
         try:
+            if _check_bom(file_path):
+                error_count += 1
+                continue
             with open(file_path, 'r', encoding='UTF-8') as fp:
                 data = json.load(fp)
-                
+
             default_materials = None
             if "default_materials" in data:
                 default_materials = data["default_materials"]
@@ -237,6 +259,8 @@ def check_name_consistency(profiles_dir, vendor_name):
         return 0, 1
     
     try:
+        if _check_bom(str(vendor_file)):
+            return 1, 0
         with open(vendor_file, 'r', encoding='UTF-8') as fp:
             data = json.load(fp)
     except Exception as e:
@@ -258,6 +282,9 @@ def check_name_consistency(profiles_dir, vendor_name):
                 continue
 
             try:
+                if _check_bom(str(sub_file)):
+                    error_count += 1
+                    continue
                 with open(sub_file, 'r', encoding='UTF-8') as fp:
                     sub_data = json.load(fp)
             except Exception as e:
@@ -295,6 +322,9 @@ def check_filament_id(vendor, vendor_folder):
     # Use rglob to recursively find .json files.
     for file_path in vendor_path.rglob("*.json"):
         try:
+            if _check_bom(file_path):
+                error += 1
+                continue
             with open(file_path, 'r', encoding='UTF-8') as fp:
                 # Use custom hook to detect duplicates.
                 data = json.load(fp, object_pairs_hook=no_duplicates_object_pairs_hook)
@@ -338,6 +368,9 @@ def check_obsolete_keys(profiles_dir, vendor_name):
 
     for file_path in vendor_path.rglob("*.json"):
         try:
+            if _check_bom(file_path):
+                error_count += 1
+                continue
             with open(file_path, "r", encoding="UTF-8") as fp:
                 data = json.load(fp)
         except Exception as e:

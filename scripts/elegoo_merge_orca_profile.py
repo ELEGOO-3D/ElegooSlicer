@@ -1,6 +1,18 @@
 import json
+import sys
 
-with open('../resources/profiles/OrcaFilamentLibrary.json', 'r', encoding='utf-8') as f:
+BOM = b'\xef\xbb\xbf'
+
+file_path = '../resources/profiles/OrcaFilamentLibrary.json'
+
+with open(file_path, 'rb') as fb:
+    if fb.read(3) == BOM:
+        print(f"Error: {file_path} contains UTF-8 BOM. "
+              f"Please re-save the file without BOM.",
+              file=sys.stderr)
+        sys.exit(1)
+
+with open(file_path, 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 def should_keep(item):

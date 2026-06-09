@@ -4,11 +4,29 @@ import re
 import sys
 from pathlib import Path
 
+BOM = b'\xef\xbb\xbf'
+
+
+def _check_bom(file_path):
+    """Check if file has UTF-8 BOM. If so, print error and return True."""
+    with open(file_path, 'rb') as f:
+        if f.read(3) == BOM:
+            print(f"Error: {file_path} contains UTF-8 BOM. "
+                  f"Please re-save the file without BOM (e.g., using Notepad++ or VS Code).",
+                  file=sys.stderr)
+            return True
+    return False
+
+
 def update_version_in_json(folder_path, new_version):
+    has_error = False
     for file_name in os.listdir(folder_path):
         file_path = os.path.join(folder_path, file_name)
         if os.path.isfile(file_path) and file_name.endswith('.json'):
             try:
+                if _check_bom(file_path):
+                    has_error = True
+                    continue
                 with open(file_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                 if 'version' in data:
@@ -18,9 +36,12 @@ def update_version_in_json(folder_path, new_version):
                     print(f"Updated version in {file_path}")
                 else:
                     print(f"No 'version' key found in {file_path}")
-            
+
             except Exception as e:
                 print(f"Failed to process {file_path}: {e}")
+                has_error = True
+    if has_error:
+        sys.exit(1)
 
 
 def normalize_version(version_text):

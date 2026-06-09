@@ -1,7 +1,21 @@
 import os
 import json
 import argparse
+import sys
 from collections import defaultdict
+
+BOM = b'\xef\xbb\xbf'
+
+
+def _check_bom(file_path):
+    """Check if file has UTF-8 BOM. If so, print error and return True."""
+    with open(file_path, 'rb') as f:
+        if f.read(3) == BOM:
+            print(f"Error: {file_path} contains UTF-8 BOM. "
+                  f"Please re-save the file without BOM.",
+                  file=sys.stderr)
+            return True
+    return False
 
 def create_ordered_profile(profile_dict, priority_fields=['name', 'type']):
     """Create a new dictionary with priority fields first"""
@@ -93,6 +107,8 @@ def update_profile_library(vendor="",profile_type="filament"):
                     sub_path = os.path.relpath(full_path, base_dir).replace('\\', '/')
                     
                     try:
+                        if _check_bom(full_path):
+                            continue
                         with open(full_path, 'r', encoding='utf-8') as f:
                             _profile = json.load(f)
                             if _profile.get('type') != profile_type:
@@ -127,6 +143,8 @@ def update_profile_library(vendor="",profile_type="filament"):
         profile_section = profile_type+'_list'
         
         try:
+            if _check_bom(lib_path):
+                continue
             with open(lib_path, 'r+', encoding='utf-8') as f:
                 library = json.load(f)
                 library[profile_section] = sorted_profiles
@@ -166,6 +184,8 @@ def clean_up_profile(vendor="", profile_type="", force=False):
                     sub_path = os.path.relpath(full_path, base_dir).replace('\\', '/')
                     
                     try:
+                        if _check_bom(full_path):
+                            continue
                         with open(full_path, 'r+', encoding='utf-8') as f:
                             _profile = json.load(f)
                             need_update = False
@@ -217,10 +237,12 @@ def rename_filament_system(vendor="OrcaFilamentLibrary"):
             if file.lower().endswith('.json'):
                 full_path = os.path.join(root, file)
                 try:
+                    if _check_bom(full_path):
+                        continue
                     with open(full_path, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                         modified = False
-                        
+
                         # Update name if it contains "BBL X1C"
                         if 'name' in data and "BBL X1C" in data['name']:
                             data['name'] = data['name'].replace("BBL X1C", "System")

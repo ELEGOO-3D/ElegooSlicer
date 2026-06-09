@@ -18,6 +18,18 @@ import json
 import sys
 from pathlib import Path
 
+BOM = b'\xef\xbb\xbf'
+
+
+def _check_bom(path):
+    with open(path, 'rb') as f:
+        if f.read(3) == BOM:
+            print(f"Error: {path} contains UTF-8 BOM. "
+                  f"Please re-save the file without BOM.",
+                  file=sys.stderr)
+            return True
+    return False
+
 
 def find_repo_root() -> Path:
     p = Path(__file__).resolve().parent
@@ -45,7 +57,9 @@ def reformat_file(path: Path, dry_run: bool) -> tuple[bool, bool]:
     Returns (success, content_would_change_or_changed).
     """
     try:
-        raw = path.read_text(encoding="utf-8-sig")
+        if _check_bom(path):
+            return False, False
+        raw = path.read_text(encoding="utf-8")
         data = json.loads(raw)
         out = json.dumps(data, indent="\t", ensure_ascii=False) + "\n"
         changed = raw != out
