@@ -240,8 +240,6 @@ IPCResult HomeView::handleGetUserInfo()
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__
         << ": userId=" << userNetworkInfo.userId
         << ", nickname=" << userNetworkInfo.nickname
-        << ", email=" << userNetworkInfo.email
-        << ", phone=" << userNetworkInfo.phone
         << ", hostType=" << userNetworkInfo.hostType
         << ", loginStatus=" << userNetworkInfo.loginStatus
         << ", accessTokenExpireTime=" << userNetworkInfo.accessTokenExpireTime

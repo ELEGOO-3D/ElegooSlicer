@@ -388,8 +388,9 @@ void UserNetworkManager::logout()
 
     std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": logout user" << "userInfo.userId=" << mUserInfo.userId
-    << "userInfo.username=" << mUserInfo.username << "nickname=" << mUserInfo.nickname << ", email=" << mUserInfo.email
-    << "phone=" << mUserInfo.phone << ", region=" << mUserInfo.region << "language=" << mUserInfo.language << ", loginStatus=" << mUserInfo.loginStatus;  
+    << "userInfo.username=" << mUserInfo.username << "nickname=" << mUserInfo.nickname
+    << ", region=" << mUserInfo.region << "language=" << mUserInfo.language
+    << ", loginStatus=" << mUserInfo.loginStatus;  
 
     mUserInfo = UserNetworkInfo();
     saveUserInfo(mUserInfo);

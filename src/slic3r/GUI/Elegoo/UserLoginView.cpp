@@ -40,8 +40,7 @@ void UserLoginView::ShowLoginDialog()
     if (!userInfo.userId.empty()) {
         BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << ": a user is already logged in, logout first before opening login"
                                    << " userId=" << userInfo.userId << ", username=" << userInfo.username
-                                   << ", nickname=" << userInfo.nickname << ", email=" << userInfo.email
-                                   << ", phone=" << userInfo.phone << ", region=" << userInfo.region
+                                   << ", nickname=" << userInfo.nickname << ", region=" << userInfo.region
                                    << ", language=" << userInfo.language << ", loginStatus=" << userInfo.loginStatus;
         UserNetworkManager::getInstance()->logout();
     }
@@ -119,14 +118,12 @@ void UserLoginView::setupIPCHandlers()
         userNetworkInfo.loginTime = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
         if (userNetworkInfo.userId.empty() || userNetworkInfo.token.empty()) {
             BOOST_LOG_TRIVIAL(warning) << "UserLoginView report.userInfo login failed, nickname="
-                                       << userNetworkInfo.nickname << ", email=" << userNetworkInfo.email
-                                       << ", phone=" << userNetworkInfo.phone << ", region=" << mRegion
+                                       << userNetworkInfo.nickname << ", region=" << mRegion
                                        << ", language=" << mLanguage;
             return IPCResult::error();
         }
         userNetworkInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
         BOOST_LOG_TRIVIAL(info) << "UserLoginView report.userInfo login ok, nickname=" << userNetworkInfo.nickname
-                                << ", email=" << userNetworkInfo.email << ", phone=" << userNetworkInfo.phone
                                 << ", region=" << mRegion << ", language=" << mLanguage;
         UserNetworkManager::getInstance()->login(userNetworkInfo);
 
