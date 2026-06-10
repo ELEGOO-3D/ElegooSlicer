@@ -237,7 +237,17 @@ IPCResult HomeView::handleGetUserInfo()
     UserNetworkInfo userNetworkInfo = UserNetworkManager::getInstance()->getUserInfo();   
     nlohmann::json data; 
     data = convertUserNetworkInfoToJson(userNetworkInfo);
-    BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": handleGetUserInfo returned user info: " << data.dump();
+    BOOST_LOG_TRIVIAL(info) << __FUNCTION__
+        << ": userId=" << userNetworkInfo.userId
+        << ", nickname=" << userNetworkInfo.nickname
+        << ", email=" << userNetworkInfo.email
+        << ", phone=" << userNetworkInfo.phone
+        << ", hostType=" << userNetworkInfo.hostType
+        << ", loginStatus=" << userNetworkInfo.loginStatus
+        << ", accessTokenExpireTime=" << userNetworkInfo.accessTokenExpireTime
+        << ", createTime=" << userNetworkInfo.createTime
+        << ", loginTime=" << userNetworkInfo.loginTime
+        << ", lastTokenRefreshTime=" << userNetworkInfo.lastTokenRefreshTime;
     return IPCResult::success(data);
 }
 
