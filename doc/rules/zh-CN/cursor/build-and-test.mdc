@@ -58,7 +58,7 @@ build_release_windows.bat test
 ./build_release_macos.sh -a arm64    # 或 x86_64 或 universal
 
 # 指定 macOS 目标版本
-./build_release_macos.sh -t 12.0
+./build_release_macos.sh -t 11.3
 
 # 构建配置（Debug 或 Release）
 ./build_release_macos.sh -c Debug

@@ -53,7 +53,7 @@ macOS Build
 ./build_release_macos.sh -a arm64    # or x86_64 or universal
 
 # Specify macOS target version
-./build_release_macos.sh -t 12.0
+./build_release_macos.sh -t 11.3
 
 # Build configuration (Debug or Release)
 ./build_release_macos.sh -c Debug

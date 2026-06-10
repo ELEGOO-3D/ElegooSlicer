@@ -51,7 +51,7 @@ while getopts ":dpa:snt:xbc:1ehwg" opt; do
         echo "   -a: Set ARCHITECTURE (arm64 or x86_64 or universal)"
         echo "   -s: Build slicer only"
         echo "   -n: Nightly build"
-        echo "   -t: Specify minimum version of the target platform, default is 12.0"
+        echo "   -t: Specify minimum version of the target platform, default is 11.3"
         echo "   -x: Use Ninja Multi-Config CMake generator, default is Xcode"
         echo "   -b: Build without reconfiguring CMake"
         echo "   -c: Set CMake build configuration, default is Release"
@@ -94,7 +94,7 @@ if [ -z "$DEPS_CMAKE_GENERATOR" ]; then
 fi
 
 if [ -z "$OSX_DEPLOYMENT_TARGET" ]; then
-  export OSX_DEPLOYMENT_TARGET="12.0"
+  export OSX_DEPLOYMENT_TARGET="11.3"
 fi
 
 if [ -z "$ELEGOO_INTERNAL_TESTING" ]; then
