@@ -1896,6 +1896,7 @@ unsigned int PresetBundle::sync_ams_list(unsigned int &unknowns)
         auto filament_changed = !ams.has("filament_changed") || ams.opt_bool("filament_changed");
         auto filament_multi_color = ams.opt<ConfigOptionStrings>("filament_multi_colors")->values;
         auto filament_preset_name = ams.has("filament_preset_name") ? ams.opt_string("filament_preset_name", 0u) : std::string();
+        auto filament_preset_alias = ams.has("filament_preset_alias") ? ams.opt_string("filament_preset_alias", 0u) : std::string();
         if (filament_id.empty()) continue;
         if (!filament_changed && this->filament_presets.size() > filament_presets.size()) {
             filament_presets.push_back(this->filament_presets[filament_presets.size()]);
@@ -1909,6 +1910,15 @@ unsigned int PresetBundle::sync_ams_list(unsigned int &unknowns)
             }
             return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id;
         });
+        
+        if (iter == filaments.end() && !filament_preset_alias.empty()) {
+            const std::string& resolved_name = filaments.get_preset_name_by_alias(filament_preset_alias);
+            if (resolved_name != filament_preset_alias) {
+                iter = std::find_if(filaments.begin(), filaments.end(), [this, &filament_id, &resolved_name](auto& f) {
+                    return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id && f.name == resolved_name;
+                });
+            }
+        }
         if (iter == filaments.end()) {
             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(": filament_id %1% not found or system or compatible") % filament_id;
             auto filament_type = ams.opt_string("filament_type", 0u);

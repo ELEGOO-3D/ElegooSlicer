@@ -1855,6 +1855,7 @@ bool Sidebar::load_mms_list()
             filament_config.set_key_value("filament_colour", new ConfigOptionStrings{tray.filamentColor});
             filament_config.set_key_value("tray_name", new ConfigOptionStrings{ tray.trayName });
             filament_config.set_key_value("filament_preset_name", new ConfigOptionStrings{ tray.filamentPresetName });
+            filament_config.set_key_value("filament_preset_alias", new ConfigOptionStrings{ tray.filamentPresetAlias });
             filament_config.set_key_value("filament_multi_colors", new ConfigOptionStrings{});
             filament_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(tray.filamentColor);
             filament_mms_list.emplace(filament_index, std::move(filament_config));

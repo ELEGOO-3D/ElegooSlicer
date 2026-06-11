@@ -74,6 +74,7 @@ struct PrinterMmsTray
     std::string filamentColor;
     std::string filamentDiameter;
     std::string filamentPresetName; // preset filament name
+    std::string filamentPresetAlias; // preset alias (name before @), for cross-printer matching
     double      minNozzleTemp;
     double      maxNozzleTemp;
     double      minBedTemp;

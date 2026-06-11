@@ -106,6 +106,7 @@ void PrinterMmsManager::getMmsTrayFilamentId(const PrinterNetworkInfo& printerNe
                 tray.filamentId = matchedPreset.filamentId;
                 tray.settingId = matchedPreset.settingId;
                 tray.filamentPresetName = matchedPreset.filamentName;
+                tray.filamentPresetAlias = matchedPreset.filamentAlias;
                 continue;
             }
         }
@@ -472,6 +473,7 @@ void PrinterMmsManager::getFilamentMmsMapping(std::vector<PrintFilamentMmsMappin
                     mappedTray.filamentId = matchedPreset.filamentId;
                     mappedTray.settingId = matchedPreset.settingId;
                     mappedTray.filamentPresetName = matchedPreset.filamentName;
+                    mappedTray.filamentPresetAlias = matchedPreset.filamentAlias;
                     isMapped = true;
                     break;
                 }
