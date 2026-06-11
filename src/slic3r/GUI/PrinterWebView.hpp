@@ -10,6 +10,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <chrono>
 
 #if wxUSE_WEBVIEW_EDGE
 #include "wx/msw/webview_edge.h"
@@ -49,6 +50,9 @@ public:
     void reload();
     void update_mode();
 
+    /** @brief Set the printer model for telemetry fallback. */
+    void setPrinterModel(const std::string& model);
+
 
     void onRtcTokenChanged(const nlohmann::json& data);
     void onRtmMessage(const nlohmann::json& data);
@@ -78,6 +82,7 @@ private:
     wxString m_url;
     wxString m_connectiongUrl;
     wxString m_failedUrl;
+    std::string m_printerModel;
     enum PWLoadState { CONNECTING_LOADING = 0, CONNECTING_LOADED, URL_LOADING, URL_LOADED, FAILED_LOADING, FAILED_LOADED };
     // 0 is load connecting page
     // 1 is load url

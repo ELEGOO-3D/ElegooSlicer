@@ -356,7 +356,7 @@ void report_app_open_source(const std::string& launch_target)
 
     nlohmann::json payload = nlohmann::json::object();
     payload["open_type"] = is_third_party_launch ? "third_party" : "manual";
-    payload["source"] = is_third_party_launch ? normalize_open_source(get_query_parameter(launch_target, "source")) : "unknown";
+    payload["source"] = is_third_party_launch ? normalize_open_source(get_query_parameter(launch_target, "source")) : "";
     TelemetryReporter::getInstance()->reportEvent("app_open_source", payload);
 }
 

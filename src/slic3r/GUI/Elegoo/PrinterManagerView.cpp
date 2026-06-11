@@ -622,8 +622,9 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
     if (openDeviceAssistant) {
         appendUrlParam("openDeviceAssistant", "true");
         appendUrlParam("timestamp", std::to_string(nowMs));
-    }  
+    }
 
+    view->setPrinterModel(printerInfo.printerModel);
     view->load_url(url);
     // Local network shows IP address, cloud printing shows printer name
     if(printerInfo.networkType==0)

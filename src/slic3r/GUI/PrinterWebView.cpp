@@ -166,6 +166,11 @@ void PrinterWebView::reload() { m_browser->Reload(); }
 
 void PrinterWebView::update_mode() { m_browser->EnableAccessToDevTools(wxGetApp().app_config->get_bool("developer_mode")); }
 
+void PrinterWebView::setPrinterModel(const std::string& model)
+{
+    m_printerModel = model;
+}
+
 /**
  * Method that retrieves the current state from the web control and updates the
  * GUI the reflect this current state.
@@ -566,13 +571,18 @@ void PrinterWebView::setupIPCHandlers()
         return result;
     });
     // Telemetry: printer command delivery; reported after the web page confirms delivery (channel vs business errors)
-    mIpc->onRequest("printer_command_delivery", [](const IPCRequest& request) {
+    mIpc->onRequest("printer_command_delivery", [this](const IPCRequest& request) {
         auto           params = request.params;
         nlohmann::json content;
         content["result"]         = params.value("result", "");         // delivery result, e.g. "success"
         content["network_type"]   = params.value("network_type", "");   // "wan" | "lan"
         content["command_method"] = params.value("command_method", ""); // command method code, e.g. "2005"
-        content["printer_model"]  = params.value("printer_model", "");
+        if (content["command_method"].empty()|| content["command_method"] == "unknown") {
+            // if command method is not provided, do not report telemetry to avoid noise, as we cannot distinguish between different commands
+            // but still return success to avoid affecting user experience
+            return IPCResult::success();
+        }
+        content["printer_model"]  = m_printerModel;
         content["serial_number"]  = params.value("serial_number", "");
         // error_code: request ok (response received, no throw) -> 0; failed / timeout -> -1
         int errorCode = params.value("error_code", 0);
@@ -591,13 +601,13 @@ void PrinterWebView::setupIPCHandlers()
         return IPCResult::success();
     });
     // Telemetry: print job start from web UI
-    mIpc->onRequest("print_job_start", [](const IPCRequest& request) {
+    mIpc->onRequest("print_job_start", [this](const IPCRequest& request) {
         auto           params = request.params;
         nlohmann::json content;
         content["result"]         = params.value("result", "");         // delivery result, e.g. "success"
         content["print_source"]  = "webui";                          // e.g. "webui"
         content["network_type"]  = params.value("network_type", ""); // "wan" | "lan"
-        content["printer_model"] = params.value("printer_model", "");
+        content["printer_model"]  = m_printerModel;
         content["serial_number"] = params.value("serial_number", "");
         int errorCode            = params.value("error_code", 0);
         if (errorCode == -1) {
