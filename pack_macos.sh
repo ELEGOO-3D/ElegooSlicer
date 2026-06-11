@@ -66,7 +66,7 @@ fi
 
 
 # 构建 ElegooSlicer
-./build_release_macos.sh -s -n -x -a ${ARCH}  -t 10.15 -1 ${BUILD_FLAG}
+./build_release_macos.sh -s -n -x -a ${ARCH}  -t 10.15 -1 ${BUILD_FLAG} -g
 
 # 判断是否构建成功
 if [ $? -ne 0 ]; then
