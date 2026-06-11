@@ -126,12 +126,28 @@ endif (MINGW)
 
 if (APPLE AND ELEGOO_SENTRY_SYMBOLS)
     message(STATUS "ElegooSlicer: dSYM enabled for Sentry symbol upload (-g)")
-    foreach(_sentry_cfg Release RelWithDebInfo Debug MinSizeRel)
-        set_target_properties(ElegooSlicer PROPERTIES
-            XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=${_sentry_cfg}] "dwarf-with-dsym"
-            XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=${_sentry_cfg}] "YES"
+    if (CMAKE_GENERATOR STREQUAL "Xcode")
+        foreach(_sentry_cfg Release RelWithDebInfo Debug MinSizeRel)
+            set_target_properties(ElegooSlicer PROPERTIES
+                XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=${_sentry_cfg}] "dwarf-with-dsym"
+                XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=${_sentry_cfg}] "YES"
+            )
+        endforeach()
+    else()
+        # Non-Xcode generators do not honor Xcode dSYM attributes. Generate
+        # the bundle dSYM next to the .app so it is uploaded but not packaged.
+        target_compile_options(ElegooSlicer PRIVATE
+            $<$<CONFIG:Release>:-g>
+            $<$<CONFIG:RelWithDebInfo>:-g>
+            $<$<CONFIG:MinSizeRel>:-g>
         )
-    endforeach()
+        add_custom_command(TARGET ElegooSlicer POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E rm -rf "$<TARGET_BUNDLE_DIR:ElegooSlicer>.dSYM"
+            COMMAND dsymutil "$<TARGET_FILE:ElegooSlicer>" -o "$<TARGET_BUNDLE_DIR:ElegooSlicer>.dSYM"
+            COMMENT "Generating dSYM for ElegooSlicer (Sentry)"
+            VERBATIM
+        )
+    endif()
 endif()
 
 if (NOT WIN32 AND NOT APPLE)

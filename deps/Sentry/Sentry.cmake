@@ -1,5 +1,6 @@
 if (APPLE)
-    set(_sentry_patch PATCH_COMMAND git apply --verbose --ignore-space-change --whitespace=fix ${CMAKE_CURRENT_LIST_DIR}/0001-crashpad-macos11-iokit.patch)
+    set(_sentry_patch PATCH_COMMAND bash -c
+        "git apply --verbose --ignore-space-change --whitespace=fix '${CMAKE_CURRENT_LIST_DIR}/0001-crashpad-macos11-iokit.patch' || git apply --reverse --check --ignore-space-change --whitespace=fix '${CMAKE_CURRENT_LIST_DIR}/0001-crashpad-macos11-iokit.patch'")
 else ()
     set(_sentry_patch "")
 endif ()
