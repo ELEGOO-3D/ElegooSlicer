@@ -235,7 +235,7 @@ bool PrinterMmsManager::isFilamentCompatible(
                 if(std::abs(currentProjectNozzleDiameter - presetNozzle) < 0.01) return true;
             }
         }
-        return false;
+        continue;
     }
     return false;
 }
