@@ -202,7 +202,7 @@ std::string buildOsVersion()
 
 std::string getOsArch()
 {
-    return normalizeArchName(wxPlatformInfo::Get().GetArchName().ToUTF8().data());
+    return normalizeArchName(wxPlatformInfo::Get().GetCpuArchitectureName().ToUTF8().data());
 }
 
 std::string generateSessionId()
@@ -744,6 +744,19 @@ void TelemetryReporter::initializeStaticContextLocked()
     getWindowsPrimaryGpuInfo(mDeviceInfo.gpuModel, mDeviceInfo.gpuDriverVersion, mDeviceInfo.gpuVramMb);
 #endif
 
+    // log system info 
+    BOOST_LOG_TRIVIAL(info) << "System Info: os=" << mDeviceInfo.os
+                            << ", os_version=" << mDeviceInfo.osVersion
+                            << ", os_arch=" << mDeviceInfo.osArch
+                            << ", screen_resolution=" << mDeviceInfo.screenResolution
+                            << ", app_language=" << mDeviceInfo.appLanguage
+                            << ", system_language=" << mDeviceInfo.systemLanguage
+                            << ", cpu_model=" << mDeviceInfo.cpuModel
+                            << ", cpu_logical_cores=" << mDeviceInfo.cpuLogicalCores
+                            << ", gpu_model=" << mDeviceInfo.gpuModel
+                            << ", gpu_driver_version=" << mDeviceInfo.gpuDriverVersion
+                            << ", gpu_vram_mb=" << mDeviceInfo.gpuVramMb
+                            << ", memory_total_gb=" << mDeviceInfo.memoryTotalGb;
     auto networkHelper = NetworkFactory::createNetworkHelper(htElegooLink);
     if (networkHelper) {
         mTelemetryUrl = networkHelper->getTelemetryUrl();
@@ -788,6 +801,9 @@ void TelemetryReporter::updateGraphicsContextLocked()
             }
         }
     }
+    BOOST_LOG_TRIVIAL(info) << "Graphics Info: opengl_version=" << mDeviceInfo.openglVersion
+                            << ", opengl_vendor=" << mDeviceInfo.openglVendor
+                            << ", opengl_renderer=" << mDeviceInfo.openglRenderer;
 }
 
 void TelemetryReporter::startWorkerLocked()
