@@ -1,8 +1,15 @@
+if (APPLE)
+    set(_sentry_patch PATCH_COMMAND git apply --verbose --ignore-space-change --whitespace=fix ${CMAKE_CURRENT_LIST_DIR}/0001-crashpad-macos11-iokit.patch)
+else ()
+    set(_sentry_patch "")
+endif ()
+
 elegooslicer_add_cmake_project(Sentry
     GIT_REPOSITORY https://github.com/getsentry/sentry-native.git
     GIT_TAG 0.14.2
     GIT_SUBMODULES_RECURSE TRUE
     DEPENDS ${ZLIB_PKG} ${CURL_PKG}
+    ${_sentry_patch}
     CMAKE_ARGS
         -DSENTRY_BUILD_SHARED_LIBS=OFF
         -DSENTRY_BUILD_EXAMPLES=OFF

@@ -9,17 +9,22 @@ Usage:
     python upload_sentry_pdbs.py <debug_dir> [version]
 
 Requires .env with: SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT
-Never blocks the build -- all failures are printed as warnings and exit 0.
+Network failures are retried up to 3 times; the build fails if upload still fails.
+Skips upload (exit 0) when SENTRY_AUTH_TOKEN is not configured.
 """
 
-import sys
 import platform
 import subprocess
+import sys
+import time
 import urllib.request
 from pathlib import Path
 
 
 SENTRY_CLI_VERSION = "3.4.3"
+MAX_RETRIES = 3
+RETRY_DELAY_SEC = 5
+UPLOAD_TIMEOUT_SEC = 1800
 SENTRY_CLI_BINARIES = {
     "Windows": ("sentry-cli-Windows-x86_64.exe", "sentry-cli.exe"),
     "Darwin":  ("sentry-cli-Darwin-universal",     "sentry-cli"),
@@ -67,11 +72,48 @@ def get_sentry_cli_info():
     return dl_name, local_name, url
 
 
+def _ensure_executable(cli_path: Path):
+    """Ensure the binary is executable on Unix."""
+    if platform.system() != "Windows":
+        cli_path.chmod(0o755)
+
+
+def _download_sentry_cli(url: str, cli_path: Path):
+    """Download sentry-cli once; raise on network or corrupted download."""
+    if cli_path.exists():
+        cli_path.unlink()
+    urllib.request.urlretrieve(url, cli_path)
+
+    file_size = cli_path.stat().st_size
+    if file_size < 1_048_576:
+        cli_path.unlink()
+        raise RuntimeError(f"downloaded sentry-cli too small ({file_size} bytes), corrupted?")
+
+    _ensure_executable(cli_path)
+
+
+def _retry(operation: str, func):
+    """Run func up to MAX_RETRIES times; re-raise the last error on failure."""
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            return func()
+        except Exception as exc:
+            last_error = exc
+            if attempt < MAX_RETRIES:
+                print(f"[WARNING] {operation} failed (attempt {attempt}/{MAX_RETRIES}): {exc}")
+                print(f"[INFO] Retrying in {RETRY_DELAY_SEC}s...")
+                time.sleep(RETRY_DELAY_SEC)
+            else:
+                print(f"[ERROR] {operation} failed after {MAX_RETRIES} attempts: {exc}")
+    raise last_error
+
+
 def find_or_download_sentry_cli(cache_dir: Path):
     """Return path to sentry-cli: use cached copy or download one."""
     info = get_sentry_cli_info()
     if not info:
-        print(f"[WARNING] Unsupported platform: {platform.system()}, skipping Sentry upload")
+        print(f"[ERROR] Unsupported platform: {platform.system()}")
         return None
 
     _, local_name, url = info
@@ -85,29 +127,14 @@ def find_or_download_sentry_cli(cache_dir: Path):
 
     print(f"[INFO] sentry-cli not found, downloading v{SENTRY_CLI_VERSION}...")
     print(f"[INFO] URL: {url}")
-    try:
-        urllib.request.urlretrieve(url, cli_path)
-    except Exception as e:
-        print(f"[WARNING] Failed to download sentry-cli: {e}")
-        if cli_path.exists():
-            cli_path.unlink()
-        return None
 
-    file_size = cli_path.stat().st_size
-    if file_size < 1_048_576:
-        print(f"[WARNING] Downloaded sentry-cli too small ({file_size} bytes), corrupted?")
-        cli_path.unlink()
-        return None
+    def do_download():
+        _download_sentry_cli(url, cli_path)
+        file_size = cli_path.stat().st_size
+        print(f"[OK] sentry-cli v{SENTRY_CLI_VERSION} downloaded ({file_size:,} bytes)")
+        return cli_path
 
-    _ensure_executable(cli_path)
-    print(f"[OK] sentry-cli v{SENTRY_CLI_VERSION} downloaded ({file_size:,} bytes)")
-    return cli_path
-
-
-def _ensure_executable(cli_path: Path):
-    """Ensure the binary is executable on Unix."""
-    if platform.system() != "Windows":
-        cli_path.chmod(0o755)
+    return _retry("sentry-cli download", do_download)
 
 
 def find_debug_files(debug_dir: Path) -> list:
@@ -116,7 +143,6 @@ def find_debug_files(debug_dir: Path) -> list:
     for pat in ("*.pdb", "*.dSYM", "*.sym", "*.debug"):
         files.extend(debug_dir.glob(pat))
     if debug_dir.is_dir():
-        # dSYM bundles are directories, glob catches them as files — ensure coverage
         for d in debug_dir.iterdir():
             if d.is_dir() and d.suffix == ".dSYM":
                 files.append(d)
@@ -126,10 +152,28 @@ def find_debug_files(debug_dir: Path) -> list:
     return sorted(set(files))
 
 
+def upload_debug_files(cli_path: Path, cmd: list) -> bool:
+    """Upload debug symbols with retries; return True on success."""
+
+    def do_upload():
+        try:
+            result = subprocess.run(cmd, timeout=UPLOAD_TIMEOUT_SEC)
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"sentry-cli timed out after {UPLOAD_TIMEOUT_SEC}s") from exc
+        except OSError as exc:
+            raise RuntimeError(f"failed to run sentry-cli: {exc}") from exc
+
+        if result.returncode != 0:
+            raise RuntimeError(f"sentry-cli exited with {result.returncode}")
+        return True
+
+    return _retry("Sentry debug symbol upload", do_upload)
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: upload_sentry_pdbs.py <debug_dir> [version]")
-        sys.exit(0)
+        sys.exit(2)
 
     debug_dir = Path(sys.argv[1])
     version = sys.argv[2] if len(sys.argv) > 2 else "unknown"
@@ -143,7 +187,6 @@ def main():
         sys.exit(0)
 
     auth_token = env.get("SENTRY_AUTH_TOKEN", "").strip()
-
     if not auth_token:
         print("[INFO] SENTRY_AUTH_TOKEN not configured in .env, skipping.")
         sys.exit(0)
@@ -154,21 +197,25 @@ def main():
     project = env.get("SENTRY_PROJECT", "").strip() or project_map.get(system, f"elegoo-slicer-{system.lower()}")
 
     if not debug_dir.exists():
-        print(f"[WARNING] {debug_dir} not found, skipping.")
-        sys.exit(0)
+        print(f"[ERROR] {debug_dir} not found.")
+        sys.exit(1)
 
     debug_files = find_debug_files(debug_dir)
     if not debug_files:
-        print(f"[WARNING] No debug symbols found in {debug_dir}, skipping.")
-        sys.exit(0)
+        print(f"[ERROR] No debug symbols found in {debug_dir}.")
+        sys.exit(1)
     if system == "Darwin" and not any(p.suffix == ".dSYM" for p in debug_files):
-        print(f"[WARNING] No .dSYM in {debug_dir}. Rebuild with -g so CMake enables dSYM generation.")
-        sys.exit(0)
+        print(f"[ERROR] No .dSYM in {debug_dir}. Rebuild with -g so CMake enables dSYM generation.")
+        sys.exit(1)
 
     cache_dir = project_root / "tools" / "sentry-cli"
-    cli_path = find_or_download_sentry_cli(cache_dir)
+    try:
+        cli_path = find_or_download_sentry_cli(cache_dir)
+    except Exception:
+        sys.exit(1)
+
     if not cli_path:
-        sys.exit(0)
+        sys.exit(1)
 
     print("=" * 75)
     print("  Sentry Debug Symbol Upload")
@@ -185,10 +232,7 @@ def main():
     print("=" * 75)
     print()
 
-    # Native debug files are matched by UUID/debug id, not --release (not supported on
-    # `debug-files upload` in sentry-cli 3.x). Version is logged for traceability only.
     release = version if version.startswith("elegoo-slicer@") else f"elegoo-slicer@{version}"
-
     print(f"[INFO] Uploading {len(debug_files)} debug symbol file(s) to Sentry (app release tag: {release})...")
     cmd = [
         str(cli_path), "debug-files", "upload",
@@ -197,20 +241,14 @@ def main():
         "--project", project,
         "--log-level", "info",
     ]
-    # Pass only known debug symbol files, not the whole directory
     cmd.extend(str(f) for f in debug_files)
 
     try:
-        result = subprocess.run(cmd, timeout=1800)
-        if result.returncode != 0:
-            print(f"\n[WARNING] sentry-cli exited with {result.returncode}, check Sentry dashboard.")
-        else:
-            print(f"\n[OK] Debug symbols uploaded successfully!")
-    except subprocess.TimeoutExpired:
-        print(f"[WARNING] sentry-cli timed out after 30 minutes, upload may be incomplete.")
+        upload_debug_files(cli_path, cmd)
     except Exception:
-        print(f"[WARNING] Failed to run sentry-cli, check network and Sentry dashboard.")
+        sys.exit(1)
 
+    print("\n[OK] Debug symbols uploaded successfully!")
     sys.exit(0)
 
 

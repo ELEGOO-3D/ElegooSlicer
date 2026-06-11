@@ -1,0 +1,11 @@
+--- a/external/crashpad/util/mac/mac_util.cc
++++ b/external/crashpad/util/mac/mac_util.cc
+@@ -250,7 +250,7 @@ bool MacOSVersion(int32_t* major, int32_t* minor, int32_t* bugfix) {
+
+ void MacModelAndBoard(std::string* model, std::string* board_id) {
+   base::mac::ScopedIOObject<io_service_t> platform_expert(
+-      IOServiceGetMatchingService(kIOMainPortDefault,
++      IOServiceGetMatchingService(MACH_PORT_NULL,
+                                   IOServiceMatching("IOPlatformExpertDevice")));
+   if (platform_expert) {
+     model->assign(IORegistryEntryDataPropertyAsString(platform_expert.get(),

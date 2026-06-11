@@ -308,7 +308,10 @@ echo.
 echo [OK] ElegooSlicer installation completed
 echo.
 
-if "%sentry_upload%"=="ON" call :upload_pdb
+if "%sentry_upload%"=="ON" (
+    call :upload_pdb
+    if errorlevel 1 goto error_end
+)
 
 if "%only_slicer%"=="ON" (
     echo [INFO] Only Slicer mode - Build complete, exiting
@@ -511,14 +514,17 @@ if exist "%WP%\%build_dir%\install.ini" (
 if exist "%PDB_DIR%" (
     echo [INFO] Uploading app PDB from: %PDB_DIR%
     python "%WP%\scripts\upload_sentry_pdbs.py" "%PDB_DIR%" "%SENTRY_VER%"
+    if errorlevel 1 exit /b 1
 )
 if exist "%DEPS_BIN_DIR%" (
     echo [INFO] Uploading deps PDB from: %DEPS_BIN_DIR%
     python "%WP%\scripts\upload_sentry_pdbs.py" "%DEPS_BIN_DIR%" "%SENTRY_VER%"
+    if errorlevel 1 exit /b 1
 )
 if exist "%DEPS_LIB_PDB_DIR%" (
     echo [INFO] Uploading deps PDB from: %DEPS_LIB_PDB_DIR%
     python "%WP%\scripts\upload_sentry_pdbs.py" "%DEPS_LIB_PDB_DIR%" "%SENTRY_VER%"
+    if errorlevel 1 exit /b 1
 )
 echo ----------------------------------------------------------------------------
 echo.
