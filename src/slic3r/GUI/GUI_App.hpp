@@ -234,6 +234,9 @@ public:
 private:
     bool            m_initialized { false };
     bool            m_post_initialized { false };
+    // post_init() has been entered; guards against reentry from wxEVT_IDLE while
+    // post_init() runs nested modal loops (e.g. unit-conversion dialog in load_files()).
+    bool            m_post_init_started { false };
     bool            m_app_conf_exists{ false };
     EAppMode        m_app_mode{ EAppMode::Editor };
     bool            m_is_recreating_gui{ false };

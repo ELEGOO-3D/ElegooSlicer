@@ -810,6 +810,13 @@ void GUI_App::post_init()
     if (! this->initialized())
         throw Slic3r::RuntimeError("Calling post_init() while not yet initialized");
 
+    // Guard against reentrant calls while load_files() shows modal dialogs (wxEVT_IDLE
+    // keeps firing during ShowModal() nested event loop). Do not reuse m_post_initialized
+    // here: it must keep meaning "post_init completed" for its other usages.
+    if (m_post_init_started)
+        return;
+    m_post_init_started = true;
+
     m_open_method = "double_click";
     std::string telemetry_launch_target;
     bool switch_to_3d = false;
