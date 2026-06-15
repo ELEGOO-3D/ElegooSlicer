@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 17:55+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -4677,6 +4677,21 @@ msgstr "Print alles"
 msgid "Send all"
 msgstr "Alles verzenden"
 
+msgid "Export Logs"
+msgstr ""
+
+msgid "The log directory does not exist."
+msgstr ""
+
+msgid "No log files were found to export."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Logs were exported to:\n"
+"%s"
+msgstr ""
+
 msgid "Beginner Guide"
 msgstr ""
 
@@ -4691,6 +4706,9 @@ msgstr "Installatiewizard"
 
 msgid "Show Configuration Folder"
 msgstr "Toon de configuratie map"
+
+msgid "Export logs to a zip file"
+msgstr ""
 
 msgid "Show Tip of the Day"
 msgstr "Toon Tip van de dag"
@@ -17483,6 +17501,12 @@ msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
+msgstr ""
+
+msgid "Send print task failed"
+msgstr ""
+
+msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

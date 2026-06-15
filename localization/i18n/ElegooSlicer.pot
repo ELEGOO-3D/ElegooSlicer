@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-15 10:41+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16219,6 +16219,12 @@ msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
+msgstr ""
+
+msgid "Send print task failed"
+msgstr ""
+
+msgid "Send print file failed"
 msgstr ""
 
 #, possible-boost-format

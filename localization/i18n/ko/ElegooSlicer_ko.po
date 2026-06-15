@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 17:55+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "PO-Revision-Date: 2024-05-31 23:33+0900\n"
 "Last-Translator: Hotsolidinfill <138652683+Hotsolidinfill@users.noreply."
 "github.com>, crwusiz <crwusiz@gmail.com>\n"
@@ -4632,6 +4632,21 @@ msgstr "모두 출력"
 msgid "Send all"
 msgstr "모두 전송"
 
+msgid "Export Logs"
+msgstr ""
+
+msgid "The log directory does not exist."
+msgstr ""
+
+msgid "No log files were found to export."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Logs were exported to:\n"
+"%s"
+msgstr ""
+
 msgid "Beginner Guide"
 msgstr ""
 
@@ -4646,6 +4661,9 @@ msgstr "설정 마법사"
 
 msgid "Show Configuration Folder"
 msgstr "설정 폴더 열기"
+
+msgid "Export logs to a zip file"
+msgstr ""
 
 msgid "Show Tip of the Day"
 msgstr "오늘의 팁 표시"
@@ -17920,6 +17938,12 @@ msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
+msgstr ""
+
+msgid "Send print task failed"
+msgstr ""
+
+msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

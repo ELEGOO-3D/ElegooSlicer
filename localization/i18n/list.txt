@@ -201,6 +201,7 @@ src/slic3r/Utils/Elegoo/PrinterNetworkEvent.cpp
 src/slic3r/Utils/Elegoo/PrinterNetworkEvent.hpp
 src/slic3r/Utils/Elegoo/PrinterPluginManager.cpp
 src/slic3r/Utils/Elegoo/PrinterPluginManager.hpp
+src/slic3r/Utils/Elegoo/PrinterUploadManager.cpp
 src/slic3r/Utils/Elegoo/UserNetworkManager.cpp
 src/slic3r/Utils/Elegoo/UserNetworkManager.hpp
 src/slic3r/GUI/Elegoo/HomepageView.cpp

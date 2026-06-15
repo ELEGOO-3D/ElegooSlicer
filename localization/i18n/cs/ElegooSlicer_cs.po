@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 17:55+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "PO-Revision-Date: 2023-09-30 15:15+0200\n"
 "Last-Translator: René Mošner <Renemosner@seznam.cz>\n"
 "Language-Team: \n"
@@ -4676,6 +4676,21 @@ msgstr "Vytisknout vše"
 msgid "Send all"
 msgstr "Odeslat vše"
 
+msgid "Export Logs"
+msgstr ""
+
+msgid "The log directory does not exist."
+msgstr ""
+
+msgid "No log files were found to export."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Logs were exported to:\n"
+"%s"
+msgstr ""
+
 msgid "Beginner Guide"
 msgstr ""
 
@@ -4690,6 +4705,9 @@ msgstr "Průvodce nastavením"
 
 msgid "Show Configuration Folder"
 msgstr "Zobrazit konfigurační složku"
+
+msgid "Export logs to a zip file"
+msgstr ""
 
 msgid "Show Tip of the Day"
 msgstr "Ukázat Tip Dne"
@@ -17430,6 +17448,12 @@ msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
+msgstr ""
+
+msgid "Send print task failed"
+msgstr ""
+
+msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

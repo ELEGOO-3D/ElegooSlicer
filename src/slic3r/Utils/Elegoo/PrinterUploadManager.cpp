@@ -220,12 +220,12 @@ PrinterNetworkResult<bool> PrinterUploadManager::executeUpload(const PrinterNetw
     do {
         if (!printer.has_value()) {
             BOOST_LOG_TRIVIAL(error) << "executeUpload: printer not found, file name: " << params.fileName;
-            result.code = PrinterNetworkErrorCode::PRINTER_NOT_FOUND;
+            result = PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_NOT_FOUND, false);
             break;
         }
         if (printer.value().connectStatus != PRINTER_CONNECT_STATUS_CONNECTED) {
             BOOST_LOG_TRIVIAL(error) << "executeUpload: printer not connected, file name: " << params.fileName;
-            result.code = PrinterNetworkErrorCode::PRINTER_CONNECTION_ERROR;
+            result = PrinterNetworkResult<bool>(PrinterNetworkErrorCode::PRINTER_CONNECTION_ERROR, false);
             break;
         }
         if (printer.value().networkType == NETWORK_TYPE_WAN) {

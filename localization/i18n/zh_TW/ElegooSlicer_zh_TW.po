@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 17:55+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "PO-Revision-Date: 2023-11-06 14:37+0800\n"
 "Last-Translator: ablegods <ablegods@gmail.com>\n"
 "Language-Team: \n"
@@ -4706,6 +4706,21 @@ msgstr "列印所有列印板"
 msgid "Send all"
 msgstr "傳送所有列印板"
 
+msgid "Export Logs"
+msgstr ""
+
+msgid "The log directory does not exist."
+msgstr ""
+
+msgid "No log files were found to export."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Logs were exported to:\n"
+"%s"
+msgstr ""
+
 msgid "Beginner Guide"
 msgstr ""
 
@@ -4720,6 +4735,9 @@ msgstr "設定精靈"
 
 msgid "Show Configuration Folder"
 msgstr "打開設定檔的資料夾"
+
+msgid "Export logs to a zip file"
+msgstr ""
 
 msgid "Show Tip of the Day"
 msgstr "顯示每日小提示"
@@ -17713,6 +17731,12 @@ msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
+msgstr ""
+
+msgid "Send print task failed"
+msgstr ""
+
+msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

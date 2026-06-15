@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ElegooSlicer\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 17:55+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "PO-Revision-Date: \n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -4569,6 +4569,21 @@ msgstr "造形開始 (全プレート)"
 msgid "Send all"
 msgstr "送信 (全プレート)"
 
+msgid "Export Logs"
+msgstr ""
+
+msgid "The log directory does not exist."
+msgstr ""
+
+msgid "No log files were found to export."
+msgstr ""
+
+#, c-format, boost-format
+msgid ""
+"Logs were exported to:\n"
+"%s"
+msgstr ""
+
 msgid "Beginner Guide"
 msgstr ""
 
@@ -4583,6 +4598,9 @@ msgstr "セットアップ ウィザード"
 
 msgid "Show Configuration Folder"
 msgstr "構成フォルダを表示"
+
+msgid "Export logs to a zip file"
+msgstr ""
 
 msgid "Show Tip of the Day"
 msgstr "「毎日のヒント」を表示"
@@ -16969,6 +16987,12 @@ msgid "Internal communication error. Please try again."
 msgstr ""
 
 msgid "Host/IP/URL"
+msgstr ""
+
+msgid "Send print task failed"
+msgstr ""
+
+msgid "Send print file failed"
 msgstr ""
 
 #, boost-format

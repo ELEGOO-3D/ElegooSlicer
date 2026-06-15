@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Slic3rPE\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-15 10:41+0800\n"
+"POT-Creation-Date: 2026-06-15 12:56+0800\n"
 "PO-Revision-Date: 2023-04-01 13:21+0800\n"
 "Last-Translator: ELEGOOTechSupport <softfeverever@gmail.com>\n"
 "Language-Team: \n"
@@ -17204,6 +17204,12 @@ msgstr "内部通信错误，请稍后重试。"
 msgid "Host/IP/URL"
 msgstr ""
 
+msgid "Send print task failed"
+msgstr "发送打印任务失败"
+
+msgid "Send print file failed"
+msgstr "发送打印文件失败"
+
 #, boost-format
 msgid "%1% connection failed. Please check and try again."
 msgstr "%1% 连接异常，请检查后重试"
@@ -17491,12 +17497,6 @@ msgstr ""
 #~ "Operation failed. Please check if multiple clients are open and continue "
 #~ "on the main client."
 #~ msgstr "操作失败，请检查是否已经开启了多个客户端，请在主客户端上继续操作"
-
-#~ msgid "Send print task failed"
-#~ msgstr "发送打印任务失败"
-
-#~ msgid "Send print file failed"
-#~ msgstr "发送打印文件失败"
 
 #~ msgid ""
 #~ "The imported 3mf file may have some incompatibilities, continuing to "
