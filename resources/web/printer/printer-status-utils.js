@@ -152,7 +152,7 @@ const PrinterStatusUtils = {
         const remainingTime = (typeof estimatedTime === 'number' && estimatedTime > 0)
             ? estimatedTime
             : Math.max(0, (totalTime || 0) - (currentTime || 0));
-
+        if (remainingTime === 0) return '--:--:--';    
         const hours = Math.floor(remainingTime / 3600);
         const minutes = Math.floor((remainingTime % 3600) / 60);
         const seconds = remainingTime % 60;
