@@ -2532,12 +2532,14 @@ static wxMenu* generate_help_menu()
             dlg.ShowModal();
         });
 
+#if 0
     // Test crash (for testing crash reporting)
     helpMenu->AppendSeparator();
     append_menu_item(helpMenu, wxID_ANY, _L("Test Crash Report"), _L("Trigger a test crash to verify crash reporting"),
         [](wxCommandEvent&) {
             CrashReporter::triggerTestCrash();
         });
+#endif
 
     // About
 #ifndef __APPLE__
