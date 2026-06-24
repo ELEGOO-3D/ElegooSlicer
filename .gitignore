@@ -57,3 +57,5 @@ src/tiff/
 src/zlib/
 scripts/__pycache__/
 /CLAUDE.md
+slicer_online/
+docs/
