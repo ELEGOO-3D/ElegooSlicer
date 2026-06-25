@@ -30,7 +30,7 @@ ElegooSlicer is an open-source slicer compatible with most FDM printers. Current
 
 **Mac**:
 1. Download the DMG for your computer: `arm64` version for Apple Silicon and `x86_64` for Intel CPU.  
-2. Drag OrcaSlicer.app to Application folder. 
+2. Drag ElegooSlicer.app to Application folder. 
 3. *If you want to run a build from a PR, you also need to follow the instructions below:*  
     <details quarantine>
     <summary>Details</summary>
