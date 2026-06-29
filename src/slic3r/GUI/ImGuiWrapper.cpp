@@ -18,7 +18,7 @@
 #include <wx/clipbrd.h>
 #include <wx/debug.h>
 
-#include <GL/glew.h>
+#include <glad/gl.h>
 
 #ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -26,6 +26,7 @@
 #include <imgui/imgui_internal.h>
 
 #include "libslic3r/libslic3r.h"
+#include <libslic3r/ClipperUtils.hpp>
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Color.hpp"
 #include "libslic3r/Shape/TextShape.hpp"
@@ -99,6 +100,9 @@ static const std::map<const wchar_t, std::string> font_icons = {
     {ImGui::CollapseBtn                , "collapse_btn"               },
     {ImGui::RevertBtn                  , "revert_btn"                 },
 
+    //{ImGui::HorizontalHide        , "horizontal_hide"               }, // ORCA use ExpandBtn / CollapseBtn
+    //{ImGui::HorizontalShow        , "horizontal_show"               },
+
     {ImGui::CloseBlockNotifButton      , "block_notification_close"           },
     {ImGui::CloseBlockNotifHoverButton , "block_notification_close_hover"     },
 
@@ -134,6 +138,7 @@ static const std::map<const wchar_t, std::string> font_icons_large = {
     {ImGui::PrevArrowBtnIcon,             "notification_arrow_left"              },
     {ImGui::NextArrowBtnIcon,             "notification_arrow_right"             },
     {ImGui::CompleteIcon,                 "notification_slicing_complete"        },
+    {ImGui::FilamentGreen,                "filament_green"                       },
 
     {ImGui::PlayButton,                   "notification_play"                    },
     {ImGui::PlayDarkButton,               "notification_play_dark"               },
@@ -179,6 +184,8 @@ const ImVec4 ImGuiWrapper::COL_WINDOW_BG_DARK    = { 45 / 255.f, 45 / 255.f, 49 
 const ImVec4 ImGuiWrapper::COL_TOOLBAR_BG        = { 250 / 255.f, 250 / 255.f, 250 / 255.f, 1.f }; // ORCA color matches with toolbar_background.png
 const ImVec4 ImGuiWrapper::COL_TOOLBAR_BG_DARK   = { 57  / 255.f, 60  / 255.f, 66  / 255.f, 1.f }; // ORCA color matches with toolbar_background_dark.png
 const ImVec4 ImGuiWrapper::COL_ORCA              = to_ImVec4(ColorRGBA::ORCA());
+const ImVec4 ImGuiWrapper::COL_MODIFIED          = { 253.f / 255.f, 111.f / 255.f, 40.f / 255.f, 1}; // ORCA same color with m_color_label_modified
+const ImVec4 ImGuiWrapper::COL_WARNING           = to_ImVec4(ColorRGB::WARNING());
 
 int ImGuiWrapper::TOOLBAR_WINDOW_FLAGS = ImGuiWindowFlags_AlwaysAutoResize
                                  | ImGuiWindowFlags_NoMove
@@ -392,6 +399,7 @@ void ImGuiWrapper::set_language(const std::string &language)
         0,
     };
     m_font_cjk = false;
+    m_is_korean = false;
     if (lang == "cs" || lang == "pl") {
         ranges = ranges_latin2;
     } else if (lang == "ru" || lang == "uk") {
@@ -524,8 +532,42 @@ void ImGuiWrapper::new_frame()
         init_font(true);
     }
 
+    ImGuiIO& io = ImGui::GetIO();
+
     ImGui::NewFrame();
     m_new_frame_open = true;
+
+    // BBL: we should render the new frame first, than reset keys' status
+    // BBL: copy & paste form prusa github repo (https://github.com/prusa3d/PrusaSlicer/blob/master/src/slic3r/GUI/ImGuiWrapper.cpp#L375C5-L402C6)
+    // synchronize key states
+    // when the application loses the focus it may happen that the key up event is not processed
+
+    // synchronize modifier keys
+    constexpr std::array<std::pair<ImGuiKeyModFlags_, wxKeyCode>, 3> imgui_mod_keys{
+        std::make_pair(ImGuiKeyModFlags_Ctrl, WXK_CONTROL),
+        std::make_pair(ImGuiKeyModFlags_Shift, WXK_SHIFT),
+        std::make_pair(ImGuiKeyModFlags_Alt, WXK_ALT) };
+    for (const std::pair<ImGuiKeyModFlags_, wxKeyCode>& key : imgui_mod_keys) {
+        if ((io.KeyMods & key.first) != 0 && !wxGetKeyState(key.second))
+            io.KeyMods &= ~key.first;
+    }
+
+    // Not sure if it is neccessary
+    // values from 33 to 126 are reserved for the standard ASCII characters
+    for (size_t i = 33; i <= 126; ++i) {
+        wxKeyCode keycode = static_cast<wxKeyCode>(i);
+        if (io.KeysDown[i] && keycode != WXK_NONE && !wxGetKeyState(keycode))
+            io.KeysDown[i] = false;
+    }
+
+    // special keys: delete, backspace, ...
+    for (int key : io.KeyMap) {
+        wxKeyCode keycode = static_cast<wxKeyCode>(key);
+        if (io.KeysDown[key] && keycode != WXK_NONE && !wxGetKeyState(keycode))
+            io.KeysDown[key] = false;
+    }
+
+    // BBL: end copy & paste
 }
 
 void ImGuiWrapper::render()
@@ -830,8 +872,8 @@ bool ImGuiWrapper::button(const wxString &label, const wxString& tooltip)
     const bool ret = ImGui::Button(label_utf8.c_str());
 
     if (!tooltip.IsEmpty() && ImGui::IsItemHovered()) {
-        auto tooltip_utf8 = into_u8(tooltip);
-        ImGui::SetTooltip(tooltip_utf8.c_str(), nullptr);
+        const float max_tooltip_width = ImGui::GetFontSize() * 20.0f;
+        this->tooltip(tooltip, max_tooltip_width);
     }
 
     return ret;
@@ -843,8 +885,8 @@ bool ImGuiWrapper::bbl_button(const wxString &label, const wxString& tooltip)
     const bool ret = ImGui::BBLButton(label_utf8.c_str());
 
     if (!tooltip.IsEmpty() && ImGui::IsItemHovered()) {
-        auto tooltip_utf8 = into_u8(tooltip);
-        ImGui::SetTooltip(tooltip_utf8.c_str(), nullptr);
+        const float max_tooltip_width = ImGui::GetFontSize() * 20.0f;
+        this->tooltip(tooltip, max_tooltip_width);
     }
 
     return ret;
@@ -865,6 +907,54 @@ bool ImGuiWrapper::button(const wxString& label, const ImVec2 &size, bool enable
 
     disabled_end();
     return (enable) ? res : false;
+}
+
+// ORCA Glyph based button for correctly rendering icon size based Glyph
+// excludes spacings after Glyph and centers icon properly
+// compared to image_button this supports styling
+bool ImGuiWrapper::glyph_button(wchar_t icon_char, ImVec2 icon_size)
+{
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    ImFont*     font      = ImGui::GetFont();
+    ImGuiStyle& style     = ImGui::GetStyle();
+    ImVec2      padding   = style.FramePadding;
+    float       border_w  = style.FrameBorderSize;
+    float       rounding  = style.FrameRounding;
+    std::string icon_str  = into_u8(icon_char);
+    const char* icon      = icon_str.c_str();
+    
+    float  width  = icon_size.x + (padding.x + border_w) * 2.f;
+    float  height = icon_size.y + (padding.y + border_w) * 2.f;
+    ImVec2 rc_min = ImGui::GetCursorScreenPos();
+    ImVec2 rc_max = ImVec2(rc_min.x + width, rc_min.y + height);
+
+    ImGui::Dummy(ImVec2(width, height));
+
+    ImGuiCol bg_color     = ImGuiCol_Button;
+    ImGuiCol border_color = ImGuiCol_Border;
+    bool     clicked      = false;
+
+    if (ImGui::IsMouseHoveringRect(rc_min, rc_max)) {
+        bg_color = ImGuiCol_ButtonHovered;
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            bg_color     = ImGuiCol_ButtonActive;
+            border_color = ImGuiCol_BorderShadow;
+            clicked      = true;
+        }
+    }
+
+    draw_list->AddRectFilled(rc_min, rc_max, ImGui::GetColorU32(bg_color), rounding);
+
+    if (border_w > 0.f)
+        draw_list->AddRect(rc_min, rc_max, ImGui::GetColorU32(border_color), rounding, 0, border_w);
+
+    ImVec2 text_pos = ImVec2(
+        rc_min.x + (width  - font->FontSize) * .5f,
+        rc_min.y + (height - font->FontSize) * .5f
+    );
+    draw_list->AddText(font, font->FontSize, text_pos, ImGui::GetColorU32(ImGuiCol_Text), icon);
+
+    return clicked;
 }
 
 bool ImGuiWrapper::radio_button(const wxString &label, bool active)
@@ -966,7 +1056,7 @@ void ImGuiWrapper::text(const wxString &label)
 
 void ImGuiWrapper::warning_text(const char *label)
 {
-    ImGui::PushStyleColor(ImGuiCol_Text, ImGuiWrapper::to_ImVec4(ColorRGB::WARNING()));
+    ImGui::PushStyleColor(ImGuiCol_Text, ImGuiWrapper::COL_WARNING);
     this->text(label);
     ImGui::PopStyleColor();
 }
@@ -1011,15 +1101,19 @@ void ImGuiWrapper::text_wrapped(const wxString &label, float wrap_width)
     this->text_wrapped(label_utf8.c_str(), wrap_width);
 }
 
-void ImGuiWrapper::tooltip(const std::string &label, float wrap_width)
+void ImGuiWrapper::tooltip(const char *label, float wrap_width)
 {
     ImGui::BeginTooltip();
     ImGui::PushTextWrapPos(wrap_width);
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
-    ImGui::TextUnformatted(label.c_str());
+    ImGui::TextUnformatted(label);
     ImGui::PopStyleColor(1);
     ImGui::PopTextWrapPos();
     ImGui::EndTooltip();
+}
+
+void ImGuiWrapper::tooltip(const std::string &label, float wrap_width) {
+    tooltip(label.c_str(), wrap_width);
 }
 
 void ImGuiWrapper::tooltip(const wxString &label, float wrap_width)
@@ -1070,11 +1164,12 @@ bool ImGuiWrapper::slider_float(const char* label, float* v, float v_min, float 
     const ImGuiStyle& style = ImGui::GetStyle();
     if (show_edit_btn) {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, { 1, style.ItemSpacing.y });
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);        // ORCA match edit button style
         ImGui::SameLine();
         std::wstring btn_name = ImGui::SliderFloatEditBtnIcon + boost::nowide::widen(str_label);
         ImGui::PushStyleColor(ImGuiCol_Button, { 0.25f, 0.25f, 0.25f, 0.0f });
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0.5f, 0.5f, 0.5f, 1.0f });
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0.5f, 0.5f, 0.5f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0, 0, 0, 0 }); // ORCA match edit button style
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  {0, 0, 0, 0 }); // ORCA match edit button style
         if (ImGui::Button(into_u8(btn_name).c_str())) {
             ImGui::SetKeyboardFocusHere(-1);
             this->set_requires_extra_frame();
@@ -1083,7 +1178,7 @@ bool ImGuiWrapper::slider_float(const char* label, float* v, float v_min, float 
         if (ImGui::IsItemHovered())
             this->tooltip(into_u8(_L("Edit")), max_tooltip_width);
 
-        ImGui::PopStyleVar();
+        ImGui::PopStyleVar(2); // ORCA
     }
 
     if (label_visible) {
@@ -2646,18 +2741,22 @@ void ImGuiWrapper::pop_combo_style()
     ImGui::PopStyleColor(7);
 }
 
-void ImGuiWrapper::push_radio_style()
+void ImGuiWrapper::push_radio_style(const float scale)
 {
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(1.5f, 1.5f) * scale); // ORCA ensure icon size stays consistent
     if (m_is_dark_mode) {
         ImGui::PushStyleColor(ImGuiCol_CheckMark, to_ImVec4(decode_color_to_float_array("#0055BF"))); // ORCA use orca color for radio buttons
+        ImGui::PushStyleColor(ImGuiCol_Border   , to_ImVec4(decode_color_to_float_array("#949494"))); // ORCA match border color
     } else {
         ImGui::PushStyleColor(ImGuiCol_CheckMark, to_ImVec4(decode_color_to_float_array("#0066bd"))); // ORCA use orca color for radio buttons
+        ImGui::PushStyleColor(ImGuiCol_Border   , to_ImVec4(decode_color_to_float_array("#7C8282"))); // ORCA match border color
     }
 }
 
 void ImGuiWrapper::pop_radio_style()
 {
-    ImGui::PopStyleColor(1);
+    ImGui::PopStyleColor(2);
+    ImGui::PopStyleVar(1);
 }
 
 void ImGuiWrapper::init_font(bool compress)
@@ -2692,6 +2791,9 @@ void ImGuiWrapper::init_font(bool compress)
     if(m_glyph_ranges == ImGui::GetIO().Fonts->GetGlyphRangesKorean()) {
         font_name_regular = "NanumGothic-Regular.ttf";
         font_name_bold = "NanumGothic-Bold.ttf";
+    } else if (m_glyph_ranges == ImGui::GetIO().Fonts->GetGlyphRangesThai()) {
+        font_name_regular = "Sarabun-Medium.ttf";
+        font_name_bold = "Sarabun-SemiBold.ttf";
     }
     default_font = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/" + font_name_regular).c_str(), m_font_size, &cfg, ranges.Data);
     if (default_font == nullptr) {
@@ -2705,6 +2807,11 @@ void ImGuiWrapper::init_font(bool compress)
     if (bold_font == nullptr) {
         bold_font = io.Fonts->AddFontDefault();
         if (bold_font == nullptr) { throw Slic3r::RuntimeError("ImGui: Could not load deafult font"); }
+    }
+
+    if (m_glyph_ranges == ImGui::GetIO().Fonts->GetGlyphRangesThai()) {
+        default_font->Scale *= 1.25f;
+        bold_font->Scale *= 1.25f;
     }
 
 #ifdef _WIN32
@@ -2791,7 +2898,7 @@ void ImGuiWrapper::init_font(bool compress)
     glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
     glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
     glsafe(::glPixelStorei(GL_UNPACK_ROW_LENGTH, 0));
-    if (compress && GLEW_EXT_texture_compression_s3tc)
+    if (compress && GLAD_GL_EXT_texture_compression_s3tc)
         glsafe(::glTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels));
     else
         glsafe(::glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels));
@@ -2977,22 +3084,39 @@ void ImGuiWrapper::render_draw_data(ImDrawData *draw_data)
 
     shader->start_using();
 
-    // We are using the OpenGL fixed pipeline to make the example code simpler to read!
-    // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled, vertex/texcoord/color pointers, polygon fill.
-    GLint last_texture;          glsafe(::glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture));
-    GLint last_polygon_mode[2];  glsafe(::glGetIntegerv(GL_POLYGON_MODE, last_polygon_mode));
-    GLint last_viewport[4];      glsafe(::glGetIntegerv(GL_VIEWPORT, last_viewport));
-    GLint last_scissor_box[4];   glsafe(::glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box));
-    GLint last_texture_env_mode; glsafe(::glGetTexEnviv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &last_texture_env_mode));
-    glsafe(::glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_TRANSFORM_BIT));
+    // Backup GL state
+    GLenum last_active_texture;       glsafe(::glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint*)&last_active_texture));
+    GLuint last_program;              glsafe(::glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*)&last_program));
+    GLuint last_texture;              glsafe(::glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&last_texture));
+    GLuint last_array_buffer;         glsafe(::glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (GLint*)&last_array_buffer));
+    GLuint last_vertex_array_object = 0;
+#if !SLIC3R_OPENGL_ES
+    if (OpenGLManager::get_gl_info().is_core_profile())
+#endif // !SLIC3R_OPENGL_ES
+        glsafe(::glGetIntegerv(GL_VERTEX_ARRAY_BINDING, (GLint*)&last_vertex_array_object));
+    GLint last_viewport[4];           glsafe(::glGetIntegerv(GL_VIEWPORT, last_viewport));
+    GLint last_scissor_box[4];        glsafe(::glGetIntegerv(GL_SCISSOR_BOX, last_scissor_box));
+    GLenum last_blend_src_rgb;        glsafe(::glGetIntegerv(GL_BLEND_SRC_RGB, (GLint*)&last_blend_src_rgb));
+    GLenum last_blend_dst_rgb;        glsafe(::glGetIntegerv(GL_BLEND_DST_RGB, (GLint*)&last_blend_dst_rgb));
+    GLenum last_blend_src_alpha;      glsafe(::glGetIntegerv(GL_BLEND_SRC_ALPHA, (GLint*)&last_blend_src_alpha));
+    GLenum last_blend_dst_alpha;      glsafe(::glGetIntegerv(GL_BLEND_DST_ALPHA, (GLint*)&last_blend_dst_alpha));
+    GLenum last_blend_equation_rgb;   glsafe(::glGetIntegerv(GL_BLEND_EQUATION_RGB, (GLint*)&last_blend_equation_rgb));
+    GLenum last_blend_equation_alpha; glsafe(::glGetIntegerv(GL_BLEND_EQUATION_ALPHA, (GLint*)&last_blend_equation_alpha));
+    GLboolean last_enable_blend        = ::glIsEnabled(GL_BLEND);
+    GLboolean last_enable_cull_face    = ::glIsEnabled(GL_CULL_FACE);
+    GLboolean last_enable_depth_test   = ::glIsEnabled(GL_DEPTH_TEST);
+    GLboolean last_enable_stencil_test = ::glIsEnabled(GL_STENCIL_TEST);
+    GLboolean last_enable_scissor_test = ::glIsEnabled(GL_SCISSOR_TEST);
+
+    // set new GL state
+    glsafe(::glActiveTexture(GL_TEXTURE0));
     glsafe(::glEnable(GL_BLEND));
-    glsafe(::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    glsafe(::glBlendEquation(GL_FUNC_ADD));
+    glsafe(::glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
     glsafe(::glDisable(GL_CULL_FACE));
     glsafe(::glDisable(GL_DEPTH_TEST));
+    glsafe(::glDisable(GL_STENCIL_TEST));
     glsafe(::glEnable(GL_SCISSOR_TEST));
-    glsafe(::glEnable(GL_TEXTURE_2D));
-    glsafe(::glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
-    glsafe(::glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE));
 
     // Setup viewport, orthographic projection matrix
     // Our visible imgui space lies from draw_data->DisplayPos (top left) to draw_data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
@@ -3023,6 +3147,16 @@ void ImGuiWrapper::render_draw_data(ImDrawData *draw_data)
         const ImDrawIdx* idx_buffer  = cmd_list->IdxBuffer.Data;
         const GLsizeiptr vtx_buffer_size = (GLsizeiptr)cmd_list->VtxBuffer.Size * (int)sizeof(ImDrawVert);
         const GLsizeiptr idx_buffer_size = (GLsizeiptr)cmd_list->IdxBuffer.Size * (int)sizeof(ImDrawIdx);
+
+        GLuint vao_id = 0;
+#if !SLIC3R_OPENGL_ES
+        if (OpenGLManager::get_gl_info().is_core_profile()) {
+#endif // !SLIC3R_OPENGL_ES
+            glsafe(::glGenVertexArrays(1, &vao_id));
+            glsafe(::glBindVertexArray(vao_id));
+#if !SLIC3R_OPENGL_ES
+        }
+#endif // !SLIC3R_OPENGL_ES
 
         GLuint vbo_id;
         glsafe(::glGenBuffers(1, &vbo_id));
@@ -3083,14 +3217,31 @@ void ImGuiWrapper::render_draw_data(ImDrawData *draw_data)
 
         glsafe(::glDeleteBuffers(1, &ibo_id));
         glsafe(::glDeleteBuffers(1, &vbo_id));
+#if !SLIC3R_OPENGL_ES
+        if (OpenGLManager::get_gl_info().is_core_profile()) {
+#endif // !SLIC3R_OPENGL_ES
+            if (vao_id > 0)
+                glsafe(::glDeleteVertexArrays(1, &vao_id));
+#if !SLIC3R_OPENGL_ES
+        }
+#endif // !SLIC3R_OPENGL_ES
     }
 
-    // Restore modified state
-    glsafe(::glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, last_texture_env_mode));
-    glsafe(::glBindTexture(GL_TEXTURE_2D, (GLuint)last_texture));
-    glsafe(::glPopAttrib());
-    glsafe(::glPolygonMode(GL_FRONT, (GLenum)last_polygon_mode[0]);
-    glsafe(::glPolygonMode(GL_BACK,  (GLenum)last_polygon_mode[1])));
+    // Restore modified GL state
+    glsafe(::glBindTexture(GL_TEXTURE_2D, last_texture));
+    glsafe(::glActiveTexture(last_active_texture));
+#if !SLIC3R_OPENGL_ES
+    if (OpenGLManager::get_gl_info().is_core_profile())
+#endif // !SLIC3R_OPENGL_ES
+        glsafe(::glBindVertexArray(last_vertex_array_object));
+    glsafe(::glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer));
+    glsafe(::glBlendEquationSeparate(last_blend_equation_rgb, last_blend_equation_alpha));
+    glsafe(::glBlendFuncSeparate(last_blend_src_rgb, last_blend_dst_rgb, last_blend_src_alpha, last_blend_dst_alpha));
+    if (last_enable_blend) glsafe(::glEnable(GL_BLEND)); else glsafe(::glDisable(GL_BLEND));
+    if (last_enable_cull_face) glsafe(::glEnable(GL_CULL_FACE)); else glsafe(::glDisable(GL_CULL_FACE));
+    if (last_enable_depth_test) glsafe(::glEnable(GL_DEPTH_TEST)); else glsafe(::glDisable(GL_DEPTH_TEST));
+    if (last_enable_stencil_test) glsafe(::glEnable(GL_STENCIL_TEST)); else glsafe(::glDisable(GL_STENCIL_TEST));
+    if (last_enable_scissor_test) glsafe(::glEnable(GL_SCISSOR_TEST)); else glsafe(::glDisable(GL_SCISSOR_TEST));
     glsafe(::glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]));
     glsafe(::glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]));
 
@@ -3159,6 +3310,94 @@ void ImGuiWrapper::clipboard_set(void* /* user_data */, const char* text)
         wxTheClipboard->SetData(new wxTextDataObject(wxString::FromUTF8(text)));   // object owned by the clipboard
         wxTheClipboard->Close();
     }
+}
+
+std::tuple<ImVec2, bool>  ImGuiWrapper::calculate_filament_group_text_size(const std::string& filament_type)
+{
+    ImVec2             text_size = ImGui::CalcTextSize(filament_type.c_str());
+    float         four_word_width = ImGui::CalcTextSize("ABCD").x;
+
+    float wrap_width = four_word_width;
+    float line_height = ImGui::GetTextLineHeight();
+
+    bool is_multiline = text_size.x > wrap_width;
+    int line_count = std::ceil(text_size.x / wrap_width);
+    float text_height = line_count * line_height;
+
+    float final_width = is_multiline ? wrap_width : text_size.x;
+    float final_height = line_count * line_height;
+
+    return { { final_width,final_height },is_multiline };
+}
+
+void ImGuiWrapper::filament_group(const std::string& filament_type, const char* hex_color, unsigned char filament_id, float align_width)
+{
+    //ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    std::string id = std::to_string(static_cast<unsigned int> (filament_id + 1));
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+    static ImTextureID transparent;
+    ImVec2             text_size = ImGui::CalcTextSize(filament_type.c_str());
+    // BBS image sizing based on text width (DPI scaling)
+    float         img_width = ImGui::CalcTextSize("ABC").x;
+    ImVec2        img_size = { img_width, img_width };
+    ImVec2        id_text_size = this->calc_text_size(id);
+    unsigned char rgba[4];
+    rgba[3] = 0xff;
+    Slic3r::GUI::BitmapCache::parse_color4(hex_color, rgba);
+    std::string svg_path = "/images/outlined_rect.svg";
+    if (rgba[3] == 0x00) {
+        svg_path = "/images/outlined_rect_transparent.svg";
+    }
+    BitmapCache::load_from_svg_file_change_color(Slic3r::resources_dir() + svg_path, img_size.x, img_size.y, transparent, hex_color);
+    ImGui::BeginGroup();
+    {
+        ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+        draw_list->AddImage(transparent, cursor_pos, { cursor_pos.x + img_size.x, cursor_pos.y + img_size.y }, { 0, 0 }, { 1, 1 }, ImGui::GetColorU32(ImVec4(1.f, 1.f, 1.f, 1.f)));
+        // image border test
+        // draw_list->AddRect(cursor_pos, {cursor_pos.x + img_size.x, cursor_pos.y + img_size.y}, IM_COL32(0, 0, 0, 255));
+        ImVec2 current_cursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({ current_cursor.x + (img_size.x - id_text_size.x) * 0.5f, current_cursor.y + (img_size.y - id_text_size.y) * 0.5f });
+
+        float gray = 0.299 * rgba[0] + 0.587 * rgba[1] + 0.114 * rgba[2];
+        ImVec4 text_color = gray < 80 ? ImVec4(1.0f, 1.0f, 1.0f, 1.0f) : ImVec4(0, 0, 0, 1.0f);
+        this->text_colored(text_color, id.c_str());
+
+        auto wrapped_text_info = calculate_filament_group_text_size(filament_type);
+        ImVec2 wrapped_text_size = std::get<0>(wrapped_text_info);
+        bool is_multiline = std::get<1>(wrapped_text_info);
+
+        float text_y_offset = 4.f;
+        float text_x_offset = is_multiline ? (img_size.x - wrapped_text_size.x) * 0.5f + 2.f : (img_size.x - wrapped_text_size.x) * 0.5f + 2.f;
+
+        auto cursor_x_before_text = ImGui::GetCursorPosX();
+        current_cursor = ImGui::GetCursorPos();
+        ImGui::SetCursorPos({
+            current_cursor.x + text_x_offset,
+            current_cursor.y + text_y_offset
+            });
+
+        if (is_multiline) {
+            ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + wrapped_text_size.x);
+        }
+        this->text(filament_type);
+        if (is_multiline) {
+            ImGui::PopTextWrapPos();
+        }
+        ImGui::Dummy(ImVec2(align_width, 0));
+        ImGui::EndGroup();
+    }
+    //ImGui::PopStyleVar(1);
+}
+
+void ImGuiWrapper::sub_title(const std::string &label)
+{
+    ImDrawList *draw_list = ImGui::GetWindowDrawList();
+    text_colored(ImVec4(1.0f, 1.0f, 1.0f, 0.5f), label);
+    ImGui::SameLine();
+    ImVec2 cursor_pos = ImGui::GetCursorScreenPos();
+    float available_width = ImGui::GetContentRegionAvail().x;
+    draw_list->AddLine(ImVec2(cursor_pos.x, cursor_pos.y + 8.0f), ImVec2(cursor_pos.x + available_width, cursor_pos.y + 8.0f), IM_COL32(255, 255, 255, 100));
+    ImGui::NewLine();
 }
 
 bool IMTexture::load_from_svg_file(const std::string& filename, unsigned width, unsigned height, ImTextureID& texture_id)

@@ -361,7 +361,7 @@ public:
         return 0; // Reserve space for top and bottom borders
     }
 
-    wxSize GetTabSize(wxDC& dc, wxWindow* wnd, const wxString& caption, const wxBitmap& bitmap, bool active, int close_button_state, int* x_extent) override {
+    wxSize GetTabSize(wxReadOnlyDC& dc, wxWindow* wnd, const wxString& caption, const wxBitmapBundle& bitmap, bool active, int close_button_state, int* x_extent) override {
         const TabMetrics metrics = getMetrics(wnd);
         // Get the default tab size
         wxAuiSimpleTabArt::GetTabSize(dc, wnd, caption, bitmap, active, close_button_state, x_extent);
@@ -550,7 +550,7 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
                            std::chrono::system_clock::now().time_since_epoch())
                            .count();
 
-    PrinterWebView* existingView = findPrinterView(printerId);
+    ElegooPrinterWebView* existingView = findPrinterView(printerId);
     if (existingView) {
         int idx = mTabBar->GetPageIndex(existingView);
         if (idx != wxNOT_FOUND) {
@@ -592,7 +592,7 @@ void PrinterManagerView::openPrinterTab(const std::string& printerId, bool saveS
         }
     };
 
-    PrinterWebView* view = new PrinterWebView(mTabBar);
+    ElegooPrinterWebView* view = new ElegooPrinterWebView(mTabBar);
 
     if(PrintHost::get_print_host_type(printerInfo.hostType) == htElegooLink && (printerInfo.printerModel == "Elegoo Centauri Carbon 2" || printerInfo.printerModel == "Elegoo Centauri 2")) 
     {
@@ -667,7 +667,7 @@ void PrinterManagerView::onClosePrinterTab(wxAuiNotebookEvent& event)
     if (page == wxNOT_FOUND) return;
 
     wxWindow* win = mTabBar->GetPage(page);
-    PrinterWebView* viewToClose = removePrinterViewByWindow(win);
+    ElegooPrinterWebView* viewToClose = removePrinterViewByWindow(win);
     if (viewToClose) {
         viewToClose->OnClose(wxCloseEvent());
         mTabBar->SetSelection(0);
@@ -1005,7 +1005,7 @@ void PrinterManagerView::setupIPCHandlers()
     
     mConnectStatusChangedHandlerId = PrinterNetworkEvent::getInstance()->connectStatusChanged.connect([this](const PrinterConnectStatusEvent& event) {
         wxGetApp().CallAfter([this, event] {
-            PrinterWebView* targetView = findPrinterView(event.printerId);
+            ElegooPrinterWebView* targetView = findPrinterView(event.printerId);
             nlohmann::json data;
             data["status"] = event.status;
             data["printerId"] = event.printerId;
@@ -1019,7 +1019,7 @@ void PrinterManagerView::setupIPCHandlers()
     });
     mEventRawChangedHandlerId = PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
         wxGetApp().CallAfter([this, event] {
-            PrinterWebView* targetView = findPrinterView(event.printerId);
+            ElegooPrinterWebView* targetView = findPrinterView(event.printerId);
             nlohmann::json data;
             data["event"] = event.event;
             data["printerId"] = event.printerId;
@@ -1038,7 +1038,7 @@ void PrinterManagerView::setupIPCHandlers()
             data["rtcToken"] = event.userInfo.rtcToken;
             data["userId"] = event.userInfo.userId;
             data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
-            forEachPrinterView([&data](const std::string&, PrinterWebView* view) { view->onRtcTokenChanged(data); });
+            forEachPrinterView([&data](const std::string&, ElegooPrinterWebView* view) { view->onRtcTokenChanged(data); });
             if (MultiInstanceCoordinator::getInstance()->isMaster()) {
                 IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtcTokenChanged", data, ""));
             }
@@ -1046,7 +1046,7 @@ void PrinterManagerView::setupIPCHandlers()
     });
     mRtmMessageChangedHandlerId = UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
         wxGetApp().CallAfter([this, event] {
-            PrinterWebView* targetView = findPrinterView(event.printerId);
+            ElegooPrinterWebView* targetView = findPrinterView(event.printerId);
             nlohmann::json data;
             data["message"] = event.message;
             data["printerId"] = event.printerId;
@@ -1068,7 +1068,7 @@ IPCResult PrinterManagerView::deletePrinter(const std::string& printerId)
     result.message = networkResult.message;
     result.code = networkResult.isSuccess() ? 0 : static_cast<int>(networkResult.code);
     wxGetApp().CallAfter([this, printerId]() {
-        PrinterWebView* view = findPrinterView(printerId);
+        ElegooPrinterWebView* view = findPrinterView(printerId);
         if (view) {
             int page = mTabBar->GetPageIndex(view);
             if (page != wxNOT_FOUND) {
@@ -1084,9 +1084,9 @@ IPCResult PrinterManagerView::deletePrinter(const std::string& printerId)
 void PrinterManagerView::closeInvalidPrinterTab(std::vector<PrinterNetworkInfo>& printerList)
 {
     std::vector<std::string> printersToRemove;
-    std::vector<PrinterWebView*> viewsToClose;
+    std::vector<ElegooPrinterWebView*> viewsToClose;
     
-    forEachPrinterView([&printerList, &printersToRemove, &viewsToClose](const std::string& printerId, PrinterWebView* view) {
+    forEachPrinterView([&printerList, &printersToRemove, &viewsToClose](const std::string& printerId, ElegooPrinterWebView* view) {
         auto it = std::find_if(printerList.begin(), printerList.end(), 
                               [&printerId](const PrinterNetworkInfo& p) { return p.printerId == printerId; });
         if (it == printerList.end()) {
@@ -1111,7 +1111,7 @@ IPCResult PrinterManagerView::updatePrinterName(const std::string& printerId, co
 {
     IPCResult result;
     wxGetApp().CallAfter([this, printerId, printerName]() {
-        PrinterWebView* view = findPrinterView(printerId);
+        ElegooPrinterWebView* view = findPrinterView(printerId);
         if (view) {
             int page = mTabBar->GetPageIndex(view);
             if (page != wxNOT_FOUND) {
@@ -1140,7 +1140,7 @@ IPCResult PrinterManagerView::updatePrinterHost(const std::string& printerId, co
             url = url + wxString("?id=") + from_u8(printerInfo.printerId) + "&ip=" + printerInfo.host +"&sn=" + from_u8(printerInfo.serialNumber) + "&access_code=" + accessCode;
         }
         wxGetApp().CallAfter([this, printerId, url]() {
-            PrinterWebView* view = findPrinterView(printerId);
+            ElegooPrinterWebView* view = findPrinterView(printerId);
             if (view) {
                 int page = mTabBar->GetPageIndex(view);
                 if (page != wxNOT_FOUND) {
@@ -1171,7 +1171,7 @@ IPCResult PrinterManagerView::updatePhysicalPrinter(const std::string& printerId
     if (result.code == 0 && (oldPrinter.host != printerInfo.host || oldPrinter.webUrl != printerInfo.webUrl)) {
         PrinterNetworkInfo updatedPrinter = PrinterManager::getInstance()->getPrinterNetworkInfo(printerId);
         wxGetApp().CallAfter([this, printerId, updatedPrinter]() {
-            PrinterWebView* view = findPrinterView(printerId);
+            ElegooPrinterWebView* view = findPrinterView(printerId);
             if (view) {
                 int page = mTabBar->GetPageIndex(view);
                 if (page != wxNOT_FOUND) {
@@ -1420,7 +1420,7 @@ void PrinterManagerView::saveTabState()
             wxWindow* page = mTabBar->GetPage(i);
             if (page) {
                 // Find the printer ID for this page
-                forEachPrinterView([&page, &tabs, this, i](const std::string& printerId, PrinterWebView* view) {
+                forEachPrinterView([&page, &tabs, this, i](const std::string& printerId, ElegooPrinterWebView* view) {
                     if (view == page) {
                         nlohmann::json tabInfo;
                         tabInfo["printerId"] = printerId;
@@ -1505,14 +1505,14 @@ void PrinterManagerView::loadTabState()
 }
 
 
-PrinterWebView* PrinterManagerView::findPrinterView(const std::string& printerId)
+ElegooPrinterWebView* PrinterManagerView::findPrinterView(const std::string& printerId)
 {
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     auto it = mPrinterViews.find(printerId);
     return (it != mPrinterViews.end()) ? it->second : nullptr;
 }
 
-void PrinterManagerView::insertPrinterView(const std::string& printerId, PrinterWebView* view)
+void PrinterManagerView::insertPrinterView(const std::string& printerId, ElegooPrinterWebView* view)
 {
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     mPrinterViews[printerId] = view;
@@ -1524,12 +1524,12 @@ bool PrinterManagerView::removePrinterView(const std::string& printerId)
     return mPrinterViews.erase(printerId) > 0;
 }
 
-PrinterWebView* PrinterManagerView::removePrinterViewByWindow(wxWindow* win)
+ElegooPrinterWebView* PrinterManagerView::removePrinterViewByWindow(wxWindow* win)
 {
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     for (auto it = mPrinterViews.begin(); it != mPrinterViews.end(); ++it) {
         if (it->second == win) {
-            PrinterWebView* view = it->second;
+            ElegooPrinterWebView* view = it->second;
             mPrinterViews.erase(it);
             return view;
         }
@@ -1537,7 +1537,7 @@ PrinterWebView* PrinterManagerView::removePrinterViewByWindow(wxWindow* win)
     return nullptr;
 }
 
-void PrinterManagerView::forEachPrinterView(std::function<void(const std::string&, PrinterWebView*)> callback)
+void PrinterManagerView::forEachPrinterView(std::function<void(const std::string&, ElegooPrinterWebView*)> callback)
 {
     std::lock_guard<std::mutex> lock(mPrinterViewsMutex);
     for (const auto& pair : mPrinterViews) {

@@ -402,7 +402,7 @@ IPCResult PrintSendDialogEx::preparePrintTask(const std::string& printerId)
         }
     }
     // calculate filament weight
-    auto extruders = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_extruders();
+    auto extruders = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments();
     for (auto i = 0; i < extruders.size(); i++) {
         int extruderIdx = extruders[i] - 1;
         if (extruderIdx < 0 || extruderIdx >= (int) projectFilamentList.size())

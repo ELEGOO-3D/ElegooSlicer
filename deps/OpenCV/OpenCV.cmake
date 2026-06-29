@@ -8,11 +8,10 @@ if (IN_GIT_REPO)
     set(OpenCV_DIRECTORY_FLAG --directory ${BINARY_DIR_REL}/dep_OpenCV-prefix/src/dep_OpenCV)
 endif ()
 
-elegooslicer_add_cmake_project(OpenCV
+orcaslicer_add_cmake_project(OpenCV
     URL https://github.com/opencv/opencv/archive/refs/tags/4.6.0.tar.gz
     URL_HASH SHA256=1ec1cba65f9f20fe5a41fda1586e01c70ea0c9a6d7b67c9e13edf0cfe2239277
-    FORCE_RELEASE_CONFIG
-    PATCH_COMMAND git apply ${OpenCV_DIRECTORY_FLAG} --verbose --ignore-space-change --whitespace=fix ${CMAKE_CURRENT_LIST_DIR}/0001-vs2022.patch  ${CMAKE_CURRENT_LIST_DIR}/0002-clang19-macos.patch
+    PATCH_COMMAND git apply ${OpenCV_DIRECTORY_FLAG} --verbose --ignore-space-change --whitespace=fix ${CMAKE_CURRENT_LIST_DIR}/0001-vs.patch  ${CMAKE_CURRENT_LIST_DIR}/0002-clang19-macos.patch
     CMAKE_ARGS
     -DBUILD_SHARED_LIBS=0
        -DBUILD_PERE_TESTS=OFF
@@ -54,7 +53,10 @@ elegooslicer_add_cmake_project(OpenCV
        -DWITH_OPENJPEG=OFF
        -DWITH_QUIRC=OFF
        -DWITH_VTK=OFF
+       -DWITH_JPEG=OFF
        -DWITH_WEBP=OFF
+       -DWITH_TIFF=OFF
+       -DBUILD_TIFF=OFF
        -DENABLE_PRECOMPILED_HEADERS=OFF
        -DINSTALL_TESTS=OFF
        -DINSTALL_C_EXAMPLES=OFF

@@ -16,7 +16,6 @@ class ElegooPrinterNetwork;
 class ElegooUserNetwork;
 class ElegooPluginNetwork;
 
-// SDK 封装：仅允许下列网络适配类调用实例接口（getInstance() 仍继承自 Singleton，但外部无法调用 private 成员函数）。
 class ElegooLink : public Singleton<ElegooLink>
 {
     friend class Singleton<ElegooLink>;

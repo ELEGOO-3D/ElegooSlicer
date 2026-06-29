@@ -11,6 +11,7 @@
 #include "libslic3r/PrintConfig.hpp"
 
 #include <regex>
+#include <cstdint>
 #include <wx/numformatter.h>
 #include <wx/tooltip.h>
 #include <wx/notebook.h>
@@ -112,6 +113,81 @@ ThumbnailErrors validate_thumbnails_string(wxString& str, const wxString& def_ex
     return errors;
 }
 
+// Orca
+wxString get_formatted_tooltip_text(const ConfigOptionDef& opt, const t_config_option_key& id)
+{
+    wxString tooltip = _(opt.tooltip);
+
+    std::string opt_id = id;
+    auto hash_pos = opt_id.find("#");
+    if (hash_pos != std::string::npos) {
+        opt_id.replace(hash_pos, 1,"[");
+        opt_id += "]";
+    }
+
+    tooltip += (tooltip.empty() ? "" : "\n\n") + _(L("parameter name")) + ": " + opt_id;
+
+    // Orca: 
+    // We can't use Orca's default values as-is because they sometimes depend on other values. 
+    // Parent preset configuration values will be used instead.
+    if (const Preset* print_parent_preset = wxGetApp().preset_bundle->prints.get_selected_preset_parent()) {
+        const DynamicPrintConfig& parent_config = print_parent_preset->config;
+
+        if (!parent_config.has(opt_id))
+            return tooltip;
+
+        wxString side_text = from_u8(opt.sidetext);
+
+        // Orca: a small hack for `layers` side text: adding a space before it for better looking text
+        if (opt.sidetext == L("layers"))
+            side_text = " " + _(side_text);
+
+        if (opt.type == coFloat || opt.type == coInt || opt.type == coPercent || opt.type == coFloatOrPercent) {
+            double default_value = 0.;
+
+            if (opt.type == coFloat)
+                default_value = parent_config.option<ConfigOptionFloat>(opt_id)->value;
+            else if (opt.type == coInt)
+                default_value = parent_config.option<ConfigOptionInt>(opt_id)->value;
+            else if (opt.type == coPercent)
+                default_value = parent_config.option<ConfigOptionPercent>(opt_id)->value;
+            else if (opt.type == coFloatOrPercent) {
+                default_value = parent_config.option<ConfigOptionFloatOrPercent>(opt_id)->value;
+                if (parent_config.option<ConfigOptionFloatOrPercent>(opt_id)->percent)
+                    side_text = "%";
+                else if (!side_text.empty()) {
+                    static std::string postfix = " or %";
+                    auto postfix_pos = side_text.find(postfix);
+                    if (postfix_pos != std::string::npos)
+                        side_text.erase(postfix_pos, postfix.length());
+                }
+            }
+
+            tooltip += "\n\n" + _(L("Default")) + ": " + _(double_to_string(default_value)) + _(side_text);
+
+            if (opt.min > -FLT_MAX && opt.max < FLT_MAX) {
+                tooltip += "\n" + _(L("Range")) + ": [" + 
+                    _(double_to_string(opt.min)) + _(side_text) + ", " + 
+                    _(double_to_string(opt.max)) + _(side_text) + "]";
+            }
+        } else if (opt.type == coBool || opt.type == coString) {
+            std::string default_value = "";
+
+            if (opt.type == coString)
+                default_value = parent_config.option<ConfigOptionString>(opt_id)->value;
+            else if (opt.type == coBool)
+                default_value = parent_config.option<ConfigOptionBool>(opt_id)->value ? "true" : "false";
+
+            tooltip += "\n\n" + _(L("Default")) + ": " +
+                (default_value.empty() ? _(L("Empty string")) : _(default_value) + _(side_text));
+        }
+    }
+
+    edit_tooltip(tooltip);
+
+    return tooltip;
+}
+
 Field::~Field()
 {
 	if (m_on_kill_focus)
@@ -155,7 +231,7 @@ void Field::PostInitialize()
 	// For the mode, when settings are in non-modal dialog, neither dialog nor tabpanel doesn't receive wxEVT_KEY_UP event, when some field is selected.
 	// So, like a workaround check wxEVT_KEY_UP event for the Filed and switch between tabs if Ctrl+(1-4) was pressed
     if (getWindow()) {
-        if (m_opt.readonly) { 
+        if (m_opt.readonly) {
             this->disable();
         } else {
             this->enable();
@@ -234,23 +310,9 @@ void Field::toggle(bool en) { en && !m_opt.readonly ? enable() : disable(); }
 
 wxString Field::get_tooltip_text(const wxString &default_string)
 {
-	wxString tooltip_text("");
-#ifdef NDEBUG
-	wxString tooltip = _(m_opt.tooltip);
-    ::edit_tooltip(tooltip);
+    wxString tooltip_text = get_formatted_tooltip_text(m_opt, m_opt_id);
 
-    std::string opt_id = m_opt_id;
-    auto hash_pos = opt_id.find("#");
-    if (hash_pos != std::string::npos) {
-        opt_id.replace(hash_pos, 1,"[");
-        opt_id += "]";
-    }
-
-	if (tooltip.length() > 0)
-        tooltip_text = tooltip + "\n" + 
-        _(L("parameter name")) + "\t: " + opt_id;
- #endif
-	return tooltip_text;
+    return tooltip_text.length() > 0 ? tooltip_text : default_string;
 }
 
 bool Field::is_matched(const std::string& string, const std::string& pattern)
@@ -262,9 +324,15 @@ bool Field::is_matched(const std::string& string, const std::string& pattern)
 void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true*/)
 {
 	switch (m_opt.type) {
+    case coInts:
     case coInt: {
         long val = 0;
-        if (!str.ToLong(&val)) {
+
+        bool is_na_value = m_opt.nullable && str == m_na_value;
+
+        if (is_na_value)
+            val = ConfigOptionIntsNullable::nil_value();
+        else if (!str.ToLong(&val)) {
             if (!check_value) {
                 m_value.clear();
                 break;
@@ -272,6 +340,27 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
             show_error(m_parent, _(L("Invalid numeric.")));
             set_value(int(val), true);
         }
+
+        if (!m_opt.is_value_valid(double(val))) {
+            if (!check_value) {
+                m_value.clear();
+                break;
+            }
+
+            if (!is_na_value) {
+                // Orca: no need to check ranges for the nil value
+                show_error(m_parent, _L("Value is out of range."));
+
+                int min = static_cast<int>(m_opt.min);
+                int max = static_cast<int>(m_opt.max);
+
+                if (min > val) val = min;
+                if (val > max) val = max;
+
+                set_value(int(val), true);
+            }
+        }
+
         m_value = int(val);
         break;
     }
@@ -300,7 +389,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
 
         const char dec_sep = is_decimal_separator_point() ? '.' : ',';
         const char dec_sep_alt = dec_sep == '.' ? ',' : '.';
-        // Replace the first incorrect separator in decimal number, 
+        // Replace the first incorrect separator in decimal number,
         // if this value doesn't "N/A" value in some language
         if (!is_na_value && str.Replace(dec_sep_alt, dec_sep, false) != 0)
             set_value(str, false);
@@ -320,7 +409,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
                 show_error(m_parent, _(L("Invalid numeric.")));
                 set_value(double_to_string(val), true);
             }
-            if (m_opt.min > val || val > m_opt.max)
+            if (!m_opt.is_value_valid(val))
             {
                 if (!check_value) {
                     m_value.clear();
@@ -358,7 +447,8 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
                         }
                     }
                 }
-                else {
+                else if (!is_na_value) {
+                    // Orca: no need to check ranges for the nil value
                     show_error(m_parent, _L("Value is out of range."));
                     if (m_opt.min > val) val = m_opt.min;
                     if (val > m_opt.max) val = m_opt.max;
@@ -369,9 +459,10 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
         m_value = val;
 		break; }
 	case coString:
-	case coStrings:
-    case coFloatOrPercent: {
-        if (m_opt.type == coFloatOrPercent && !str.IsEmpty() &&  str.Last() != '%')
+    case coStrings:
+    case coFloatOrPercent:
+    case coFloatsOrPercents: {
+        if ((m_opt.type == coFloatOrPercent || m_opt.type == coFloatsOrPercents) && !str.IsEmpty() &&  str.Last() != '%')
         {
             double val = 0.;
             const char dec_sep = is_decimal_separator_point() ? '.' : ',';
@@ -521,37 +612,18 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
         str.Replace(" ", wxEmptyString, true);
         if (!str.IsEmpty()) {
             bool invalid_val = false;
-            bool out_of_range_val = false;
-            wxStringTokenizer points(str, ",");
-            while (points.HasMoreTokens()) {
-                wxString token = points.GetNextToken();
+            wxStringTokenizer thumbnails(str, ",");
+            while (thumbnails.HasMoreTokens()) {
+                wxString token = thumbnails.GetNextToken();
                 double x, y;
-                wxStringTokenizer _point(token, "x");
-                if (_point.HasMoreTokens()) {
-                    wxString x_str = _point.GetNextToken();
-                    if (x_str.ToDouble(&x) && _point.HasMoreTokens()) {
-                        wxString y_str = _point.GetNextToken();
-                        if (y_str.ToDouble(&y) && !_point.HasMoreTokens()) {
-                            if (m_opt_id == "bed_exclude_area") {
-                                if (0 <= x &&  0 <= y) {
-                                    out_values.push_back(Vec2d(x, y));
-                                    continue;
-                                }
-                            }
-                            else if (m_opt_id == "printable_area") {
-                                if (0 <= x && x <= 1000 && 0 <= y && y <= 1000) {
-                                    out_values.push_back(Vec2d(x, y));
-                                    continue;
-                                }
-                            }
-                            else {
-                                if (0 < x && x < 1000 && 0 < y && y < 1000) {
-                                    out_values.push_back(Vec2d(x, y));
-                                    continue;
-                                }
-                            }
-                            out_of_range_val = true;
-                            break;
+                wxStringTokenizer thumbnail(token, "x");
+                if (thumbnail.HasMoreTokens()) {
+                    wxString x_str = thumbnail.GetNextToken();
+                    if (x_str.ToDouble(&x) && thumbnail.HasMoreTokens()) {
+                        wxString y_str = thumbnail.GetNextToken();
+                        if (y_str.ToDouble(&y) && !thumbnail.HasMoreTokens()) {
+                            out_values.push_back(Vec2d(x, y));
+                            continue;
                         }
                     }
                 }
@@ -559,14 +631,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
                 break;
             }
 
-            if (out_of_range_val) {
-                wxString text_value;
-                if (!m_value.empty())
-                    text_value = get_thumbnails_string(boost::any_cast<std::vector<Vec2d>>(m_value));
-                set_value(text_value, true);
-                show_error(m_parent, _L("Value is out of range."));
-            }
-            else if (invalid_val) {
+            if (invalid_val) {
                 wxString text_value;
                 if (!m_value.empty())
                     text_value = get_thumbnails_string(boost::any_cast<std::vector<Vec2d>>(m_value));
@@ -664,9 +729,9 @@ struct myEvtHandler : wxEvtHandler
             // In Field, All Bind has id, but for TextInput, ComboBox, SpinInput, all not
             if (entry->m_id != wxID_ANY && entry->m_lastId == wxID_ANY)
                 Unbind(entry->m_eventType,
-                    wxEventFunctorRef{entry->m_fn}, 
-                    entry->m_id, 
-                    entry->m_lastId, 
+                    wxEventFunctorRef{entry->m_fn},
+                    entry->m_id,
+                    entry->m_lastId,
                     entry->m_callbackUserData);
             //DoUnbind(entry->m_id, entry->m_lastId, entry->m_eventType, *entry->m_fn, entry->m_callbackUserData);
         }
@@ -746,6 +811,13 @@ void TextCtrl::BUILD() {
 		const ConfigOptionStrings *vec = m_opt.get_default_value<ConfigOptionStrings>();
 		if (vec == nullptr || vec->empty()) break; //for the case of empty default value
 		text_value = vec->get_at(m_opt_idx);
+		// For multiline fields, unescape newlines and other escape sequences
+		if (m_opt.multiline) {
+			std::string unescaped_value;
+			if (unescape_string_cstyle(text_value.ToStdString(), unescaped_value)) {
+				text_value = wxString::FromUTF8(unescaped_value);
+			}
+		}
 		break;
 	}
     case coPoint:
@@ -767,7 +839,7 @@ void TextCtrl::BUILD() {
         : builder2.build(m_parent, "", "", "", wxDefaultPosition, size, wxTE_PROCESS_ENTER);
     temp->SetLabel(_L(m_opt.sidetext));
 	auto text_ctrl = m_opt.multiline ? (wxTextCtrl *)temp : ((TextInput *) temp)->GetTextCtrl();
-    text_ctrl->SetLabel(text_value);
+    text_ctrl->SetValue(text_value);
     temp->SetSize(size);
     m_combine_side_text = !m_opt.multiline;
     if (parent_is_custom_ctrl && m_opt.height < 0)
@@ -859,13 +931,18 @@ bool TextCtrl::value_was_changed()
     case coInt:
         return boost::any_cast<int>(m_value) != boost::any_cast<int>(val);
     case coPercent:
-    case coPercents:
+    case coPercents: {
+        if (m_opt.nullable && std::isnan(boost::any_cast<double>(m_value)) &&
+                              std::isnan(boost::any_cast<double>(val)))
+            return false;
+        return boost::any_cast<double>(m_value) != boost::any_cast<double>(val);
+    }
     case coFloats:
     case coFloat: {
         if (m_opt.nullable && std::isnan(boost::any_cast<double>(m_value)) &&
                               std::isnan(boost::any_cast<double>(val)))
             return false;
-        return boost::any_cast<double>(m_value) != boost::any_cast<double>(val);
+        return !is_approx(boost::any_cast<double>(m_value), boost::any_cast<double>(val));
     }
     case coString:
     case coStrings:
@@ -890,9 +967,9 @@ void TextCtrl::propagate_value()
 void TextCtrl::set_value(const boost::any& value, bool change_event/* = false*/) {
     m_disable_change_event = !change_event;
     if (m_opt.nullable) {
-        if (boost::any_cast<wxString>(value) != _(L("N/A")))
+        const bool m_is_na_val = value.empty() || (boost::any_cast<wxString>(value) == _(L("N/A")));
+        if (!m_is_na_val)
             m_last_meaningful_value = value;
-
         text_ctrl()->SetValue(boost::any_cast<wxString>(value)); // BBS
     }
     else
@@ -1004,7 +1081,7 @@ void CheckBox::BUILD() {
 
 	// BBS: use ::CheckBox
     static Builder<::CheckBox> builder;
-	auto temp = builder.build(m_parent); 
+	auto temp = builder.build(m_parent);
 	if (!wxOSX) temp->SetBackgroundStyle(wxBG_STYLE_PAINT);
 	//temp->SetBackgroundColour(*wxWHITE);
 	temp->SetValue(check_value);
@@ -1033,8 +1110,8 @@ void CheckBox::set_value(const boost::any& value, bool change_event)
     m_disable_change_event = !change_event;
     if (m_opt.nullable) {
         const bool is_value_unsigned_char = value.type() == typeid(unsigned char);
-        m_is_na_val = is_value_unsigned_char &&
-                      boost::any_cast<unsigned char>(value) == ConfigOptionBoolsNullable::nil_value();
+        m_is_na_val = value.empty() || (is_value_unsigned_char &&
+                      boost::any_cast<unsigned char>(value) == ConfigOptionBoolsNullable::nil_value());
         if (!m_is_na_val)
             m_last_meaningful_value = is_value_unsigned_char ? value : static_cast<unsigned char>(boost::any_cast<bool>(value));
 
@@ -1117,8 +1194,8 @@ void SpinCtrl::BUILD() {
 		break;
 	}
 
-    const int min_val = m_opt.min == INT_MIN ? 0 : m_opt.min;
-	const int max_val = m_opt.max < 2147483647 ? m_opt.max : 2147483647;
+    const int min_val = m_opt.min == -FLT_MAX ? 0 : (int)m_opt.min;
+	const int max_val = m_opt.max < FLT_MAX ? (int)m_opt.max : INT_MAX;
 
     static Builder<SpinInput> builder;
 	auto temp = builder.build(m_parent, "", "", wxDefaultPosition, size,
@@ -1152,8 +1229,8 @@ void SpinCtrl::BUILD() {
         propagate_value();
 	}), temp->GetId());
 
-    temp->Bind(wxEVT_SPINCTRL, ([this](wxCommandEvent e) {  propagate_value();  }), temp->GetId()); 
-    
+    temp->Bind(wxEVT_SPINCTRL, ([this](wxCommandEvent e) {  propagate_value();  }), temp->GetId());
+
     temp->Bind(wxEVT_TEXT_ENTER, ([this](wxCommandEvent & e)
     {
         e.Skip();
@@ -1174,7 +1251,7 @@ void SpinCtrl::BUILD() {
         if (!parsed || value < INT_MIN || value > INT_MAX)
             tmp_value = UNDEF_VALUE;
         else {
-            tmp_value = std::min(std::max((int)value, m_opt.min), m_opt.max);
+            tmp_value = std::min(std::max((int)value, temp->GetMin()), temp->GetMax());
 #ifdef __WXOSX__
 #ifdef UNDEFINED__WXOSX__ // BBS
             // Forcibly set the input value for SpinControl, since the value
@@ -1215,7 +1292,7 @@ void SpinCtrl::propagate_value()
             on_kill_focus();
 	} else {
         auto ctrl = dynamic_cast<SpinInput *>(window);
-        if (m_value.empty() 
+        if (m_value.empty()
             ? !ctrl->GetTextCtrl()->GetLabel().IsEmpty()
             : ctrl->GetValue() != boost::any_cast<int>(m_value))
             on_change_field();
@@ -1227,7 +1304,7 @@ void SpinCtrl::set_value(const boost::any& value, bool change_event) {
     m_disable_change_event = !change_event;
     m_value = value;
     if (value.empty()) { // BBS: null value
-        dynamic_cast<SpinInput*>(window)->SetValue(m_opt.min);
+        dynamic_cast<SpinInput*>(window)->SetValue(dynamic_cast<SpinInput*>(window)->GetMin());
         dynamic_cast<SpinInput*>(window)->GetTextCtrl()->SetValue("");
     }
     else {
@@ -1298,7 +1375,7 @@ void Choice::BUILD()
     auto         dynamic_list = dynamic_lists.find(m_opt.opt_key);
     if (dynamic_list != dynamic_lists.end())
         m_list = dynamic_list->second;
-    if (m_opt.gui_type != ConfigOptionDef::GUIType::undefined && m_opt.gui_type != ConfigOptionDef::GUIType::select_open 
+    if (m_opt.gui_type != ConfigOptionDef::GUIType::undefined && m_opt.gui_type != ConfigOptionDef::GUIType::select_open
             && m_list == nullptr) {
         m_is_editable = true;
         static Builder<choice_ctrl> builder1;
@@ -1325,7 +1402,7 @@ void Choice::BUILD()
         opt_height = (double) temp->GetTextCtrl()->GetSize().GetHeight() / m_em_unit;
 
     // BBS
-    temp->SetTextLabel(m_opt.sidetext);
+    temp->SetTextLabel(_L(m_opt.sidetext));
     m_combine_side_text = true;
 
 #ifdef __WXGTK3__
@@ -1550,7 +1627,7 @@ void Choice::set_value(const boost::any& value, bool change_event)
 			field->SetSelection(idx);
 
         if (!m_value.empty() && m_opt.opt_key == "sparse_infill_density") {
-            // If m_value was changed before, then update m_value here too to avoid case 
+            // If m_value was changed before, then update m_value here too to avoid case
             // when control's value is already changed from the ConfigManipulation::update_print_fff_config(),
             // but m_value doesn't respect it.
             if (double val; text_value.ToDouble(&val))
@@ -1561,18 +1638,45 @@ void Choice::set_value(const boost::any& value, bool change_event)
 	}
 	case coEnum:
     // BBS
-    case coEnums: {
+	case coEnums: {
 		int val = boost::any_cast<int>(value);
+		int selection = val;
 
-        // Support ThirdPartyPrinter
-        if (m_opt_id.compare("host_type") == 0 && val != 0 &&
-			m_opt.enum_values.size() > field->GetCount()) // for case, when PrusaLink isn't used as a HostType
-			val--;
-        if (m_opt_id == "top_surface_pattern" || m_opt_id == "bottom_surface_pattern" ||
-            m_opt_id == "internal_solid_infill_pattern" || m_opt_id == "sparse_infill_pattern" ||
-            m_opt_id == "support_base_pattern" || m_opt_id == "support_interface_pattern" ||
-            m_opt_id == "ironing_pattern" || m_opt_id == "support_ironing_pattern" ||
-            m_opt_id == "support_style" || m_opt_id == "curr_bed_type")
+        if (m_opt_id == "input_shaping_type") {
+            if (field != nullptr) {
+                const unsigned int count = field->GetCount();
+                int match_index = -1;
+                for (unsigned int idx = 0; idx < count; ++idx) {
+                    if (void* data = field->GetClientData(idx)) {
+                        int stored = static_cast<int>(reinterpret_cast<uintptr_t>(data));
+                        if (stored == val) {
+                            match_index = static_cast<int>(idx);
+                            break;
+                        }
+                    }
+                }
+                if (match_index >= 0)
+                    selection = match_index;
+                else if (val >= 0 && val < static_cast<int>(count))
+                    selection = val;
+                else if (count > 0)
+                    selection = 0;
+                else
+                    selection = -1;
+            }
+        } else {
+            // Support ThirdPartyPrinter
+            if (m_opt_id.compare("host_type") == 0 && val != 0 &&
+                m_opt.enum_values.size() > field->GetCount()) // for case, when PrusaLink isn't used as a HostType
+                selection = val - 1;
+            else
+                selection = val;
+
+            if (m_opt_id == "top_surface_pattern" || m_opt_id == "bottom_surface_pattern" ||
+                m_opt_id == "internal_solid_infill_pattern" || m_opt_id == "sparse_infill_pattern" ||
+                m_opt_id == "support_base_pattern" || m_opt_id == "support_interface_pattern" ||
+                m_opt_id == "ironing_pattern" || m_opt_id == "support_ironing_pattern" ||
+                m_opt_id == "support_style" || m_opt_id == "curr_bed_type" || m_opt_id == "wipe_tower_wall_type")
 		{
 			std::string key;
 			const t_config_enum_values& map_names = *m_opt.enum_keys_map;
@@ -1584,15 +1688,16 @@ void Choice::set_value(const boost::any& value, bool change_event)
 
 			const std::vector<std::string>& values = m_opt.enum_values;
 			auto it = std::find(values.begin(), values.end(), key);
-			val = it == values.end() ? 0 : it - values.begin();
+			selection = it == values.end() ? 0 : static_cast<int>(it - values.begin());
 		}
+        }
         if (m_opt.nullable) {
             if (val != ConfigOptionEnumsGenericNullable::nil_value())
                 m_last_meaningful_value = value;
             else
-                val = -1;
+                selection = -1;
         }
-		field->SetSelection(val);
+		field->SetSelection(selection);
 		break;
 	}
 	default:
@@ -1659,11 +1764,22 @@ boost::any& Choice::get_value()
     {
         if (m_opt.nullable && field->GetSelection() == -1)
             m_value = ConfigOptionEnumsGenericNullable::nil_value();
+        else if (m_opt_id == "input_shaping_type")
+        {
+            int selection = field->GetSelection();
+            if (selection >= 0) {
+                if (void* data = field->GetClientData(selection))
+                    m_value = static_cast<int>(reinterpret_cast<uintptr_t>(data));
+                else
+                    m_value = selection;
+            } else
+                m_value = 0;
+        }
         else if (   m_opt_id == "top_surface_pattern" || m_opt_id == "bottom_surface_pattern" ||
                     m_opt_id == "internal_solid_infill_pattern" || m_opt_id == "sparse_infill_pattern" ||
                     m_opt_id == "support_base_pattern" || m_opt_id == "support_interface_pattern" ||
                     m_opt_id == "ironing_pattern" || m_opt_id == "support_ironing_pattern" ||
-                    m_opt_id == "support_style" || m_opt_id == "curr_bed_type")
+                    m_opt_id == "support_style" || m_opt_id == "curr_bed_type" || m_opt_id == "wipe_tower_wall_type")
         {
             const std::string &key = m_opt.enum_values[field->GetSelection()];
             m_value = int(m_opt.enum_keys_map->at(key));
@@ -2168,8 +2284,8 @@ boost::any& PointCtrl::get_value()
         show_error(m_parent, _L("Invalid numeric."));
 	}
 	else
-	if (m_opt.min > x || x > m_opt.max ||
-		m_opt.min > y || y > m_opt.max)
+	if (!m_opt.is_value_valid(x) ||
+		!m_opt.is_value_valid(y))
 	{
 		if (m_opt.min > x) x = m_opt.min;
 		if (x > m_opt.max) x = m_opt.max;
@@ -2228,8 +2344,8 @@ void SliderCtrl::BUILD()
 	auto temp = new wxBoxSizer(wxHORIZONTAL);
 
 	auto def_val = m_opt.get_default_value<ConfigOptionInt>()->value;
-	auto min = m_opt.min == INT_MIN ? 0 : m_opt.min;
-	auto max = m_opt.max == INT_MAX ? 100 : m_opt.max;
+	auto min = m_opt.min == -FLT_MAX ? 0   : (int)m_opt.min;
+	auto max = m_opt.max ==  FLT_MAX ? 100 : INT_MAX;
 
 	m_slider = new wxSlider(m_parent, wxID_ANY, def_val * m_scale,
 							min * m_scale, max * m_scale,
@@ -2243,7 +2359,7 @@ void SliderCtrl::BUILD()
 	m_textctrl->SetFont(Slic3r::GUI::wxGetApp().normal_font());
 	m_textctrl->SetBackgroundStyle(wxBG_STYLE_PAINT);
 
-	temp->Add(m_slider, 1, wxEXPAND | wxALIGN_CENTER_VERTICAL, 0);
+	temp->Add(m_slider, 1, wxEXPAND, 0);
 	temp->Add(m_textctrl, 0, wxALIGN_CENTER_VERTICAL, 0);
 
 	m_slider->Bind(wxEVT_SLIDER, ([this](wxCommandEvent e) {

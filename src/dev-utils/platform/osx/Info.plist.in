@@ -5,7 +5,7 @@
   <key>CFBundleExecutable</key>
   <string>@SLIC3R_APP_KEY@</string>
   <key>CFBundleGetInfoString</key>
-  <string>@SLIC3R_APP_NAME@ Copyright(C) 2021-2024 Elegoo All Rights Reserved</string>
+  <string>@SLIC3R_APP_NAME@ Copyright(C) 2026 Elegoo All Rights Reserved</string>
   <key>CFBundleIconFile</key>
   <string>images/ElegooSlicer.icns</string>
   <key>CFBundleName</key>
@@ -13,7 +13,7 @@
   <key>CFBundleShortVersionString</key>
   <string>@SLIC3R_APP_NAME@ @SLIC3R_BUILD_ID@</string>
   <key>CFBundleIdentifier</key>
-  <string>com.elegoo3d.elegoo-slic3r/</string>
+  <string>com.elegoo3d.elegoo-slicer/</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>

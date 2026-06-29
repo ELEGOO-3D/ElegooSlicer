@@ -37,7 +37,7 @@ namespace {
     std::vector<size_t> get_used_filament_indices(PartPlate& plate)
     {
         std::vector<size_t> indices;
-        for (const int extruder_id : plate.get_used_extruders()) {
+        for (const int extruder_id : plate.get_used_filaments()) {
             if (extruder_id <= 0) {
                 continue;
             }
@@ -303,7 +303,7 @@ void report_slice_completed(PartPlate& plate, const Print& print,
     nlohmann::json payload = nlohmann::json::object();
     payload["printer_model"] = full_config.has("printer_model") ? full_config.opt_string("printer_model") : std::string();
     payload["file_size_bytes"] = get_existing_file_size_bytes(plate.get_tmp_gcode_path());
-    payload["layer_count"] = normal_time_mode.layers_times.size();
+    payload["layer_count"] = 0; //normal_time_mode.layers_times.size();
     payload["estimated_time_sec"] = normal_time_mode.time > 0.0f ? static_cast<int64_t>(normal_time_mode.time + 0.5f) : 0;
     payload["total_filament_used_g"] = print_statistics.total_weight;
     payload["total_filament_used_mm"] = print_statistics.total_used_filament;

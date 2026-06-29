@@ -124,6 +124,11 @@ void set_logging_level(unsigned int level)
     );
 }
 
+void set_logging_file(const std::string &file)
+{
+	boost::log::add_file_log(file);
+}
+
 unsigned int level_string_to_boost(std::string level)
 {
     std::map<std::string, int> Control_Param;
@@ -299,6 +304,11 @@ std::string custom_shapes_dir()
     return (boost::filesystem::path(g_data_dir) / "shapes").string();
 }
 
+std::string handy_models_dir()
+{
+    return (boost::filesystem::path(resources_dir()) / "handy_models").string();
+}
+
 static std::atomic<bool> debug_out_path_called(false);
 
 std::string debug_out_path(const char *name, ...)
@@ -384,7 +394,6 @@ void set_log_path_and_level(const std::string& file, unsigned int level)
 	g_log_sink = boost::log::add_file_log(
 		keywords::file_name = full_path.string() + ".%N",
 		keywords::rotation_size = 100 * 1024 * 1024,
-		keywords::auto_flush = true,
 		keywords::format =
 		(
 			expr::stream
@@ -392,17 +401,9 @@ void set_log_path_and_level(const std::string& file, unsigned int level)
 			<< expr::format_date_time< boost::posix_time::ptime >("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
 			<<"[Thread " << expr::attr<attrs::current_thread_id::value_type>("ThreadID") << "]"
 			<< ":" << expr::smessage
-		)
+		),
+		keywords::auto_flush = true
 	);
-
-#ifdef _WIN32
-#if defined(ELEGOO_ENABLE_DEBUG_OUTPUT) && ELEGOO_ENABLE_DEBUG_OUTPUT
-	boost::shared_ptr<DebugOutputBackend> backend(new DebugOutputBackend());
-	boost::shared_ptr<sinks::synchronous_sink<DebugOutputBackend>> sink(new sinks::synchronous_sink<DebugOutputBackend>(backend));
-	logging::core::get()->add_sink(sink);
-	BOOST_LOG_TRIVIAL(info) << "[ElegooSlicer] Debug output sink initialized";
-#endif
-#endif
 
 	logging::add_common_attributes();
 
@@ -417,6 +418,14 @@ void flush_logs()
 	// 	g_log_sink->flush();
 
 	// return;
+}
+
+// ORCA
+boost::filesystem::path get_log_file_name()
+{
+    if (g_log_sink)
+        return g_log_sink->locked_backend()->get_current_file_name();
+    return {};
 }
 
 #ifdef _WIN32
@@ -957,6 +966,34 @@ __finished:
 #endif
 }
 
+bool copy_framework(const std::string &from, const std::string &to)
+{
+    boost::filesystem::path src(from), dst(to);
+    try {
+        if (!boost::filesystem::is_directory(src)) {
+            std::cerr << "Error: Source is not a directory: " << src << std::endl;
+            return false;
+        }
+        boost::filesystem::create_directories(dst);
+        for (boost::filesystem::directory_iterator it(src); it != boost::filesystem::directory_iterator(); ++it) {
+            const auto &entry     = it->path();
+            const auto  dest_path = dst / entry.filename();
+
+            if (boost::filesystem::is_symlink(entry)) {
+                boost::filesystem::copy_symlink(entry, dest_path);
+            } else if (boost::filesystem::is_directory(entry)) {
+                copy_framework(it->path().string(), dest_path.string());
+            } else {
+                boost::filesystem::copy(entry, dest_path, boost::filesystem::copy_options::overwrite_existing);
+            }
+        }
+        return true;
+    } catch (const boost::filesystem::filesystem_error &e) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << "Filesystem error: " << e.what();
+    }
+    return false;
+}
+
 CopyFileResult check_copy(const std::string &origin, const std::string &copy)
 {
 	boost::nowide::ifstream f1(origin, std::ifstream::in | std::ifstream::binary | std::ifstream::ate);
@@ -1046,7 +1083,7 @@ bool is_gallery_file(const std::string &path, char const* type)
 
 bool is_shapes_dir(const std::string& dir)
 {
-	return dir == sys_shapes_dir() || dir == custom_shapes_dir();
+	return dir == sys_shapes_dir() || dir == custom_shapes_dir() || dir == handy_models_dir();
 }
 
 } // namespace Slic3r
@@ -1171,6 +1208,18 @@ std::string normalize_utf8_nfc(const char *src)
 {
     static std::locale locale_utf8(boost::locale::generator().generate(""));
     return boost::locale::normalize(src, boost::locale::norm_nfc, locale_utf8);
+}
+
+std::vector<std::string> split_string(const std::string &str, char delimiter)
+{
+    std::vector<std::string> result;
+    std::stringstream ss(str);
+    std::string substr;
+
+    while (std::getline(ss, substr, delimiter)) {
+        result.push_back(substr);
+    }
+    return result;
 }
 
 namespace PerlUtils {
@@ -1384,6 +1433,42 @@ std::string format_memsize_MB(size_t n)
     return out + "MB";
 }
 
+std::string format_memsize(size_t bytes, unsigned int decimals)
+{
+		static constexpr const float kb = 1024.0f;
+		static constexpr const float mb = 1024.0f * kb;
+		static constexpr const float gb = 1024.0f * mb;
+		static constexpr const float tb = 1024.0f * gb;
+
+		const float f_bytes = static_cast<float>(bytes);
+		if (f_bytes < kb)
+				return std::to_string(bytes) + " bytes";
+		else if (f_bytes < mb) {
+				const float f_kb = f_bytes / kb;
+				char buf[64];
+				sprintf(buf, "%.*f", decimals, f_kb);
+				return std::to_string(bytes) + " bytes (" + std::string(buf) + "KB)";
+		}
+		else if (f_bytes < gb) {
+				const float f_mb = f_bytes / mb;
+				char buf[64];
+				sprintf(buf, "%.*f", decimals, f_mb);
+				return std::to_string(bytes) + " bytes (" + std::string(buf) + "MB)";
+		}
+		else if (f_bytes < tb) {
+				const float f_gb = f_bytes / gb;
+				char buf[64];
+				sprintf(buf, "%.*f", decimals, f_gb);
+				return std::to_string(bytes) + " bytes (" + std::string(buf) + "GB)";
+		}
+		else {
+				const float f_tb = f_bytes / tb;
+				char buf[64];
+				sprintf(buf, "%.*f", decimals, f_tb);
+				return std::to_string(bytes) + " bytes (" + std::string(buf) + "TB)";
+		}
+}
+
 // Returns platform-specific string to be used as log output or parsed in SysInfoDialog.
 // The latter parses the string with (semi)colons as separators, it should look about as
 // "desc1: value1; desc2: value2" or similar (spaces should not matter).
@@ -1562,12 +1647,15 @@ bool bbl_calc_md5(std::string &filename, std::string &md5_out)
 }
 
 // SoftFever: copy directory recursively
-void copy_directory_recursively(const boost::filesystem::path &source, const boost::filesystem::path &target, std::function<bool(const std::string)> filter)
+void copy_directory_recursively(const boost::filesystem::path& source,
+                                const boost::filesystem::path& target,
+                                std::function<bool(const std::string)> filter,
+                                bool merge_mode)
 {
     BOOST_LOG_TRIVIAL(info) << Slic3r::format("copy_directory_recursively %1% -> %2%", source, target);
     std::string error_message;
 
-    if (boost::filesystem::exists(target))
+    if (!merge_mode && boost::filesystem::exists(target))
         boost::filesystem::remove_all(target);
     boost::filesystem::create_directories(target);
     for (auto &dir_entry : boost::filesystem::directory_iterator(source))
@@ -1578,7 +1666,7 @@ void copy_directory_recursively(const boost::filesystem::path &source, const boo
 
         if (boost::filesystem::is_directory(dir_entry)) {
             const auto target_path = target / name;
-            copy_directory_recursively(dir_entry, target_path);
+            copy_directory_recursively(dir_entry, target_path, filter, merge_mode);
         }
         else {
 			if(filter && filter(name))
@@ -1593,6 +1681,76 @@ void copy_directory_recursively(const boost::filesystem::path &source, const boo
         }
     }
     return;
+}
+
+bool install_vendor_bundles_from_resources(
+    const std::vector<std::string>& bundle_names,
+    const std::string& resource_subdir,
+    const std::string& data_subdir)
+{
+    namespace fs = boost::filesystem;
+
+    fs::path rsrc_path = fs::path(Slic3r::resources_dir()) / resource_subdir;
+    fs::path vendor_path = fs::path(Slic3r::data_dir()) / data_subdir;
+
+    BOOST_LOG_TRIVIAL(info) << "Installing " << bundle_names.size() << " bundles from resources...";
+
+    for (const auto &bundle : bundle_names) {
+        try {
+            // Install the JSON file
+            auto path_in_rsrc = (rsrc_path / bundle).replace_extension(".json");
+            auto path_in_vendors = (vendor_path / bundle).replace_extension(".json");
+
+            if (!fs::exists(path_in_rsrc)) {
+                BOOST_LOG_TRIVIAL(warning) << "Bundle not found in resources: " << bundle;
+                return false;
+            }
+
+            // Create target directory if needed
+            if (!fs::exists(vendor_path))
+                fs::create_directories(vendor_path);
+
+            // Copy JSON file
+            std::string error_message;
+            CopyFileResult cfr = copy_file(path_in_rsrc.string(), path_in_vendors.string(), error_message, false);
+            if (cfr != CopyFileResult::SUCCESS) {
+                BOOST_LOG_TRIVIAL(error) << "Failed to copy " << bundle << ".json: " << error_message;
+                return false;
+            }
+
+            // Copy the vendor directory (if it exists)
+            auto dir_in_rsrc = rsrc_path / bundle;
+            auto dir_in_vendors = vendor_path / bundle;
+
+            if (fs::exists(dir_in_rsrc) && fs::is_directory(dir_in_rsrc)) {
+                // Remove existing directory
+                if (fs::exists(dir_in_vendors))
+                    fs::remove_all(dir_in_vendors);
+                fs::create_directories(dir_in_vendors);
+
+                // Copy with file filter (same as PresetUpdater::install_bundles_rsrc)
+                // Filter out certain file types: .stl, .png, .svg, .jpeg, .jpg, .3mf
+                auto file_filter = [](const std::string name) -> bool {
+                    return boost::iends_with(name, ".stl") ||
+                           boost::iends_with(name, ".png") ||
+                           boost::iends_with(name, ".svg") ||
+                           boost::iends_with(name, ".jpeg") ||
+                           boost::iends_with(name, ".jpg") ||
+                           boost::iends_with(name, ".3mf");
+                };
+
+                copy_directory_recursively(dir_in_rsrc, dir_in_vendors, file_filter);
+            }
+
+            BOOST_LOG_TRIVIAL(info) << "Successfully installed bundle: " << bundle;
+
+        } catch (const std::exception& e) {
+            BOOST_LOG_TRIVIAL(error) << "Exception installing bundle " << bundle << ": " << e.what();
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void save_string_file(const boost::filesystem::path& p, const std::string& str)

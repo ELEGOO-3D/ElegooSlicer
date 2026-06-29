@@ -19,9 +19,12 @@
 //#include "ConfigWizard.hpp"
 #include "wxExtensions.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
+#include "slic3r/GUI/MsgDialog.hpp"
 #include "GUI_App.hpp"
 #include "Jobs/BoostThreadWorker.hpp"
 #include "Jobs/PlaterWorker.hpp"
+
+#include "Widgets/HyperLink.hpp" // ORCA
 
 #define DESIGN_INPUT_SIZE wxSize(FromDIP(100), -1)
 
@@ -37,8 +40,8 @@ DownloadProgressDialog::DownloadProgressDialog(wxString                         
     , m_download_id(download_id)
 {
 
-    wxString download_failed_msg = _L("Failed to download the plug-in. Please check your firewall settings and vpn software, check and retry.");
-    wxString install_failed_msg = _L("Failed to install the plug-in. Please check whether it is blocked or deleted by anti-virus software.");
+    wxString download_failed_msg = _L("Failed to download the plug-in. Please check your firewall settings and VPN software and retry.");
+    wxString install_failed_msg = _L("Failed to install the plug-in. The plug-in file may be in use. Please restart OrcaSlicer and try again. Also check whether it is blocked or deleted by anti-virus software.");
 
     SetBackgroundColour(*wxWHITE);
     wxBoxSizer* m_sizer_main = new wxBoxSizer(wxVERTICAL);

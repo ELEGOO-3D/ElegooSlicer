@@ -150,6 +150,7 @@ private:
     static std::map<int, void*> icon_list;
 
     bool m_is_dark = false;
+    bool m_restore_realistic_view_after_paint = false;
 
     /// <summary>
     /// Process mouse event on gizmo toolbar
@@ -172,6 +173,14 @@ public:
         IC_RESET_ZOOM,
         IC_RESET_ZOOM_HOVER,
         IC_NAME_COUNT,
+        IC_CANVAS_MENU,
+        IC_CANVAS_MENU_HOVER,
+        IC_CANVAS_MENU_DARK,
+        IC_CANVAS_MENU_DARK_HOVER,
+        IC_CANVAS_ZOOM,
+        IC_CANVAS_ZOOM_HOVER,
+        IC_CANVAS_ZOOM_DARK,
+        IC_CANVAS_ZOOM_DARK_HOVER,
     };
 
     explicit GLGizmosManager(GLCanvas3D& parent);

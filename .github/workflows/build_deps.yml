@@ -19,11 +19,14 @@ on:
       build-deps-only:
         required: false
         type: boolean
+      force-build:
+        required: false
+        type: boolean
 
 jobs:
   build_deps:
     name: Build Deps
-    if: inputs.build-deps-only || inputs.valid-cache != true
+    if: ${{ !cancelled() && (inputs.build-deps-only || inputs.force-build || inputs.valid-cache != true) }}
     runs-on: ${{ inputs.os }}
     env:
       date:
@@ -33,7 +36,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          lfs: 'true'
+          lfs: 'false'
 
       - name: load cached deps
         uses: actions/cache@v5
@@ -43,104 +46,92 @@ jobs:
 
       - uses: lukka/get-cmake@latest
         with:
-          cmakeVersion: "~3.28.0"  # use most recent 3.28.x version
+          cmakeVersion: "~4.3.0"  # use most recent 4.3.x version
+          useLocalCache: true         # <--= Use the local cache (default is 'false').
+          useCloudCache: true
 
       - name: setup dev on Windows
-        if: inputs.os == 'windows-latest'
-        uses: microsoft/setup-msbuild@v2
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v3
 
       - name: Get the date on Ubuntu and macOS
-        if: inputs.os != 'windows-latest'
+        if: runner.os != 'Windows'
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_ENV
         shell: bash
 
       - name: Get the date on Windows
-        if: inputs.os == 'windows-latest'
+        if: runner.os == 'Windows'
         run: echo "date=$(Get-Date -Format 'yyyyMMdd')" | Out-File -Append -FilePath $env:GITHUB_ENV -Encoding utf8
         shell: pwsh
 
 
       # Build Dependencies
       - name: Build on Windows
-        if: inputs.os == 'windows-latest'
+        if: runner.os == 'Windows'
         working-directory: ${{ github.workspace }}
         run: |
-            choco install strawberryperl
-            mkdir ${{ github.workspace }}/deps/build
-            mkdir ${{ github.workspace }}/deps/build/ElegooSlicer_dep
-            .\build_release_vs2022.bat deps
-            # .\build_release_vs2022.bat pack
-            cd ${{ github.workspace }}/deps/build
+            if (-not "${{ vars.SELF_HOSTED }}") {
+              choco install strawberryperl
+            }
+            .\build_release_vs.bat deps
+            .\build_release_vs.bat pack
+        shell: pwsh
 
       - name: Build on Mac ${{ inputs.arch }}
-        if: inputs.os == 'macos-14'
+        if: runner.os == 'macOS'
         working-directory: ${{ github.workspace }}
         run: |
-            brew install automake texinfo ninja libtool
-            brew list
-            mkdir -p ${{ github.workspace }}/deps/build_${{ inputs.arch }}
-            mkdir -p ${{ github.workspace }}/deps/build_${{ inputs.arch }}/ElegooSlicer_dep_${{ inputs.arch }}
-            brew uninstall --ignore-dependencies zstd
-            ./build_release_macos.sh -dpx -a ${{ inputs.arch }} -t 10.15 -1
-            brew install zstd
+            if [ -z "${{ vars.SELF_HOSTED }}" ]; then
+              brew install automake texinfo libtool
+            fi
+            ./build_release_macos.sh -dx ${{ !vars.SELF_HOSTED && '-1' || '' }} -a ${{ inputs.arch }} -t 10.15
+            (cd "${{ github.workspace }}/deps/build/${{ inputs.arch }}" && \
+            find . -mindepth 1 -maxdepth 1 ! -name 'OrcaSlicer_dep' -exec rm -rf {} +)
 
 
-      - name: Install Ubuntu Build Dependencies
-        if: inputs.os == 'ubuntu-20.04' || inputs.os == 'ubuntu-24.04'
-        working-directory: ${{ github.workspace }}
-        env:
-          apt-cmd: ${{ (inputs.os == 'ubuntu-20.04' && 'apt-fast') || (inputs.os == 'ubuntu-24.04' && 'sudo apt-get') || '' }}
-          webkit-ver: ${{ (inputs.os == 'ubuntu-20.04' && '4.0') || (inputs.os == 'ubuntu-24.04' && '4.1') || '' }}
-        run: |
-            ${{ env.apt-cmd }} update
-            ${{ env.apt-cmd }} install -y cmake git g++ build-essential libgl1-mesa-dev m4 \
-            libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules pkgconf \
-            libglu1-mesa-dev libcairo2-dev libgtk-3-dev libsoup2.4-dev libwebkit2gtk-${{ env.webkit-ver }}-dev \
-            libgstreamer1.0-dev libgstreamer-plugins-good1.0-dev libgstreamer-plugins-base1.0-dev \
-            gstreamer1.0-plugins-bad libosmesa6-dev wget sudo autoconf curl libunwind-dev texinfo
+      - name: Apt-Install Dependencies
+        if: runner.os == 'Linux' && !vars.SELF_HOSTED
+        uses: ./.github/actions/apt-install-deps
 
       - name: Build on Ubuntu
-        if: inputs.os == 'ubuntu-20.04' || inputs.os == 'ubuntu-24.04'
+        if: runner.os == 'Linux'
         working-directory: ${{ github.workspace }}
         run: |
-            mkdir -p ${{ github.workspace }}/deps/build
             mkdir -p ${{ github.workspace }}/deps/build/destdir
-            sudo ./BuildLinux.sh -ur
-            sudo chown $USER -R ./
-            ./BuildLinux.sh -dr
+            ./build_linux.sh -drlL
             cd deps/build
-            tar -czvf ElegooSlicer_dep_ubuntu_$(date +"%Y%m%d").tar.gz destdir
+            tar -czvf OrcaSlicer_dep_ubuntu_$(date +"%Y%m%d").tar.gz destdir
 
 
       # Upload Artifacts
-      - name: Upload Mac ${{ inputs.arch }} artifacts
-        if: inputs.os == 'macos-14'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ElegooSlicer_dep_mac_${{ inputs.arch }}_${{ env.date }}
-          path: ${{ github.workspace }}/deps/build_${{ inputs.arch }}/ElegooSlicer_dep*.tar.gz
+      # - name: Upload Mac ${{ inputs.arch }} artifacts
+      #   if: runner.os == 'macOS'
+      #   uses: actions/upload-artifact@v6
+      #   with:
+      #     name: OrcaSlicer_dep_mac_${{ env.date }}
+      #     path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep*.tar.gz
 
-      - name: Upload Windows artifacts
-        if: inputs.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ElegooSlicer_dep_win64_${{ env.date }}
-          path: ${{ github.workspace }}/deps/build/ElegooSlicer_dep*.zip
+      # - name: Upload Windows artifacts
+      #   if: runner.os == 'Windows'
+      #   uses: actions/upload-artifact@v6
+      #   with:
+      #     name: OrcaSlicer_dep_win64_${{ env.date }}
+      #     path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep*.zip
 
-      - name: Upload Ubuntu artifacts
-        if: ${{ ! env.ACT && inputs.os == 'ubuntu-20.04' || inputs.os == 'ubuntu-24.04' }}
-        env:
-          ubuntu-ver: ${{ (inputs.os == 'ubuntu-20.04' && '2004') || (inputs.os == 'ubuntu-24.04' && '2404') || '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ElegooSlicer_dep_ubuntu_${{ env.ubuntu-ver }}_${{ env.date }}
-          path: ${{ github.workspace }}/deps/build/ElegooSlicer_dep_ubuntu_*.tar.gz
+      # - name: Upload Ubuntu artifacts
+      #   if: runner.os == 'Linux' && !env.ACT
+      #   env:
+      #     ubuntu-ver: '2404'
+      #   uses: actions/upload-artifact@v6
+      #   with:
+      #     name: OrcaSlicer_dep_ubuntu_${{ env.ubuntu-ver }}_${{ env.date }}
+      #     path: ${{ github.workspace }}/deps/build/OrcaSlicer_dep_ubuntu_*.tar.gz
 
-  build_elegoo:
-    name: Build ElegooSlicer
+  build_orca:
+    name: Build OrcaSlicer
     needs: [build_deps]
-    if: ${{ !cancelled() && !inputs.build-deps-only && (inputs.valid-cache == true && needs.build_deps.result == 'skipped') || (inputs.valid-cache != true && success()) }}
-    uses: ./.github/workflows/build_elegoo.yml
+    if: ${{ !cancelled() && !inputs.build-deps-only && (inputs.force-build || (inputs.valid-cache == true && needs.build_deps.result == 'skipped') || (inputs.valid-cache != true && success())) }}
+    uses: ./.github/workflows/build_orca.yml
     with:
       cache-key: ${{ inputs.cache-key }}
       cache-path: ${{ inputs.cache-path }}

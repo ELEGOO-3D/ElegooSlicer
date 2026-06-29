@@ -78,6 +78,9 @@ def check_filament_compatible_printers(vendor_folder):
 
     # Use rglob to recursively find .json files.
     for file_path in vendor_path.rglob("*.json"):
+        if file_path.name == 'filaments_color_codes.json': # Ignore non-profile file
+            continue
+
         try:
             if _check_bom(file_path):
                 error += 1
@@ -119,7 +122,7 @@ def check_filament_compatible_printers(vendor_folder):
         if 'inherits' in content:
             inherits = content['inherits']
             if inherits not in profiles:
-                raise ValueError(f"Parent profile not found: {inherits}, referrenced in {profile['file_path']}")
+                raise ValueError(f"Parent profile not found: {inherits}, referenced in {profile['file_path']}")
             
             return get_inherit_property(profiles[inherits], key)
         
@@ -385,6 +388,101 @@ def check_obsolete_keys(profiles_dir, vendor_name):
 
     return error_count
 
+
+CONFLICT_KEYS = [
+    ['extruder_clearance_radius', 'extruder_clearance_max_radius'],
+]
+
+VECTOR_KEYS = {
+    "filament_type",
+}
+
+def check_vector_type_keys(profiles_dir, vendor_name):
+    """
+    Check that properties expected to be vectors (JSON arrays) are not stored as scalars.
+    For example, `filament_type` must be a list like ["PA-CF"], not a string "PA-CF".
+
+    Parameters:
+        profiles_dir (Path): Base profiles directory
+        vendor_name (str): Vendor name
+
+    Returns:
+        int: Number of errors found
+    """
+    error_count = 0
+    vendor_path = profiles_dir / vendor_name
+
+    if not vendor_path.exists():
+        return 0
+
+    for file_path in vendor_path.rglob("*.json"):
+        try:
+            with open(file_path, "r", encoding="UTF-8") as fp:
+                data = json.load(fp)
+        except Exception as e:
+            print_error(f"Error processing {file_path.relative_to(profiles_dir)}: {e}")
+            error_count += 1
+            continue
+
+        if not isinstance(data, dict):
+            continue
+
+        for key in VECTOR_KEYS:
+            if key in data and not isinstance(data[key], list):
+                print_error(
+                    f"'{key}' must be an array in {file_path.relative_to(profiles_dir)}, "
+                    f"got {type(data[key]).__name__}: {data[key]!r}"
+                )
+                error_count += 1
+
+    return error_count
+
+def check_conflict_keys(profiles_dir, vendor_name):
+    """
+    Check for keys that could not be specified at the same time,
+    due to option renaming & backward compatibility reasons.
+
+    For example, `extruder_clearance_max_radius` and `extruder_clearance_radius` cannot co-exist
+    otherwise slicer won't know which one to use.
+
+    Parameters:
+        profiles_dir (Path): Base profiles directory
+        vendor_name (str): Vendor name
+
+    Returns:
+        int: Number of errors found
+        int: Number of warnings found
+    """
+    error_count = 0
+    warn_count = 0
+    vendor_path = profiles_dir / vendor_name
+
+    if not vendor_path.exists():
+        print_warning(f"No machine profiles found for vendor: {vendor_name}")
+        return 0, 1
+
+    for file_path in vendor_path.rglob("*.json"):
+        try:
+            with open(file_path, 'r', encoding='UTF-8') as fp:
+                # Use custom hook to detect duplicates.
+                data = json.load(fp, object_pairs_hook=no_duplicates_object_pairs_hook)
+        except ValueError as ve:
+            print_error(f"Duplicate key error in {file_path.relative_to(profiles_dir)}: {ve}")
+            error_count += 1
+            continue
+        except Exception as e:
+            print_error(f"Error processing {file_path.relative_to(profiles_dir)}: {e}")
+            error_count += 1
+            continue
+
+        for key_sets in CONFLICT_KEYS:
+            if sum([1 if k in data else 0 for k in key_sets]) > 1:
+                print_error(f"Conflict keys {key_sets} co-exist in {file_path.relative_to(profiles_dir)}")
+                error_count += 1
+
+    return error_count, warn_count
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Check 3D printer profiles for common issues",
@@ -423,6 +521,12 @@ def main():
         errors_found += new_errors
         warnings_found += new_warnings
 
+        new_errors, new_warnings = check_conflict_keys(profiles_dir, vendor_name)
+        errors_found += new_errors
+        warnings_found += new_warnings
+
+        errors_found += check_vector_type_keys(profiles_dir, vendor_name)
+
         errors_found += check_filament_id(vendor_name, vendor_path / "filament")
         checked_vendor_count += 1
 
@@ -446,6 +550,8 @@ def main():
     else:
         print_success("Files with warnings : 0")
     print("=================================================")
+    if errors_found > 0 or warnings_found > 0 :
+        print_warning('Issue(s) found, try `orca_filament_lib.py --fix` to fix common issues automatically')
 
     exit(-1 if errors_found > 0 else 0)
 

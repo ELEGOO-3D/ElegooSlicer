@@ -8,7 +8,7 @@
 #include "GLShader.hpp"
 #include "OpenGLManager.hpp"
 
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <boost/log/trivial.hpp>
 
 namespace Slic3r {

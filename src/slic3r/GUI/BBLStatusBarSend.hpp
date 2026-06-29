@@ -93,6 +93,7 @@ public:
     void enable_cancel_button();
 
     void set_download_user_action(std::function<void(ButtonAction)> user_action_callback);
+    void    cancel();
 
 private:
     bool     m_show_error_info_state = false;
@@ -108,8 +109,8 @@ namespace GUI {
 using Slic3r::BBLStatusBarSend;
 }
 
-wxDECLARE_EVENT(EVT_SHOW_ERROR_INFO, wxCommandEvent);
-
+wxDECLARE_EVENT(EVT_SHOW_ERROR_INFO_SEND, wxCommandEvent);
+wxDECLARE_EVENT(EVT_SHOW_ERROR_FAIL_SEND, wxCommandEvent);
 } // namespace Slic3r
 
 #endif // BBLSTATUSBAR_HPP

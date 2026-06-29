@@ -7,6 +7,7 @@
 #include <functional>
 
 #include <boost/optional.hpp>
+#include <boost/log/trivial.hpp>
 
 #include <wx/frame.h>
 #include <wx/dialog.h>
@@ -31,7 +32,8 @@ class wxTopLevelWindow;
 class wxRect;
 
 #define wxVERSION_EQUAL_OR_GREATER_THAN(major, minor, release) ((wxMAJOR_VERSION > major) || ((wxMAJOR_VERSION == major) && (wxMINOR_VERSION > minor)) || ((wxMAJOR_VERSION == major) && (wxMINOR_VERSION == minor) && (wxRELEASE_NUMBER >= release)))
-
+#define ICON_SINGLE_SIZE FromDIP(16)//don't change,if need new value,self create in cpp
+#define ICON_SIZE wxSize(FromDIP(16), FromDIP(16))//don't change,if need new value,self create in cpp
 namespace Slic3r {
 namespace GUI {
 
@@ -64,6 +66,11 @@ wxDECLARE_EVENT(EVT_VOLUME_DETACHED, VolumeDetachedEvent);
 #endif /* _WIN32 */
 
 wxTopLevelWindow* find_toplevel_parent(wxWindow *window);
+wxString format_nozzle_diameter(float diameter);
+// True when running inside an MSIX package (Microsoft Store build); always false on non-Windows.
+bool is_running_in_msix();
+// Opens the Microsoft Store product page for the current package. No-op when not packaged.
+void open_ms_store_product_page();
 
 void on_window_geometry(wxTopLevelWindow *tlw, std::function<void()> callback);
 
@@ -78,24 +85,6 @@ void update_dark_config();
 #ifdef _WIN32
 void update_dark_ui(wxWindow* window);
 #endif
-
-#if !wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
-struct DpiChangedEvent : public wxEvent {
-    int dpi;
-    wxRect rect;
-
-    DpiChangedEvent(wxEventType eventType, int dpi, wxRect rect)
-        : wxEvent(0, eventType), dpi(dpi), rect(rect)
-    {}
-
-    virtual wxEvent *Clone() const
-    {
-        return new DpiChangedEvent(*this);
-    }
-};
-
-wxDECLARE_EVENT(EVT_DPI_CHANGED_SLICER, DpiChangedEvent);
-#endif // !wxVERSION_EQUAL_OR_GREATER_THAN
 
 extern std::deque<wxDialog*> dialogStack;
 
@@ -134,26 +123,12 @@ public:
 //        recalc_font();
 
 #ifndef __WXOSX__
-#if wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
         this->Bind(wxEVT_DPI_CHANGED, [this](wxDPIChangedEvent& evt) {
 	            m_scale_factor = (float)evt.GetNewDPI().x / (float)DPI_DEFAULT;
 	            m_new_font_point_size = get_default_font_for_dpi(this, evt.GetNewDPI().x).GetPointSize();
 	            if (m_can_rescale && (m_force_rescale || is_new_scale_factor()))
 	                rescale(wxRect());
             });
-#else
-        this->Bind(EVT_DPI_CHANGED_SLICER, [this](const DpiChangedEvent& evt) {
-            m_scale_factor = (float)evt.dpi / (float)DPI_DEFAULT;
-
-            m_new_font_point_size = get_default_font_for_dpi(this, evt.dpi).GetPointSize();
-
-            if (!m_can_rescale)
-                return;
-
-            if (m_force_rescale || is_new_scale_factor())
-                rescale(evt.rect);
-            });
-#endif // wxVERSION_EQUAL_OR_GREATER_THAN
 #endif // no __WXOSX__
 
         this->Bind(wxEVT_MOVE_START, [this](wxMoveEvent& event)
@@ -186,7 +161,7 @@ public:
                 on_sys_color_changed();
                 event.Skip();
 #endif // __WINDOWS__
-                
+
         });
 
         if (std::is_same<wxDialog, P>::value) {
@@ -220,7 +195,7 @@ public:
         on_sys_color_changed();
     }
 #endif
-    
+
     int ShowModal()
     {
         dialogStack.push_front(this);
@@ -256,38 +231,11 @@ private:
     // check if new scale is differ from previous
     bool    is_new_scale_factor() const { return fabs(m_scale_factor - m_prev_scale_factor) > 0.001; }
 
-    // function for a font scaling of the window
-    void    scale_win_font(wxWindow *window, const int font_point_size)
-    {
-        wxFont new_font(window->GetFont());
-        new_font.SetPointSize(font_point_size);
-        window->SetFont(new_font);
-    }
-
-    // recursive function for scaling fonts for all controls in Window
-    void    scale_controls_fonts(wxWindow *window, const int font_point_size)
-    {
-        auto children = window->GetChildren();
-
-        for (auto child : children) {
-            scale_controls_fonts(child, font_point_size);
-            scale_win_font(child, font_point_size);
-        }
-
-        window->Layout();
-    }
-
     void    rescale(const wxRect &suggested_rect)
     {
         this->Freeze();
 
         m_force_rescale = false;
-#if !wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
-        // rescale fonts of all controls
-        scale_controls_fonts(this, m_new_font_point_size);
-        // rescale current window font
-        scale_win_font(this, m_new_font_point_size);
-#endif // wxVERSION_EQUAL_OR_GREATER_THAN
 
         // set normal application font as a current window font
         m_normal_font = this->GetFont();
@@ -319,7 +267,26 @@ private:
 };
 
 typedef DPIAware<wxFrame> DPIFrame;
-typedef DPIAware<wxDialog> DPIDialog;
+class DPIDialog : public DPIAware<wxDialog>
+{
+public:
+    using DPIAware<wxDialog>::DPIAware;
+
+public:
+    void EndModal(int retCode) override
+    {
+        if (!dialogStack.empty() && dialogStack.front() != this) {
+            // This is a bug in wxWidgets
+            // when the dialog is not top modal dialog, EndModal() just hide dialog without quit 
+            // the modal event loop. And the modal event loop blocks us from bottom widgets.
+            // Solution: let user click it manually or close outside. FIXME
+            BOOST_LOG_TRIVIAL(warning) << "DPIAware::EndModal Error: dialogStack is not empty, but top dialog is not this one. retCode=" << retCode;
+            return;
+        }
+
+        return wxDialog::EndModal(retCode);
+    }
+};
 
 
 class EventGuard
@@ -496,6 +463,10 @@ int get_dpi_for_window(const wxWindow *window);
 #ifdef __WXOSX__
 void dataview_remove_insets(wxDataViewCtrl* dv);
 void staticbox_remove_margin(wxStaticBox* sb);
+#endif
+
+#ifdef __WXGTK3__
+void RemoveButtonBorder(wxWindow* win);
 #endif
 
 #if defined(__WXOSX__) || defined(__linux__)

@@ -1,6 +1,7 @@
 #include "Model.hpp"
 #include "libslic3r.h"
 #include "BuildVolume.hpp"
+#include "ClipperUtils.hpp"
 #include "Exception.hpp"
 #include "Model.hpp"
 #include "ModelArrange.hpp"
@@ -9,9 +10,12 @@
 #include "MTUtils.hpp"
 #include "TriangleMeshSlicer.hpp"
 #include "TriangleSelector.hpp"
+#include "MaterialType.hpp"
 
 #include "Format/AMF.hpp"
 #include "Format/svg.hpp"
+#include "Format/bbs_3mf.hpp"
+#include "Format/DRC.hpp"
 // BBS
 #include "FaceDetector.hpp"
 
@@ -46,8 +50,9 @@
 
 namespace Slic3r {
 const std::vector<std::string> CONST_FILAMENTS = {
-    "", "4", "8", "0C", "1C", "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "AC", "BC", "CC", "DC",
-}; // 5                           10                            15    16
+    "",   "4",  "8",  "0C", "1C",  "2C",  "3C",  "4C",  "5C",  "6C",  "7C",  "8C",  "9C",  "AC",  "BC",  "CC","DC",//16
+         "EC", "0FC", "1FC", "2FC", "3FC", "4FC", "5FC", "6FC", "7FC", "8FC", "9FC", "AFC", "BFC", "CFC", "DFC", "EFC",//32
+}; //      1                         5                                 10                                 15    16
     // BBS initialization of static variables
     std::map<size_t, ExtruderParams> Model::extruderParamsMap = { {0,{"",0,0}}};
     GlobalSpeedMap Model::printSpeedMap{};
@@ -189,26 +194,34 @@ Model Model::read_from_step(const std::string&                                  
     Model model;
     bool result = false;
     bool is_cb_cancel = false;
-    std::string message;
-    Step step_file(input_file);
-    step_file.load();
+    Step::Step_Status status;
+    Step step_file(input_file, stepFn);
+    status = step_file.load();
+    if(status != Step::Step_Status::LOAD_SUCCESS) {
+        goto _finished;
+    }
     if (step_mesh_fn) {
         if (step_mesh_fn(step_file, linear_defletion, angle_defletion, is_split_compound) == -1) {
+            status = Step::Step_Status::CANCEL;
+            goto _finished;
+        }
+    }
+    
+    status = step_file.mesh(&model, is_cb_cancel, is_split_compound, linear_defletion, angle_defletion);
+
+_finished:
+
+    switch (status){
+        case Step::Step_Status::CANCEL: {
             Model empty_model;
             return empty_model;
         }
-    }
-    result = load_step(input_file.c_str(), &model, is_cb_cancel, linear_defletion, angle_defletion, is_split_compound, stepFn, stepIsUtf8Fn);
-    if (is_cb_cancel) {
-        Model empty_model;
-        return empty_model;
-    }
-
-    if (!result) {
-        if (message.empty())
+        case Step::Step_Status::LOAD_ERROR:
             throw Slic3r::RuntimeError(_L("Loading of a model file failed."));
-        else
-            throw Slic3r::RuntimeError(message);
+        case Step::Step_Status::MESH_ERROR:
+            throw Slic3r::RuntimeError(_L("Meshing of a model file failed or no valid shape."));
+        default:
+            break;
     }
 
     if (model.objects.empty())
@@ -270,22 +283,22 @@ Model Model::read_from_file(const std::string&                                  
         ObjInfo                 obj_info;
         result = load_obj(input_file.c_str(), &model, obj_info, message);
         if (result){
-            unsigned char first_extruder_id;
+            ObjDialogInOut in_out;
+            in_out.model = &model;
+            in_out.lost_material_name = obj_info.lost_material_name;
             if (obj_info.vertex_colors.size() > 0) {
-                std::vector<unsigned char> vertex_filament_ids;
                 if (objFn) { // 1.result is ok and pop up a dialog
-                    objFn(obj_info.vertex_colors, false, vertex_filament_ids, first_extruder_id);
-                    if (vertex_filament_ids.size() > 0) {
-                        result = obj_import_vertex_color_deal(vertex_filament_ids, first_extruder_id, & model);
-                    }
+                    in_out.input_colors      = std::move(obj_info.vertex_colors);
+                    in_out.is_single_color   = false;
+                    in_out.deal_vertex_color = true;
+                    objFn(in_out);
                 }
             } else if (obj_info.face_colors.size() > 0 && obj_info.has_uv_png == false) { // mtl file
-                std::vector<unsigned char> face_filament_ids;
                 if (objFn) { // 1.result is ok and pop up a dialog
-                    objFn(obj_info.face_colors, obj_info.is_single_mtl, face_filament_ids, first_extruder_id);
-                    if (face_filament_ids.size() > 0) {
-                        result = obj_import_face_color_deal(face_filament_ids, first_extruder_id, &model);
-                    }
+                    in_out.input_colors      = std::move(obj_info.face_colors);
+                    in_out.is_single_color   = obj_info.is_single_mtl;
+                    in_out.deal_vertex_color = false;
+                    objFn(in_out);
                 }
             } /*else if (obj_info.has_uv_png && obj_info.uvs.size() > 0) {
                 boost::filesystem::path full_path(input_file);
@@ -300,6 +313,8 @@ Model Model::read_from_file(const std::string&                                  
         result = load_svg(input_file.c_str(), &model, message);
     //BBS: remove the old .amf.xml files
     //else if (boost::algorithm::iends_with(input_file, ".amf") || boost::algorithm::iends_with(input_file, ".amf.xml"))
+    else if (boost::algorithm::iends_with(input_file, ".drc"))
+        result = load_drc(input_file.c_str(), &model);
     else if (boost::algorithm::iends_with(input_file, ".amf"))
         //BBS: is_xxx is used for is_inches when load amf
         result = load_amf(input_file.c_str(), config, config_substitutions, &model, is_xxx);
@@ -309,7 +324,7 @@ Model Model::read_from_file(const std::string&                                  
         //FIXME options & LoadStrategy::CheckVersion ?
         //BBS: is_xxx is used for is_bbs_3mf when load 3mf
         std::string generator;
-        result = load_bbs_3mf(input_file.c_str(), config, config_substitutions, &model, plate_data, project_presets, is_xxx, generator, file_version, proFn, options, project, plate_id);
+        result = load_bbs_3mf(input_file.c_str(), config, config_substitutions, &model, plate_data, project_presets, is_xxx, nullptr, generator, file_version, proFn, options, project, plate_id);
        }
 #ifdef __APPLE__
     else if (boost::algorithm::iends_with(input_file, ".usd") || boost::algorithm::iends_with(input_file, ".usda") ||
@@ -360,16 +375,17 @@ Model Model::read_from_file(const std::string&                                  
 //BBS: add part plate related logic
 // BBS: backup & restore
 // Loading model from a file (3MF or AMF), not from a simple geometry file (STL or OBJ).
-Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig* config, ConfigSubstitutionContext* config_substitutions, En3mfType& out_file_type, std::string& generator, LoadStrategy options,
+Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig* config, ConfigSubstitutionContext* config_substitutions, En3mfType& out_file_type, LoadStrategy options,
         PlateDataPtrs* plate_data, std::vector<Preset*>* project_presets, Semver* file_version, Import3mfProgressFn proFn, BBLProject *project)
 {
     assert(config != nullptr);
     assert(config_substitutions != nullptr);
-
+    std::string generator;
     Model model;
 
     bool result = false;
-    bool is_bbl_3mf;
+    bool is_bbl_3mf = false;
+    bool is_orca_3mf = false;
     if (boost::algorithm::iends_with(input_file, ".3mf")) {
         PrusaFileParser prusa_file_parser;
         if (prusa_file_parser.check_3mf_from_prusa(input_file)) {
@@ -379,7 +395,7 @@ Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig
         } else {
             // BBS: add part plate related logic
             // BBS: backup & restore
-            result = load_bbs_3mf(input_file.c_str(), config, config_substitutions, &model, plate_data, project_presets, &is_bbl_3mf, generator, file_version, proFn, options, project);
+            result = load_bbs_3mf(input_file.c_str(), config, config_substitutions, &model, plate_data, project_presets, &is_bbl_3mf, &is_orca_3mf, generator, file_version, proFn, options, project);
         }
     }
     else if (boost::algorithm::iends_with(input_file, ".zip.amf"))
@@ -388,7 +404,12 @@ Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig
         throw Slic3r::RuntimeError(_L("Unknown file format. Input file must have .3mf or .zip.amf extension."));
 
     if (out_file_type != En3mfType::From_Prusa) {
-        out_file_type = is_bbl_3mf ? En3mfType::From_BBS : En3mfType::From_Other;
+        if (is_orca_3mf)
+            out_file_type = En3mfType::From_Orca;
+        else
+            out_file_type = is_bbl_3mf ? En3mfType::From_BBS : En3mfType::From_Other;
+        if(generator.find("ElegooSlicer") != std::string::npos)
+            out_file_type = En3mfType::From_Elegoo;
     }
 
     if (!result)
@@ -638,7 +659,6 @@ ModelMaterial* Model::add_material(t_model_material_id material_id, const ModelM
     return material;
 }
 
-// makes sure all objects have at least one instance
 bool Model::add_default_instances()
 {
     // apply a default position to all objects not having one
@@ -1077,7 +1097,6 @@ bool Model::is_fuzzy_skin_painted() const
     return std::any_of(this->objects.cbegin(), this->objects.cend(), [](const ModelObject *mo) { return mo->is_fuzzy_skin_painted(); });
 }
 
-
 static void add_cut_volume(TriangleMesh& mesh, ModelObject* object, const ModelVolume* src_volume, const Transform3d& cut_matrix, const std::string& suffix = {}, ModelVolumeType type = ModelVolumeType::MODEL_PART)
 {
     if (mesh.empty())
@@ -1159,7 +1178,7 @@ ModelObject& ModelObject::assign_copy(ModelObject &&rhs)
     this->sla_support_points          = std::move(rhs.sla_support_points);
     this->sla_points_status           = std::move(rhs.sla_points_status);
     this->sla_drain_holes             = std::move(rhs.sla_drain_holes);
-    this->brim_points                 = std::move(brim_points);
+    this->brim_points                 = std::move(rhs.brim_points);
     this->layer_config_ranges         = std::move(rhs.layer_config_ranges);
     this->layer_height_profile        = std::move(rhs.layer_height_profile);
     this->printable                   = std::move(rhs.printable);
@@ -1632,17 +1651,31 @@ Polygon ModelObject::convex_hull_2d(const Transform3d& trafo_instance) const
     Points pts;
 
     for (const ModelVolume* v : volumes) {
-        if (v->is_model_part())
+        if (v->is_model_part()) {
             //BBS: use convex hull vertex instead of all
             append(pts, its_convex_hull_2d_above(v->get_convex_hull().its, (trafo_instance * v->get_matrix()).cast<float>(), 0.0f).points);
+	    // The next commented line instead of the previous + the rest of this #if0 section is the same as PrusaSlicer until https://github.com/prusa3d/PrusaSlicer/commit/2f7f3578d531f2d34f7732a64449606d86bb4aaa where it was parallelised.
             //append(pts, its_convex_hull_2d_above(v->mesh().its, (trafo_instance * v->get_matrix()).cast<float>(), 0.0f).points);
+	    // its_convex_hull_2d_above calls its_collect_mesh_projection_points_above
+	    // The latter multiplies each vertex by the full matrix
+	    // For every vector which crosses the Z plane, the intersection is used instead of any point below. Consecutive points below the Z plane are ignored.
+	}
     }
     return Geometry::convex_hull(std::move(pts));
 #else
+    // This seems to differ from PrusaSlicer (and the old code above) in that
+    // points below the Z plane aren't treated specially.
     Points pts;
     for (const ModelVolume *v : this->volumes)
         if (v->is_model_part()) {
             const Polygon& volume_hull = v->get_convex_hull_2d(trafo_instance);
+	    // In comparison to the old code above, get_convex_hull_2d starts with:
+	    // new_matrix = trafo_instance * m_transformation.get_matrix();
+	    // which is the same matrix multiplication as above.
+	    // Then checks caches, maybe calling ModelVolume::calculate_convex_hull_2d(const Geometry::Transformation &) if no hit
+	    // That method accesses v->get_convex_hull().its (also used above).
+	    // It multiplies each point by the matrix w/o translate, then calls convex_hull(pts)
+	    // Then translates polygon in X & Y
 
             pts.insert(pts.end(), volume_hull.points.begin(), volume_hull.points.end());
         }
@@ -1709,8 +1742,14 @@ void ModelObject::ensure_on_bed(bool allow_negative_z)
     else
         z_offset = -this->min_z();
 
-    if (z_offset != 0.0)
-        translate_instances(z_offset * Vec3d::UnitZ());
+    if (z_offset != 0.0) {
+        for (size_t i = 0; i < instances.size(); ++i) {
+            if (!instances[i]->auto_drop)
+                continue;
+
+            translate_instance(i, z_offset * Vec3d::UnitZ());
+        }
+    }
 }
 
 void ModelObject::translate_instances(const Vec3d& vector)
@@ -1945,6 +1984,49 @@ void ModelVolume::reset_extra_facets()
     this->fuzzy_skin_facets.reset();
 }
 
+std::optional<TriangleSelector::SavedPainting> ModelVolume::save_painting() const
+{
+    if (is_any_painted() && is_model_part() && !mesh().empty()) {
+        TriangleSelector::SavedPainting sp;
+        sp.mesh      = mesh();
+        sp.supported = supported_facets.get_data();
+        sp.seam      = seam_facets.get_data();
+        sp.mmu       = mmu_segmentation_facets.get_data();
+        sp.fuzzy     = fuzzy_skin_facets.get_data();
+        return sp;
+    }
+
+    return {};
+}
+
+void ModelVolume::restore_painting(const std::optional<TriangleSelector::SavedPainting>& saved, const bool keep_existing_paint)
+{
+    if (!keep_existing_paint) {
+        reset_extra_facets();
+    }
+
+    if (!saved) {
+        return;
+    }
+
+    auto remap_one = [&](const TriangleSelector::TriangleSplittingData& src_data,
+                         FacetsAnnotation& target_facets) {
+        if (src_data.bitstream.empty())
+            return;
+        auto result =
+            TriangleSelector::remap_painting(saved->mesh.its, src_data, mesh().its, Geometry::translation_transform(mesh().get_init_shift()),
+                                             keep_existing_paint ?
+                                                 std::optional<std::reference_wrapper<const TriangleSelector::TriangleSplittingData>>{std::ref(target_facets.get_data())} :
+                                                 std::optional<std::reference_wrapper<const TriangleSelector::TriangleSplittingData>>{});
+        if (!result.bitstream.empty())
+            target_facets.set_data(std::move(result));
+    };
+    remap_one(saved->supported, supported_facets);
+    remap_one(saved->seam,      seam_facets);
+    remap_one(saved->mmu,       mmu_segmentation_facets);
+    remap_one(saved->fuzzy,     fuzzy_skin_facets);
+}
+
 static void invalidate_translations(ModelObject* object, const ModelInstance* src_instance)
 {
     if (!object->origin_translation.isApprox(Vec3d::Zero()) && src_instance->get_offset().isApprox(Vec3d::Zero())) {
@@ -1958,13 +2040,14 @@ static void invalidate_translations(ModelObject* object, const ModelInstance* sr
     }
 }
 
-void ModelObject::split(ModelObjectPtrs* new_objects)
+void ModelObject::split(ModelObjectPtrs* new_objects, const bool remap_paint)
 {
     std::vector<TriangleMesh> all_meshes;
     std::vector<Transform3d> all_transfos;
     std::vector<std::pair<int, int>> volume_mesh_counts;
     all_meshes.reserve(this->volumes.size() * 5);
     bool is_multi_volume_object = (this->volumes.size() > 1);
+    std::optional<TriangleSelector::SavedPainting> saved_painting;
 
     for (int volume_idx = 0; volume_idx < this->volumes.size(); volume_idx++) {
         ModelVolume* volume = this->volumes[volume_idx];
@@ -1976,6 +2059,10 @@ void ModelObject::split(ModelObjectPtrs* new_objects)
             volume->text_configuration.reset();
 
         if (!is_multi_volume_object) {
+            if (remap_paint) {
+                // Save painting so we could restore them after the mesh split
+                saved_painting = volume->save_painting();
+            }
             //BBS: not multi volume object, then split mesh.
             std::vector<TriangleMesh> volume_meshes = volume->mesh().split();
             int mesh_count = 0;
@@ -2043,10 +2130,19 @@ void ModelObject::split(ModelObjectPtrs* new_objects)
             ModelVolume* new_vol = new_object->add_volume(*volume, std::move(mesh));
 
             if (is_multi_volume_object) {
-                // BBS: volume geometry not changed, so we can keep the color paint facets
-                if (new_vol->mmu_segmentation_facets.timestamp() == volume->mmu_segmentation_facets.timestamp())
-                    new_vol->mmu_segmentation_facets.reset(); // BBS: let next assign take effect
-                new_vol->mmu_segmentation_facets.assign(volume->mmu_segmentation_facets);
+                // BBS: volume geometry not changed, so we can keep the paint facets
+#define COPY_FACETS(f) \
+                if (new_vol->f.timestamp() == volume->f.timestamp()) \
+                    new_vol->f.reset(); /* BBS: let next assign take effect */ \
+                new_vol->f.assign(volume->f)
+
+                COPY_FACETS(supported_facets);
+                COPY_FACETS(seam_facets);
+                COPY_FACETS(mmu_segmentation_facets);
+                COPY_FACETS(fuzzy_skin_facets);
+            } else if (saved_painting) {
+                // Geometry changed, attempt to remap them to the new mesh
+                new_vol->restore_painting(saved_painting);
             }
 
             // BBS: clear volume's config, as we already set them into object
@@ -2481,6 +2577,28 @@ void ModelVolume::update_extruder_count(size_t extruder_count)
             break;
         }
     }
+    // Clear a stale per-volume filament assignment that no longer exists after the extruder count
+    // shrank (e.g. printer switch to one with fewer filaments), so downstream readers never index
+    // per-filament config vectors out of range. Ported from BambuStudio (STUDIO-15763).
+    if (extruder_id() > extruder_count) {
+        this->config.erase("extruder");
+    }
+}
+
+void ModelVolume::update_extruder_count_when_delete_filament(size_t extruder_count, size_t filament_id, int replace_filament_id)
+{
+    std::vector<int> used_extruders = get_extruders();
+    for (int extruder_id : used_extruders) {
+        if (extruder_id >= filament_id) {
+            mmu_segmentation_facets.set_enforcer_block_type_limit(*this, (EnforcerBlockerType)(extruder_count), (EnforcerBlockerType)(filament_id), (EnforcerBlockerType)(replace_filament_id));
+            break;
+        }
+    }
+    // Same stale-assignment cleanup as update_extruder_count, for the filament-delete path.
+    // Ported from BambuStudio (STUDIO-15763).
+    if (extruder_id() > extruder_count) {
+        this->config.erase("extruder");
+    }
 }
 
 void ModelVolume::center_geometry_after_creation(bool update_source_offset)
@@ -2636,7 +2754,7 @@ std::string ModelVolume::type_to_string(const ModelVolumeType t)
 // Split this volume, append the result to the object owning this volume.
 // Return the number of volumes created from this one.
 // This is useful to assign different materials to different volumes of an object.
-size_t ModelVolume::split(unsigned int max_extruders)
+size_t ModelVolume::split(unsigned int max_extruders, bool remap_paint)
 {
     std::vector<TriangleMesh> meshes = this->mesh().split();
     if (meshes.size() <= 1)
@@ -2645,6 +2763,9 @@ size_t ModelVolume::split(unsigned int max_extruders)
     // splited volume should not be text object
     if (text_configuration.has_value())
         text_configuration.reset();
+
+    std::optional<TriangleSelector::SavedPainting> saved_painting = remap_paint ? save_painting() :
+                                                                                  std::optional<TriangleSelector::SavedPainting>{};
 
     size_t idx = 0;
     size_t ivolume = std::find(this->object->volumes.begin(), this->object->volumes.end(), this) - this->object->volumes.begin();
@@ -2668,11 +2789,7 @@ size_t ModelVolume::split(unsigned int max_extruders)
             this->source = ModelVolume::Source();
 
             // BBS: reset facet annotations
-            this->mmu_segmentation_facets.reset();
-            this->exterior_facets.reset();
-            this->supported_facets.reset();
-            this->seam_facets.reset();
-            this->fuzzy_skin_facets.reset();
+            this->reset_extra_facets();
         }
         else
             this->object->volumes.insert(this->object->volumes.begin() + (++ivolume), new ModelVolume(object, *this, std::move(mesh)));
@@ -2685,6 +2802,8 @@ size_t ModelVolume::split(unsigned int max_extruders)
         this->object->volumes[ivolume]->config.set("extruder", this->extruder_id());
         //this->object->volumes[ivolume]->config.set("extruder", auto_extruder_id(max_extruders, extruder_counter));
         this->object->volumes[ivolume]->m_is_splittable = 0;
+        this->object->volumes[ivolume]->restore_painting(saved_painting);
+
         ++ idx;
     }
 
@@ -2946,6 +3065,7 @@ static void get_real_filament_id(const unsigned char &id, std::string &result) {
     if (id < CONST_FILAMENTS.size()) {
         result = CONST_FILAMENTS[id];
     } else {
+        BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << "check error:CONST_FILAMENTS out of array ";
         result = "";//error
     }
 };
@@ -2990,6 +3110,7 @@ bool Model::obj_import_vertex_color_deal(const std::vector<unsigned char> &verte
             auto volume = obj->volumes[0];
             volume->config.set("extruder", first_extruder_id);
             auto face_count = volume->mesh().its.indices.size();
+            volume->mmu_segmentation_facets.reset();
             volume->mmu_segmentation_facets.reserve(face_count);
             if (volume->mesh().its.vertices.size() != vertex_filament_ids.size()) {
                 return false;
@@ -3001,9 +3122,6 @@ bool Model::obj_import_vertex_color_deal(const std::vector<unsigned char> &verte
                 auto filament_id2 = vertex_filament_ids[face[2]];
                 if (filament_id0 <= 1 && filament_id1 <= 1 && filament_id2 <= 2) {
                     continue;
-                }
-                if (i == 0) {
-                    std::cout << "";
                 }
                 VertexColorCase vertex_color_case;
                 unsigned char iso_index;
@@ -3083,12 +3201,17 @@ bool Model::obj_import_face_color_deal(const std::vector<unsigned char> &face_fi
             auto volume        = obj->volumes[0];
             volume->config.set("extruder", first_extruder_id);
             auto face_count    = volume->mesh().its.indices.size();
+            volume->mmu_segmentation_facets.reset();
             volume->mmu_segmentation_facets.reserve(face_count);
-            if (volume->mesh().its.indices.size() != face_filament_ids.size()) { return false; }
+            if (volume->mesh().its.indices.size() != face_filament_ids.size()) {
+                return false;
+            }
             for (size_t i = 0; i < volume->mesh().its.indices.size(); i++) {
                 auto face         = volume->mesh().its.indices[i];
                 auto filament_id = face_filament_ids[i];
-                if (filament_id <= 1) { continue; }
+                if (filament_id < 1) {
+                    continue;
+                }
                 std::string result;
                 get_real_filament_id(filament_id, result);
                 volume->mmu_segmentation_facets.set_triangle_from_string(i, result);
@@ -3140,18 +3263,10 @@ double Model::getThermalLength(const ModelVolume* modelVolumePtr) {
     double thermalLength = 200.;
     auto aa = modelVolumePtr->extruder_id();
     if (Model::extruderParamsMap.find(aa) != Model::extruderParamsMap.end()) {
-        if (Model::extruderParamsMap.at(aa).materialName == "ABS" ||
-            Model::extruderParamsMap.at(aa).materialName == "PA-CF" ||
-            Model::extruderParamsMap.at(aa).materialName == "PET-CF") {
-            thermalLength = 100;
+        double thermal_length = 200.0;
+    if (MaterialType::get_thermal_length(Model::extruderParamsMap.at(aa).materialName, thermal_length)) {
+            return thermal_length;
         }
-        if (Model::extruderParamsMap.at(aa).materialName == "PC") {
-            thermalLength = 40;
-        }
-        if (Model::extruderParamsMap.at(aa).materialName == "TPU") {
-            thermalLength = 1000;
-        }
-
     }
     return thermalLength;
 }
@@ -3214,16 +3329,10 @@ void ModelInstance::invalidate_convex_hull_2d()
 //BBS adhesion coefficients from model object class
 double getadhesionCoeff(const ModelVolumePtrs objectVolumes)
 {
-    double adhesionCoeff = 1;
+    double adhesionCoeff = 1.0;
     for (const ModelVolume* modelVolume : objectVolumes) {
         if (Model::extruderParamsMap.find(modelVolume->extruder_id()) != Model::extruderParamsMap.end()) {
-            if (Model::extruderParamsMap.at(modelVolume->extruder_id()).materialName == "PETG" ||
-                Model::extruderParamsMap.at(modelVolume->extruder_id()).materialName == "PCTG") {
-                adhesionCoeff = 2;
-            }
-            else if (Model::extruderParamsMap.at(modelVolume->extruder_id()).materialName == "TPU") {
-                adhesionCoeff = 0.5;
-            }
+            MaterialType::get_adhesion_coefficient(Model::extruderParamsMap.at(modelVolume->extruder_id()).materialName, adhesionCoeff);
         }
     }
     return adhesionCoeff;
@@ -3310,6 +3419,7 @@ void ModelInstance::get_arrange_polygon(void *ap, const Slic3r::DynamicPrintConf
         if (op2 && (extruder_id = op2->getInt()) > 0) ret.extrude_ids.push_back(extruder_id);
     }
 
+    ret.extrude_ids.erase(std::unique(ret.extrude_ids.begin(), ret.extrude_ids.end()), ret.extrude_ids.end());
     if (ret.extrude_ids.empty()) //the default extruder
         ret.extrude_ids.push_back(1);
 }
@@ -3335,13 +3445,28 @@ ModelInstanceEPrintVolumeState ModelInstance::calc_print_volume_state(const Buil
 
             const Transform3d matrix = this->get_matrix() * vol->get_matrix();
 
-            const auto bboxt = bb.transformed(matrix);
+            const auto bboxt = vol->get_convex_hull().transformed_bounding_box(matrix);
             const BoundingBoxf bbox2d{to_2d(bboxt.min), to_2d(bboxt.max)};
             BuildVolume::ObjectState state;
             if (!build_volume.bounding_volume2d().inflated(BuildVolume::SceneEpsilon).overlap(bbox2d))
                 state = BuildVolume::ObjectState::Outside;
-            else
-                state = build_volume.object_state(vol->mesh().its, matrix.cast<float>(), true /* may be below print bed */);
+            else {
+                switch(build_volume.type())
+                {
+                    case BuildVolume_Type::Rectangle:
+                    {
+                        state = build_volume.volume_state_bbox(bboxt);
+                        break;
+                    }
+                    case BuildVolume_Type::Circle:
+                    case BuildVolume_Type::Convex:
+                    case BuildVolume_Type::Custom:
+                    default:
+                        state = build_volume.object_state(vol->mesh().its, matrix.cast<float>(), true /* may be below print bed */);
+                        break;
+                }
+            }
+
             if (state == BuildVolume::ObjectState::Inside)
                 // Volume is completely inside.
                 inside_outside |= INSIDE;
@@ -3377,10 +3502,13 @@ void FacetsAnnotation::get_facets(const ModelVolume& mv, std::vector<indexed_tri
     selector.get_facets(facets_per_type);
 }
 
-void FacetsAnnotation::set_enforcer_block_type_limit(const ModelVolume& mv, EnforcerBlockerType max_type)
+void FacetsAnnotation::set_enforcer_block_type_limit(const ModelVolume  &mv,
+                                                     EnforcerBlockerType max_type,
+                                                     EnforcerBlockerType to_delete_filament,
+                                                     EnforcerBlockerType replace_filament)
 {
     TriangleSelector selector(mv.mesh());
-    selector.deserialize(m_data, false, max_type);
+    selector.deserialize(m_data, false, max_type, to_delete_filament, replace_filament);
     this->set(selector);
 }
 

@@ -19,7 +19,7 @@ static wxColour BORDER_HOVER_COL = wxColour(22, 119, 255);
 const static wxColour TAB_BUTTON_BG    = wxColour("#FEFFFF");
 const static wxColour TAB_BUTTON_SEL   = wxColour(22, 119, 255, 255);
 TabButton::TabButton()
-    : paddingSize(43, 16)
+    : paddingSize(18, 16) // ORCA reduce / match left margin buttons on sidebars
     , text_color(*wxBLACK)
 {
     background_color = StateColor(
@@ -162,7 +162,7 @@ void TabButton::render(wxDC &dc)
 
     auto text = GetLabel();
     if (!text.IsEmpty()) {
-        pt.x = paddingSize.x;
+        pt.x = FromDIP(paddingSize.x); // ORCA match padding on scaling
         pt.y = rcContent.y + (rcContent.height - textSize.y) / 2;
         dc.SetFont(GetFont());
         dc.SetTextForeground(text_color.colorForStates(states));
@@ -181,6 +181,7 @@ void TabButton::render(wxDC &dc)
         pt.y = (size.y - showimg.GetHeight()) / 2;
         dc.DrawBitmap(showimg, pt);
     }
+
 }
 
 void TabButton::messureSize()

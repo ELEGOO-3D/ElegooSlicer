@@ -10,7 +10,7 @@ if (APPLE AND CMAKE_OSX_ARCHITECTURES)
     set(_context_arch_line "-DBOOST_CONTEXT_ARCHITECTURE:STRING=${CMAKE_OSX_ARCHITECTURES}")
 endif ()
 
-elegooslicer_add_cmake_project(Boost
+orcaslicer_add_cmake_project(Boost
     URL "https://github.com/boostorg/boost/releases/download/boost-1.84.0/boost-1.84.0.tar.gz"
     URL_HASH SHA256=4d27e9efed0f6f152dc28db6430b9d3dfb40c0345da7342eaa5a987dde57bd95
     LIST_SEPARATOR |
@@ -18,6 +18,8 @@ elegooslicer_add_cmake_project(Boost
         -DBOOST_EXCLUDE_LIBRARIES:STRING=contract|fiber|numpy|stacktrace|wave|test
         -DBOOST_LOCALE_ENABLE_ICU:BOOL=OFF # do not link to libicu, breaks compatibility between distros
         -DBUILD_TESTING:BOOL=OFF
+        -DBOOST_IOSTREAMS_ENABLE_BZIP2:BOOL=OFF # avoid libbz2 soname differences in AppImage builds
+        -DBOOST_IOSTREAMS_ENABLE_ZSTD:BOOL=OFF
         "${_context_abi_line}"
         "${_context_arch_line}"
 )

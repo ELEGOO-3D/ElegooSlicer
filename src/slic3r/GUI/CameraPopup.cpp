@@ -7,8 +7,12 @@
 #include <wx/progdlg.h>
 #include <wx/clipbrd.h>
 #include <wx/dcgraph.h>
+#include <wx/utils.h>
 #include "GUI_App.hpp"
 #include <slic3r/GUI/StatusPanel.hpp>
+
+#include "DeviceCore/DevManager.h"
+#include "DeviceCore/DevStorage.h"
 
 namespace Slic3r {
 namespace GUI {
@@ -124,7 +128,7 @@ CameraPopup::CameraPopup(wxWindow *parent)
 
     top_sizer->Add(m_custom_camera_hint, 0, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxALL, FromDIP(5));
     top_sizer->Add(0, 0, wxALL, 0);
-    top_sizer->Add(m_custom_camera_input, 2, wxALIGN_CENTER_VERTICAL | wxALIGN_LEFT | wxEXPAND | wxALL, FromDIP(5));
+    top_sizer->Add(m_custom_camera_input, 2, wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALL, FromDIP(5));
     top_sizer->Add(m_custom_camera_input_confirm, 1, wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT | wxALL, FromDIP(5));
     main_sizer->Add(top_sizer, 0, wxALL, FromDIP(10));
 
@@ -214,7 +218,7 @@ void CameraPopup::set_custom_cam_button_state(bool state)
 void CameraPopup::on_switch_recording(wxCommandEvent& event)
 {
     if (!m_obj) return;
-    if (m_obj->sdcard_state != MachineObject::SdcardState::HAS_SDCARD_NORMAL) {
+    if (m_obj->GetStorage()->get_sdcard_state()  != DevStorage::SdcardState::HAS_SDCARD_NORMAL) {
         sdcard_absent_hint();
         return;
     }

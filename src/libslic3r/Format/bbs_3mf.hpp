@@ -85,6 +85,7 @@ struct PlateData
     std::string     pattern_bbox_file;
     std::string     gcode_prediction;
     std::string     gcode_weight;
+    std::string     first_layer_time;
     std::string     plate_name;
     std::vector<FilamentInfo> slice_filaments_info;
     std::vector<size_t> skipped_objects;
@@ -94,6 +95,19 @@ struct PlateData
     bool            toolpath_outside {false};
     bool            is_label_object_enabled {false};
     int             timelapse_warning_code = 0; // 1<<0 sprial vase, 1<<1 by object
+    std::vector<int>          filament_maps;   // 1 base
+    using LayerFilaments = std::unordered_map<std::vector<unsigned int>, std::vector<std::pair<int, int>>, GCodeProcessorResult::FilamentSequenceHash>;
+    LayerFilaments layer_filaments;
+    std::vector<unsigned int> filament_change_sequence;
+    std::vector<unsigned int> nozzle_change_sequence;
+    std::vector<int> optimal_assignment;
+
+    // Hexadecimal number,
+    // the 0th digit corresponds to extruder 1
+    // the 1th digit corresponds to extruder 2
+    // ...  and so on.
+    // 0 means can be print on this extruder, 1 means cannot
+    std::vector<int>          limit_filament_maps;
 
     std::vector<GCodeProcessorResult::SliceWarning> warnings;
 
@@ -237,7 +251,7 @@ struct StoreParams
 // add restore logic
 // Load the content of a 3mf file into the given model and preset bundle.
 extern bool load_bbs_3mf(const char* path, DynamicPrintConfig* config, ConfigSubstitutionContext* config_substitutions, Model* model, PlateDataPtrs* plate_data_list, std::vector<Preset*>* project_presets,
-        bool* is_bbl_3mf, std::string& generator, Semver* file_version, Import3mfProgressFn proFn = nullptr, LoadStrategy strategy = LoadStrategy::Default, BBLProject *project = nullptr, int plate_id = 0);
+        bool* is_bbl_3mf, bool* is_orca_3mf, std::string& generator, Semver* file_version, Import3mfProgressFn proFn = nullptr, LoadStrategy strategy = LoadStrategy::Default, BBLProject *project = nullptr, int plate_id = 0);
 
 extern std::string bbs_3mf_get_thumbnail(const char * path);
 

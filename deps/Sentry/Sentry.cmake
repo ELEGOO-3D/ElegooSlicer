@@ -5,7 +5,7 @@ else ()
     set(_sentry_patch "")
 endif ()
 
-elegooslicer_add_cmake_project(Sentry
+orcaslicer_add_cmake_project(Sentry
     GIT_REPOSITORY https://github.com/getsentry/sentry-native.git
     GIT_TAG 0.14.2
     GIT_SUBMODULES_RECURSE TRUE

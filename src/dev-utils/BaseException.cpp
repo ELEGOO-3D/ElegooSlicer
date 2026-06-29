@@ -40,6 +40,7 @@ extern "C" {
 #ifndef ELEGOOSLICER_VERSION
 #define ELEGOOSLICER_VERSION "Unknown"
 #endif
+#include "libslic3r_version.h"
 
 static std::string g_log_folder;
 static std::atomic<int> g_crash_log_count = 0;
@@ -67,6 +68,9 @@ CBaseException::CBaseException(HANDLE hProcess, WORD wPID, LPCTSTR lpSymbolPath,
 		auto crash_log_path = boost::filesystem::path(log_folder / buf.str()).make_preferred();
 		std::string log_filename = crash_log_path.string();
 		output_file->open(log_filename, std::ios::out | std::ios::app);
+
+		// Output app build info in crash log so we could look for the correct PDB files
+        OutputString(_T("%s\n\n"), _T(SLIC3R_APP_NAME " " ELEGOOSLICER_VERSION " Build " GIT_COMMIT_HASH));
 	}
 }
 
@@ -418,7 +422,7 @@ BOOL CBaseException::GetLogicalAddress(
 	for (unsigned i = 0; i < pNtHdr->FileHeader.NumberOfSections; i++, pSection++ )
 	{
 		DWORD sectionStart = pSection->VirtualAddress;
-		DWORD sectionEnd = sectionStart + max(pSection->SizeOfRawData, pSection->Misc.VirtualSize);
+		DWORD sectionEnd = sectionStart + std::max(pSection->SizeOfRawData, pSection->Misc.VirtualSize);
 
 		if ( (rva >= sectionStart) && (rva <= sectionEnd) )
 		{

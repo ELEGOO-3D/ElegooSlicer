@@ -16,10 +16,11 @@
 
 namespace Slic3r {
 
-wxDEFINE_EVENT(EVT_SHOW_ERROR_INFO, wxCommandEvent);
+wxDEFINE_EVENT(EVT_SHOW_ERROR_INFO_SEND, wxCommandEvent);
+wxDEFINE_EVENT(EVT_SHOW_ERROR_FAIL_SEND, wxCommandEvent);
 
 BBLStatusBarSend::BBLStatusBarSend(wxWindow *parent, int id)
- : m_self{new wxPanel(parent, id == -1 ? wxID_ANY : id)} 
+ : m_self{new wxPanel(parent, id == -1 ? wxID_ANY : id)}
     , m_sizer(new wxBoxSizer(wxHORIZONTAL))
 {
     m_is_download = false;
@@ -110,7 +111,7 @@ BBLStatusBarSend::BBLStatusBarSend(wxWindow *parent, int id)
             m_show_error_info_state = false;
             m_static_bitmap_show_error->SetBitmap(m_bitmap_show_error_open);
         }
-        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO);
+        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO_SEND);
         wxQueueEvent(this->m_self->GetParent(), evt);
     });
 
@@ -130,7 +131,7 @@ BBLStatusBarSend::BBLStatusBarSend(wxWindow *parent, int id)
             m_show_error_info_state = false;
             m_static_bitmap_show_error->SetBitmap(m_bitmap_show_error_open);
         }
-        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO);
+        wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_INFO_SEND);
         wxQueueEvent(this->m_self->GetParent(), evt);
     });
 
@@ -219,6 +220,9 @@ void BBLStatusBarSend::show_error_info(wxString msg, int code, wxString descript
     m_openfolderbutton->Hide();
     m_self->Layout();
     m_sizer->Layout();
+
+    wxCommandEvent* evt = new wxCommandEvent(EVT_SHOW_ERROR_FAIL_SEND);
+    wxQueueEvent(this->m_self->GetParent(), evt);
 }
 
 void BBLStatusBarSend::show_progress(bool show)
@@ -249,9 +253,9 @@ void BBLStatusBarSend::stop_busy()
     m_busy = false;
 }
 
-void BBLStatusBarSend::set_cancel_callback_fina(BBLStatusBarSend::CancelFn ccb) 
-{ 
-    m_cancel_cb_fina = ccb; 
+void BBLStatusBarSend::set_cancel_callback_fina(BBLStatusBarSend::CancelFn ccb)
+{
+    m_cancel_cb_fina = ccb;
      if (ccb) {
         m_sizer->Show(m_cancelbutton);
     } else {
@@ -350,18 +354,18 @@ void BBLStatusBarSend::set_percent_text(const wxString &txt)
 }
 
 void BBLStatusBarSend::set_status_text(const std::string& txt)
-{ 
+{
     this->set_status_text(txt.c_str());
 }
 
 void BBLStatusBarSend::set_status_text(const char *txt)
-{ 
+{
     this->set_status_text(wxString::FromUTF8(txt));
     get_panel()->GetParent()->Layout();
     get_panel()->GetParent()->Update();
 }
 
-void BBLStatusBarSend::msw_rescale() { 
+void BBLStatusBarSend::msw_rescale() {
     //set_prog_block();
     m_cancelbutton->SetMinSize(wxSize(m_self->FromDIP(56), m_self->FromDIP(24)));
 }
@@ -420,7 +424,7 @@ void BBLStatusBarSend::hide_cancel_button()
     m_sizer->Layout();
 }
 
-void BBLStatusBarSend::change_button_label(wxString name) 
+void BBLStatusBarSend::change_button_label(wxString name)
 {
     m_cancelbutton->SetLabel(name);
 }
@@ -443,5 +447,10 @@ void BBLStatusBarSend::enable_cancel_button()
     m_cancelbutton->Enable();
 }
 
+void BBLStatusBarSend::cancel()
+{
+    m_was_cancelled = true;
+    if (m_cancel_cb_fina) m_cancel_cb_fina();
+}
 
 }

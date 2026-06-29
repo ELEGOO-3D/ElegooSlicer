@@ -197,6 +197,8 @@ cd deps
 mkdir %build_dir% 2>nul
 cd %build_dir%
 set DEPS=%CD%/ElegooSlicer_dep
+set DEPS=%DEPS:\=/%
+
 
 @REM Check for skip conditions
 if "%only_pack%"=="ON" (

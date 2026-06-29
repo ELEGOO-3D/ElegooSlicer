@@ -38,6 +38,7 @@ enum ItemType {
 enum ColumnNumber
 {
     colName         = 0,    // item name
+    colHeight          ,    // variable height
     colPrint           ,    // printable property
     colFilament        ,    // extruder selection
     // BBS
@@ -55,6 +56,12 @@ enum PrintIndicator
     piUnprintable      ,    // unprintable
 };
 
+enum VaryHeightIndicator
+{
+    hiUnVariable,    // unvariable height
+    hiVariable,    // variable height
+};
+
 enum class InfoItemType
 {
     Undef,
@@ -65,7 +72,7 @@ enum class InfoItemType
     //Sinking
     CutConnectors,
 };
-class BitmapCache;
+
 class ObjectDataViewModelNode;
 WX_DEFINE_ARRAY_PTR(ObjectDataViewModelNode*, MyObjectTreeModelNodePtrArray);
 
@@ -94,6 +101,9 @@ class ObjectDataViewModelNode
     wxBitmap                        m_sinking_icon;
     PrintIndicator                  m_printable {piUndef};
     wxBitmap                        m_printable_icon;
+
+    VaryHeightIndicator             m_variable_height{ hiUnVariable };
+    wxBitmap				        m_variable_height_icon;
     std::string                     m_warning_icon_name{ "" };
     bool                            m_has_lock{false};  // for cut object icon
 
@@ -107,7 +117,6 @@ class ObjectDataViewModelNode
     bool                            m_support_enable = false;
     bool                            m_color_enable = false;
     bool                            m_sink_enable = false;
-    std::shared_ptr<class BitmapCache> m_bitmap_cache   = nullptr;
 
 public:
     PartPlate*                      m_part_plate;
@@ -135,24 +144,19 @@ public:
                             const bool is_text_volume,
                             const bool is_svg_volume,
                             const wxString& extruder,
-                            std::shared_ptr<BitmapCache> bitmap_cache,
                             const int idx = -1 );
 
     ObjectDataViewModelNode(ObjectDataViewModelNode* parent,
                             const t_layer_height_range& layer_range,
-                            std::shared_ptr<BitmapCache> bitmap_cache,
                             const int idx = -1,
                             const wxString& extruder = wxEmptyString );
 
-    ObjectDataViewModelNode(PartPlate* part_plate, wxString name, std::shared_ptr<BitmapCache> bitmap_cache);
+    ObjectDataViewModelNode(PartPlate* part_plate, wxString name);
 
     //BBS: add part plate related logic
-    ObjectDataViewModelNode(ObjectDataViewModelNode*           parent,
-                            const ItemType                     type,
-                            std::shared_ptr<BitmapCache> bitmap_cache,
-                            const int                          plate_idx = -1);
+    ObjectDataViewModelNode(ObjectDataViewModelNode* parent, const ItemType type, const int plate_idx = -1);
     // BBS: to be checked. Whether need to add plate_idx for the following constructor ?
-    ObjectDataViewModelNode(ObjectDataViewModelNode* parent, const InfoItemType type, std::shared_ptr<BitmapCache> bitmap_cache);
+    ObjectDataViewModelNode(ObjectDataViewModelNode* parent, const InfoItemType type);
 
     ~ObjectDataViewModelNode()
     {
@@ -237,7 +241,7 @@ public:
     void            SetExtruder(const wxString &extruder) { m_extruder = extruder; }
     void            SetWarningIconName(const std::string& warning_icon_name) { m_warning_icon_name = warning_icon_name; }
     void            SetLock(bool has_lock)                                   { m_has_lock = has_lock; }
-    const wxBitmap& GetBitmap() const         { return m_bmp; }
+    const wxBitmap& GetBitmap() const               { return m_bmp; }
     const wxString& GetName() const                 { return m_name; }
     ItemType        GetType() const                 { return m_type; }
     InfoItemType    GetInfoItemType() const         { return m_info_item_type; }
@@ -245,15 +249,16 @@ public:
 	int             GetIdx() const                  { return m_idx; }
     //BBS: add part plate related logic
     void            SetPlateIdx(const int& idx);
-    int             GetPlateIdx() const { return m_plate_idx; }
+    int             GetPlateIdx() const             { return m_plate_idx; }
     ModelVolumeType GetVolumeType()                 { return m_volume_type; }
 	t_layer_height_range    GetLayerRange() const   { return m_layer_range; }
     wxString        GetExtruder()                   { return m_extruder; }
     PrintIndicator  IsPrintable() const             { return m_printable; }
+    VaryHeightIndicator  IsVaribaleHeight() const   { return m_variable_height; }
     // BBS
     bool            HasColorPainting() const        { return m_color_enable; }
-    bool            HasSupportPainting() const { return m_support_enable; }
-    bool            HasSinking() const { return m_sink_enable; }
+    bool            HasSupportPainting() const      { return m_support_enable; }
+    bool            HasSinking() const              { return m_sink_enable; }
     bool            IsActionEnabled() const         { return m_action_enable; }
     void            UpdateExtruderAndColorIcon(wxString extruder = "");
 
@@ -291,11 +296,12 @@ public:
     void        set_extruder_icon();
 	// Set printable icon for node
     void        set_printable_icon(PrintIndicator printable);
+    void        set_variable_height_icon(VaryHeightIndicator vari_height);
     void        set_action_icon(bool enable);
     // BBS
-    void        set_color_icon(bool enable);
-    void        set_support_icon(bool enable);
-    void        set_sinking_icon(bool enable);
+    void        set_color_icon(bool enable, bool force = false);
+    void        set_support_icon(bool enable,bool force = false);
+    void        set_sinking_icon(bool enable, bool force = false);
 
     // Set warning icon for node
     void        set_warning_icon(const std::string& warning_icon);
@@ -346,27 +352,30 @@ class ObjectDataViewModel :public wxDataViewModel
     wxDataViewCtrl*                             m_ctrl { nullptr };
     std::vector<std::tuple<ObjectDataViewModelNode*, wxString, wxString>> assembly_name_list;
     std::vector<std::tuple<ObjectDataViewModelNode*, wxString, wxString>> search_found_list;
-    std::map<int, int>                          m_ui_and_3d_volume_map;
-    std::shared_ptr<class BitmapCache>                                                          m_bitmap_cache = nullptr;
+    std::map<int,std::map<int, int>>                                      m_ui_and_3d_volume_maps;
 
 public:
     ObjectDataViewModel();
     ~ObjectDataViewModel();
 
     void Init();
-    std::map<int, int> &get_ui_and_3d_volume_map() { return m_ui_and_3d_volume_map; }
-    int                 get_real_volume_index_in_3d(int ui_value)
+    std::map<int, std::map<int, int>> &get_ui_and_3d_volume_map() { return m_ui_and_3d_volume_maps; }
+    int   get_real_volume_index_in_3d(int ui_object_value, int ui_volume_value)
     {
-        if (m_ui_and_3d_volume_map.find(ui_value) != m_ui_and_3d_volume_map.end()) { 
-            return m_ui_and_3d_volume_map[ui_value];
+        if (m_ui_and_3d_volume_maps.find(ui_object_value) != m_ui_and_3d_volume_maps.end()) {
+            auto cur_map = m_ui_and_3d_volume_maps[ui_object_value];
+            if (cur_map.find(ui_volume_value) != cur_map.end()) { return cur_map[ui_volume_value]; }
         }
-        return ui_value;
+        return ui_volume_value;
     }
-    int get_real_volume_index_in_ui(int _3d_value)
+    int get_real_volume_index_in_ui(int ui_object_value, int _3d_value)
     {
-        for (auto item: m_ui_and_3d_volume_map) {
-            if (item.second == _3d_value) {
-                return item.first;
+        if (m_ui_and_3d_volume_maps.find(ui_object_value) != m_ui_and_3d_volume_maps.end()) {
+            auto cur_map = m_ui_and_3d_volume_maps[ui_object_value];
+            for (auto item : cur_map) {
+                if (item.second == _3d_value) {
+                    return item.first;
+                }
             }
         }
         return _3d_value;
@@ -486,19 +495,22 @@ public:
     bool    IsPrintable(const wxDataViewItem &item) const;
     void    UpdateObjectPrintable(wxDataViewItem parent_item);
     void    UpdateInstancesPrintable(wxDataViewItem parent_item);
+    bool    IsVariableHeight(const wxDataViewItem& item) const;
+
     void    SetVolumeType(const wxDataViewItem &item, const Slic3r::ModelVolumeType type);
     ModelVolumeType GetVolumeType(const wxDataViewItem &item);
     wxDataViewItem SetPrintableState( PrintIndicator printable, int obj_idx,
                                       int subobj_idx = -1,
                                       ItemType subobj_type = itInstance);
     wxDataViewItem SetObjectPrintableState(PrintIndicator printable, wxDataViewItem obj_item);
+    wxDataViewItem SetObjectVariableHeightState(VaryHeightIndicator vari_height, wxDataViewItem obj_item);
     // BBS
     bool    IsColorPainted(wxDataViewItem& item) const;
     bool    IsSupportPainted(wxDataViewItem &item) const;
     bool    IsSinked(wxDataViewItem &item) const;
-    void    SetColorPaintState(const bool painted, wxDataViewItem obj_item);
-    void    SetSupportPaintState(const bool painted, wxDataViewItem obj_item);
-    void    SetSinkState(const bool painted, wxDataViewItem obj_item);
+    void    SetColorPaintState(const bool painted, wxDataViewItem obj_item,bool force = false);
+    void    SetSupportPaintState(const bool painted, wxDataViewItem obj_item,bool force = false);
+    void    SetSinkState(const bool painted, wxDataViewItem obj_item,bool force = false);
 
     void    SetAssociatedControl(wxDataViewCtrl* ctrl) { m_ctrl = ctrl; }
     // Rescale bitmaps for existing Items

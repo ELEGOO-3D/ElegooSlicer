@@ -8,6 +8,8 @@
 #include "libslic3r/Print.hpp"
 #include "libslic3r/TriangleMesh.hpp"
 
+#include <set>
+#include <string>
 #include <unordered_map>
 
 namespace Slic3r { namespace Test {
@@ -37,7 +39,7 @@ enum class TestMesh {
     two_hollow_squares
 };
 
-// Neccessary for <c++17
+// Necessary for <c++17
 struct TestMeshHash {
     std::size_t operator()(TestMesh tm) const {
         return static_cast<std::size_t>(tm);
@@ -79,6 +81,13 @@ std::string slice(std::initializer_list<TestMesh> meshes, const DynamicPrintConf
 std::string slice(std::initializer_list<TriangleMesh> meshes, const DynamicPrintConfig &config, bool comments = false);
 std::string slice(std::initializer_list<TestMesh> meshes, std::initializer_list<Slic3r::ConfigBase::SetDeserializeItem> config_items, bool comments = false);
 std::string slice(std::initializer_list<TriangleMesh> meshes, std::initializer_list<Slic3r::ConfigBase::SetDeserializeItem> config_items, bool comments = false);
+
+// Distinct layer Z heights that carry an extrusion tagged with the given role
+// comment (requires gcode_comments), e.g. "skirt", "brim", "support".
+std::set<double> layers_with_role(const std::string &gcode, const std::string &role);
+
+// Highest Z reached by any move in the gcode.
+double max_z(const std::string &gcode);
 
 } } // namespace Slic3r::Test
 

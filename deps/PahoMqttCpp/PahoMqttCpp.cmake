@@ -1,5 +1,5 @@
 
-elegooslicer_add_cmake_project(PahoMqttCpp
+orcaslicer_add_cmake_project(PahoMqttCpp
   GIT_REPOSITORY      https://github.com/eclipse-paho/paho.mqtt.cpp.git
   GIT_TAG             v1.5.3
 

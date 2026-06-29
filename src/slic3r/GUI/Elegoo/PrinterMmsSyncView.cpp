@@ -230,9 +230,9 @@ IPCResult PrinterMmsSyncView::getPrinterFilamentInfo(const nlohmann::json& param
             allFilamentList.push_back(filament);
         }
     }
-    auto extruders = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_extruders();
-    for (auto i = 0; i < extruders.size(); i++) {
-        int extruderIdx = extruders[i] - 1;
+    auto filaments = wxGetApp().plater()->get_partplate_list().get_curr_plate()->get_used_filaments();
+    for (auto i = 0; i < filaments.size(); i++) {
+        int extruderIdx = filaments[i] - 1;
         if (extruderIdx < 0 || extruderIdx >= (int) allFilamentList.size())
             continue;
         auto info = allFilamentList[extruderIdx];

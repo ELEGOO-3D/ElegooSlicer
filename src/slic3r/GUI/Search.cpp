@@ -22,6 +22,10 @@
 
 #include "imgui/imconfig.h"
 
+#if defined(__WXGTK__)
+#include "LinuxDisplayBackend.hpp"
+#endif
+
 using boost::optional;
 
 namespace Slic3r {
@@ -32,6 +36,17 @@ wxDEFINE_EVENT(wxCUSTOMEVT_JUMP_TO_OBJECT, wxCommandEvent);
 
 using GUI::from_u8;
 using GUI::into_u8;
+
+namespace {
+
+bool focus_left_popup(wxWindow* popup, wxWindow* focus_window, wxWindow* related_window_1 = nullptr,
+    wxWindow* related_window_2 = nullptr, wxWindow* related_window_3 = nullptr)
+{
+    return focus_window != popup && !popup->IsDescendant(focus_window) && focus_window != related_window_1 &&
+        focus_window != related_window_2 && focus_window != related_window_3;
+}
+
+} // namespace
 
 namespace Search {
 
@@ -119,6 +134,19 @@ void OptionsSearcher::append_options(DynamicPrintConfig *config, Preset::Type ty
     }
 }
 
+inline void OptionsSearcher::sort_options()
+{
+    std::sort(options.begin(), options.end(), [](const Option &o1, const Option &o2) { return o1.label < o2.label; });
+    Option * last = nullptr;
+    for (auto& opt : options) {
+        if (last && last->label == opt.label && last->group == opt.group && last->type == opt.type && last->category != opt.category) {
+            last->multi_category = true;
+            opt.multi_category = true;
+        }
+        last = &opt;
+    }
+}
+
 // Mark a string using ColorMarkerStart and ColorMarkerEnd symbols
 static std::wstring mark_string(const std::wstring &str, const std::vector<uint16_t> &matches, Preset::Type type, PrinterTechnology pt)
 {
@@ -171,13 +199,13 @@ bool OptionsSearcher::search(const std::string &search, bool force /* = false*/,
     found.clear();
 
     bool         full_list = search.empty();
-    std::wstring sep       = L" : ";
+    wxString sep       = L" : ";
 
     auto get_label = [this, &sep](const Option &opt, bool marked = true) {
         std::wstring out;
         if (marked) out += marker_by_type(opt.type, printer_technology);
         const std::wstring *prev = nullptr;
-        for (const std::wstring *const s : {view_params.category ? &opt.category_local : nullptr, &opt.group_local, &opt.label_local})
+        for (const std::wstring *const s : {view_params.category || opt.multi_category ? &opt.category_local : nullptr, &opt.group_local, &opt.label_local})
             if (s != nullptr && (prev == nullptr || *prev != *s)) {
                 if (out.size() > 2) out += sep;
                 out += *s;
@@ -190,7 +218,7 @@ bool OptionsSearcher::search(const std::string &search, bool force /* = false*/,
         std::wstring out;
         if (marked) out += marker_by_type(opt.type, printer_technology);
         const std::wstring *prev = nullptr;
-        for (const std::wstring *const s : {view_params.category ? &opt.category : nullptr, &opt.group, &opt.label})
+        for (const std::wstring *const s : {view_params.category || opt.multi_category ? &opt.category : nullptr, &opt.group, &opt.label})
             if (s != nullptr && (prev == nullptr || *prev != *s)) {
                 if (out.size() > 2) out += sep;
                 out += *s;
@@ -200,7 +228,7 @@ bool OptionsSearcher::search(const std::string &search, bool force /* = false*/,
     };
 
     auto get_tooltip = [this, &sep](const Option &opt) {
-        return marker_by_type(opt.type, printer_technology) + opt.category_local + sep + opt.group_local + sep + opt.label_local;
+        return wxString(marker_by_type(opt.type, printer_technology)) + opt.category_local + sep + opt.group_local + sep + opt.label_local;
     };
 
     std::vector<uint16_t> matches, matches2;
@@ -661,11 +689,24 @@ void SearchDialog::OnDismiss() { }
 
 void SearchDialog::Dismiss()
 {
-    auto pos = wxGetMousePosition();
     auto focus_window = wxWindow::FindFocus();
-    if (!focus_window)
+    if (!focus_window) {
         Die();
-    else if (!m_event_tag->GetScreenRect().Contains(pos) && !this->GetScreenRect().Contains(pos) && !m_search_item_tag->GetScreenRect().Contains(pos)) {
+        return;
+    }
+#if defined(__WXGTK__)
+    // On Wayland, wxGetMousePosition() returns unreliable global coords.
+    // Rely on focus tracking instead: if focus moved to a window outside
+    // this dialog and its related controls, dismiss.
+    if (Slic3r::GUI::is_running_on_wayland()) {
+        if (focus_left_popup(this, focus_window, m_event_tag, m_search_item_tag, search_line)) {
+            Die();
+        }
+        return;
+    }
+#endif
+    auto pos = wxGetMousePosition();
+    if (!m_event_tag->GetScreenRect().Contains(pos) && !this->GetScreenRect().Contains(pos) && !m_search_item_tag->GetScreenRect().Contains(pos)) {
         Die();
     }
 }
@@ -891,11 +932,24 @@ void SearchObjectDialog::OnDismiss() {}
 
 void SearchObjectDialog::Dismiss()
 {
-    auto pos = wxGetMousePosition();
     auto focus_window = wxWindow::FindFocus();
-    if (!focus_window)
+    if (!focus_window) {
         Die();
-    else if (!search_line->GetScreenRect().Contains(pos) && !this->GetScreenRect().Contains(pos)) {
+        return;
+    }
+#if defined(__WXGTK__)
+    // On Wayland, wxGetMousePosition() returns unreliable global coords.
+    // Rely on focus tracking instead: if focus moved to a window outside
+    // this dialog and its related controls, dismiss.
+    if (Slic3r::GUI::is_running_on_wayland()) {
+        if (focus_left_popup(this, focus_window, search_line)) {
+            Die();
+        }
+        return;
+    }
+#endif
+    auto pos = wxGetMousePosition();
+    if (!search_line->GetScreenRect().Contains(pos) && !this->GetScreenRect().Contains(pos)) {
         Die();
     }
 }

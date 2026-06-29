@@ -5,12 +5,21 @@ body:
   - type: markdown
     attributes:
       value: |
-        **Thank you for using ElegooSlicer and wanting to report a bug.**
+        **Thank you for using Orca Slicer and wanting to report a bug.**
         
         Please note that this is not the place to make feature requests or ask for help.
-        For this, please use the [Feature request](https://github.com/ELEGOO-3D/ElegooSlicer/issues/new?assignees=&labels=&projects=&template=feature_request.yml) issue type.
+        For this, please use the [Feature request](https://github.com/OrcaSlicer/OrcaSlicer/issues/new?assignees=&labels=&projects=&template=feature_request.yml) issue type or you can discuss your idea on our [Discord server](https://discord.gg/P4VE9UY9gJ) with others.
         
         Before filing, please check if the issue already exists (either open or closed) by using the search bar on the issues page. If it does, comment there. Even if it's closed, we can reopen it based on your comment.
+  - type: checkboxes
+    attributes:
+      label: Is this issue reproducible in the latest nightly build?
+      description: >
+        Please verify this issue still happens in the latest nightly build first. It may already be fixed there:
+        [Nightly builds](https://github.com/OrcaSlicer/OrcaSlicer/releases/tag/nightly-builds).
+      options:
+        - label: I have checked the latest nightly build and the issue is still reproducible
+          required: true
   - type: checkboxes
     attributes:
       label: Is there an existing issue for this problem?
@@ -21,8 +30,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: ElegooSlicer Version
-      description: Which version of ElegooSlicer are you running? You can see the full version in `Help` -> `About ElegooSlicer`.
+      label: OrcaSlicer Version
+      description: Which version of Orca Slicer are you running? You can see the full version in `Help` -> `About Orca Slicer`.
       placeholder: e.g. 1.9.0
     validations:
       required: true
@@ -100,10 +109,10 @@ body:
             You can export the project file from the application menu in `File`->`Save project as...`, then zip it
           * A **log file** for crashes and similar issues.
             You can find your log file here:
-            Windows: `%APPDATA%\ElegooSlicer\log` or usually `C:\Users\<your username>\AppData\Roaming\ElegooSlicer\log`
-            MacOS: `$HOME/Library/Application Support/ElegooSlicer/log`
-            Linux: `$HOME/.config/ElegooSlicer/log`
-            If ElegooSlicer still starts, you can also reach this directory from the application menu in `Help` -> `Show Configuration Folder`
+            Windows: `%APPDATA%\OrcaSlicer\log` or usually `C:\Users\<your username>\AppData\Roaming\OrcaSlicer\log`
+            MacOS: `$HOME/Library/Application Support/OrcaSlicer/log`
+            Linux: `$HOME/.config/OrcaSlicer/log`
+            If Orca Slicer still starts, you can also reach this directory from the application menu in `Help` -> `Show Configuration Folder`
             You can zip the log directory, or just select the newest logs when this issue happens, and zip them
   - type: textarea
     id: file_uploads

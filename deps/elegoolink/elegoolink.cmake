@@ -34,7 +34,7 @@ if(NOT DEFINED ELEGOOLINK_GIT_REPOSITORY)
     set(ELEGOOLINK_GIT_REPOSITORY "https://github.com/ELEGOO-3D/elegoo-link.git")
 endif()
 
-elegooslicer_add_cmake_project(elegoolink
+orcaslicer_add_cmake_project(elegoolink
 
     GIT_REPOSITORY      ${ELEGOOLINK_GIT_REPOSITORY}
     GIT_TAG             origin/main

@@ -11,7 +11,7 @@
 #include <thread>
 #include <utility>
 
-#include <GL/glew.h>
+#include <glad/gl.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -76,6 +76,20 @@ constexpr GLenum kTextureFreeMemoryAti = GL_TEXTURE_FREE_MEMORY_ATI;
 #else
 constexpr GLenum kTextureFreeMemoryAti = 0x87FC;
 #endif
+
+// glad does not expose GLAD_GL_NVX_gpu_memory_info / GLAD_GL_ATI_meminfo,
+// so we query the extension string at runtime instead.
+static bool has_gl_extension(const char* name)
+{
+    GLint num = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &num);
+    for (GLint i = 0; i < num; ++i) {
+        const char* ext = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+        if (ext && std::strcmp(ext, name) == 0)
+            return true;
+    }
+    return false;
+}
 
 std::string normalizePlatform()
 {
@@ -787,13 +801,13 @@ void TelemetryReporter::updateGraphicsContextLocked()
     }
 
     if (mDeviceInfo.gpuVramMb == 0) {
-        if (GLEW_NVX_gpu_memory_info) {
+        if (has_gl_extension("GL_NVX_gpu_memory_info")) {
             GLint totalMemoryKb = 0;
             glGetIntegerv(kGpuMemoryInfoTotalAvailableMemoryNvx, &totalMemoryKb);
             if (totalMemoryKb > 0) {
                 mDeviceInfo.gpuVramMb = static_cast<uint64_t>(totalMemoryKb) / 1024ull;
             }
-        } else if (GLEW_ATI_meminfo) {
+        } else if (has_gl_extension("GL_ATI_meminfo")) {
             GLint freeMemoryKb[4] = { 0, 0, 0, 0 };
             glGetIntegerv(kTextureFreeMemoryAti, freeMemoryKb);
             if (freeMemoryKb[0] > 0) {
