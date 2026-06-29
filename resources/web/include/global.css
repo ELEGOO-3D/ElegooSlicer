@@ -12,17 +12,17 @@
 
 /*/// COLORS ///*/
 :root { 
-	--main-color			: #009688;
-	--main-color-hover		: #26A69A;
-	--main-color-fixed		: #009688;
+	--main-color			: #1677ff;
+	--main-color-hover		: #0056b3;
+	--main-color-fixed		: #1677ff;
 	--bg-color				: #FFFFFF;
 	--bg-color-secondary	: #F4F4F4;
 	--bg-color-alt			: #F0F0F0;
 	--fg-color-text			: #262E30;
 	--fg-color-label		: #363636;
 	--fg-color-disabled		: #ACACAC;
-	--focus-bg-item			: #BFE1DE;
-	--focus-bg-box			: #E5F0EE;
+	--focus-bg-item			: #1677ff22;
+	--focus-bg-box			: #1677ff22;
 	--border-color			: #DBDBDB;
 	--icon-color			: #7C8282;
 	--button-fg-light		: #FEFEFE;
@@ -36,17 +36,17 @@
   
 @media (prefers-color-scheme: dark) { 
 :root {
-	--main-color			: #00675B;
-	--main-color-hover		: #008172;
-	--main-color-fixed		: #009688;
+	--main-color			: #1677ff;
+	--main-color-hover		: #0056b3;
+	--main-color-fixed		: #1677ff;
 	--bg-color				: #2D2D31;
 	--bg-color-secondary	: #36363B;
 	--bg-color-alt			: #242428;
 	--fg-color-text			: #EFEFF0;
 	--fg-color-label		: #B2B3B5;
 	--fg-color-disabled		: #65656A;
-	--focus-bg-item			: #223C3C;
-	--focus-bg-box			: #283232;
+	--focus-bg-item			: #1677ff22;
+	--focus-bg-box			: #1677ff22;
 	--border-color			: #4A4A51;
 	--icon-color			: #949494;
 	--button-fg-light		: #FEFEFE;
@@ -198,10 +198,17 @@ OPTIONS
 
 .ComboBox option {
     background: var(--bg-color);
+    color: var(--fg-color-text);
 }
 
 .ComboBox option:checked {
     background: var(--focus-bg-item);
+}
+
+.ComboBox option:hover,
+.ComboBox option:focus {
+    background: var(--focus-bg-item);
+    color: var(--fg-color-text);
 }
 
 /*/// SCROLL BARS ///*/

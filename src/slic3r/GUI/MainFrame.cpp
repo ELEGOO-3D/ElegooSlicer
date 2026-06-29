@@ -2861,6 +2861,7 @@ static wxMenu* generate_help_menu()
     append_menu_item(helpMenu, wxID_ANY, _L("Export Logs"), _L("Export logs to a zip file"),
         [](wxCommandEvent&) { export_logs_archive(wxGetApp().mainframe); });
 
+#if 0
     helpMenu->AppendSeparator();
 
     // Troubleshoot center
@@ -2871,6 +2872,7 @@ static wxMenu* generate_help_menu()
             NetworkTestDialog dlg(wxGetApp().mainframe);
             dlg.ShowModal();
         });
+#endif
 
 #if 0  // Temporarily disable Show Tip of the Day
     helpMenu->AppendSeparator();
@@ -3596,6 +3598,8 @@ void MainFrame::init_menubar_as_editor()
         },
         "", nullptr, []() { return true; }, this);
 
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
         append_menu_item(
         m_topbar->GetTopMenu(), wxID_ANY, _L("Preset Bundle") + "\t", "",
         [this](wxCommandEvent &) {
@@ -3622,7 +3626,7 @@ void MainFrame::init_menubar_as_editor()
         [this]() {
             return wxGetApp().is_user_login() && !wxGetApp().app_config->get_stealth_mode();
         }, this);
-
+#endif
     //m_topbar->AddDropDownMenuItem(preference_item);
     //m_topbar->AddDropDownMenuItem(printer_item);
     //m_topbar->AddDropDownMenuItem(language_item);

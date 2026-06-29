@@ -1746,8 +1746,8 @@ Sidebar::Sidebar(Plater *parent)
             wxColour bg_normal = "#FFFFFF";
             wxColour bg_focus  = "#E5F0EE";
             wxColour bd_normal = "#DBDBDB";
-            wxColour bd_hover  = "#009688";
-            wxColour bd_focus  = "#009688";
+            wxColour bd_hover  = "#1677ff";
+            wxColour bd_focus  = "#0056b3";
         };
         PanelColors panel_color;
 
@@ -6214,7 +6214,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                         if (load_config && (file_version > app_version)) {
                             if (config_substitutions.unrecogized_keys.size() > 0) {
                                 wxString text  = wxString::Format(_L("The 3MF file version %s is newer than %s's version %s, found the following unrecognized keys:"),
-                                                                 file_version.to_string_sf(), std::string(SLIC3R_APP_FULL_NAME), app_version.to_string_sf());
+                                                                 file_version.to_string(), std::string(SLIC3R_APP_FULL_NAME), app_version.to_string());
                                 text += "\n";
                                 wxString context = text;
                                 wxString append = _L("You'd better upgrade your software.\n");
@@ -6226,7 +6226,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                                 //if the minor version is not matched
                                 if (file_version.min() != app_version.min()) {
                                     wxString text  = wxString::Format(_L("The 3MF file version %s is newer than %s's version %s, we suggest to upgrade your software."),
-                                                     file_version.to_string_sf(), std::string(SLIC3R_APP_FULL_NAME), app_version.to_string_sf());
+                                                     file_version.to_string(), std::string(SLIC3R_APP_FULL_NAME), app_version.to_string());
                                     text += "\n";
                                     log_and_show_3mf_info(text, newer_3mf_title);
                                 }
@@ -9843,6 +9843,7 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
             wxGetApp().plater()->sidebar().auto_calc_flushing_volumes(idx);
 #endif
 
+#if 0   
         // Show shared profiles notification for the newly selected printer
         if (wxGetApp().app_config->get_bool("show_shared_profiles_notification"))
         {
@@ -9862,6 +9863,8 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
 
             wxGetApp().plater()->get_notification_manager()->push_shared_profiles_notification(explore_url);
         }
+#endif
+
     }
 
   

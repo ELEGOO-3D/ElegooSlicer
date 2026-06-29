@@ -112,81 +112,6 @@ body
 	align-items: center;	
 }
 
-<<<<<<< HEAD
-
-/*--Btn--*/
-.NormalBtn
-{
-	padding: 3mm 9mm;
-	font-size: 14px;
-	text-align: center;
-	background-color: #0066bd;
-	border-radius: 16px;
-	color: #fff;
-	cursor: pointer;
-	margin-left: 10px;
-}
-
-.NormalBtn:hover
-{
-	background-color:#4066b6;
-}
-
-.GrayBtn
-{
-	padding: 3mm 9mm;
-	font-size: 14px;
-	text-align: center;
-	/* border: 1px solid #575757; */ /* ORCA match button style */
-	border-radius: 18px;
-	background-color: #D9D9D9;
-	color: #000;					/* ORCA match button style */
-	cursor: pointer;
-	margin-left: 10px;	
-}
-
-.GrayBtn:hover
-{
-	background-color:#CCCCCC;		/* ORCA match button style */
-}
-
-.SmallBtn
-{
-	padding: 2px 4mm;
-	font-size: 14px;
-	text-align: center;
-	background-color: #D9D9D9;
-	border-radius: 6px;
-	color: #000;
-	cursor: pointer;
-	display: inline-block;
-}
-
-.SmallBtn:hover
-{
-	background-color: #CCCCCC;
-}
-
-
-.SmallBtn_Green
-{
-	padding: 2px 4mm;
-	font-size: 14px;
-	text-align: center;
-	background-color: #0066bd;
-	border-radius: 6px;
-	color: #fff;
-	cursor: pointer;
-	display: inline-block;
-}
-
-.SmallBtn_Green:hover
-{
-	background-color: #4066b6;
-}
-
-=======
->>>>>>> release/v2.4
 /*---HyperLink---*/
 .HyperLink
 {
@@ -231,11 +156,6 @@ input[type="checkbox"]::before {
 	box-shadow: inset 1em 1em #FFFFFF;
 }
 
-<<<<<<< HEAD
-input[type="checkbox"]:checked {
-	border-color:#1677ff;
-	background-color:#1677ff;
-=======
 input[type="checkbox"]:is(:checked, :indeterminate) {
 	border-color:    var(--main-color);
 	background-color:var(--main-color);
@@ -244,7 +164,6 @@ input[type="checkbox"]:is(:checked, :indeterminate) {
 input[type="checkbox"]:is(:checked, :indeterminate):hover {
 	border-color:    var(--main-color-hover);
 	background-color:var(--main-color-hover);
->>>>>>> release/v2.4
 }
 
 input[type="checkbox"]:checked::before {

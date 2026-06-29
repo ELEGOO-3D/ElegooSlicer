@@ -4028,16 +4028,6 @@ void TabFilament::build()
         line.append_option(optgroup->get_option("textured_plate_temp"));
         optgroup->append_line(line);
 
-        line = { L("Textured Cool Plate"), L("Bed temperature when cool plate is installed. Value 0 means the filament does not support to print on the Textured Cool Plate") };
-        line.append_option(optgroup->get_option("textured_cool_plate_temp_initial_layer"));
-        line.append_option(optgroup->get_option("textured_cool_plate_temp"));
-        optgroup->append_line(line);
-
-        line = {L("Cool Plate (SuperTack)"), L("Bed temperature when cool plate is installed. Value 0 means the filament does not support to print on the Cool Plate SuperTack")};
-        line.append_option(optgroup->get_option("supertack_plate_temp_initial_layer"));
-        line.append_option(optgroup->get_option("supertack_plate_temp"));
-        optgroup->append_line(line);
-
         optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value)
         {
             DynamicPrintConfig& filament_config = m_preset_bundle->filaments.get_edited_preset().config;

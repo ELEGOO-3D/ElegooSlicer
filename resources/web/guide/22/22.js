@@ -14,7 +14,7 @@ function HandleStudio(pVal)
 	{
 		m_ProfileItem=pVal['response'];
 		SortUI();
-		InstallNetworkPlugin();
+		// InstallNetworkPlugin();
 	}
 }
 

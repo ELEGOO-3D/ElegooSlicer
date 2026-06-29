@@ -115,9 +115,7 @@ static boost::log::trivial::severity_level level_to_boost(unsigned level)
 
 void set_logging_level(unsigned int level)
 {
-    //logSeverity = level_to_boost(level);
-	// force logging level to info
-	logSeverity = level_to_boost(3);
+    logSeverity = level_to_boost(level);
     boost::log::core::get()->set_filter
     (
         boost::log::trivial::severity >= logSeverity

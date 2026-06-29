@@ -1742,6 +1742,9 @@ bool GUI_App::wait_for_network_idle(int timeout_ms)
 
 bool GUI_App::hot_reload_network_plugin()
 {
+    return false;
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": starting hot reload";
 
     wxBusyCursor busy;
@@ -1842,6 +1845,8 @@ bool GUI_App::hot_reload_network_plugin()
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": hot reload " << (success ? "successful" : "failed");
     return success;
+#endif
+
 }
 
 std::string GUI_App::get_latest_network_version() const
@@ -1851,6 +1856,9 @@ std::string GUI_App::get_latest_network_version() const
 
 bool GUI_App::has_network_update_available() const
 {
+    return false;
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     std::string current = Slic3r::NetworkAgent::get_version();
     std::string latest = get_latest_network_version();
 
@@ -1858,6 +1866,7 @@ bool GUI_App::has_network_update_available() const
         return false;
 
     return current.substr(0, 8) != latest.substr(0, 8);
+#endif
 }
 
 void GUI_App::show_network_plugin_download_dialog(bool is_update)
@@ -1944,6 +1953,9 @@ int GUI_App::updating_bambu_networking()
 
 bool GUI_App::check_networking_version()
 {
+return false;
+    //ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     std::string network_ver = Slic3r::NetworkAgent::get_version();
     if (!network_ver.empty()) {
         BOOST_LOG_TRIVIAL(info) << "get_network_agent_version=" << network_ver;
@@ -1970,6 +1982,7 @@ bool GUI_App::check_networking_version()
 
     m_networking_compatible = false;
     return false;
+#endif
 }
 
 bool GUI_App::is_compatibility_version()

@@ -976,10 +976,10 @@ wxBoxSizer *PreferencesDialog::create_item_checkbox(wxString title, wxString too
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " sync_user_preset: " << (sync ? "true" : "false");
         }
         else if (param == "stealth_mode") {
-            bool enabled = app_config->get_stealth_mode();
-            if (enabled) wxGetApp().on_stealth_mode_enter();
-            if (m_sync_user_preset_checkbox) m_sync_user_preset_checkbox->Enable(!enabled);
-            if (m_bambu_cloud_checkbox)      m_bambu_cloud_checkbox->Enable(!enabled);
+            // bool enabled = app_config->get_stealth_mode();
+            // if (enabled) wxGetApp().on_stealth_mode_enter();
+            // if (m_sync_user_preset_checkbox) m_sync_user_preset_checkbox->Enable(!enabled);
+            // if (m_bambu_cloud_checkbox)      m_bambu_cloud_checkbox->Enable(!enabled);
         }
         else if (param == "hide_login_side_panel") {
             // if (wxGetApp().mainframe && wxGetApp().mainframe->m_webview) {
@@ -1379,7 +1379,7 @@ void PreferencesDialog::create_items()
     g_sizer->Add(item_darkmode);
 #endif
 
-    auto item_single_instance  = create_item_checkbox(_L("Allow only one OrcaSlicer instance"),
+    auto item_single_instance  = create_item_checkbox(_L("Allow only one ElegooSlicer instance"),
     #if __APPLE__
             _L("On OSX there is always only one instance of app running by default. However it is allowed to run multiple instances "
                 "of same app from the command line. In such case this settings will allow only one instance."),
@@ -1455,8 +1455,10 @@ void PreferencesDialog::create_items()
     //// GENERAL > Features
     g_sizer->Add(create_item_title(_L("Features")), 1, wxEXPAND);
 
+#if 0
     auto item_multi_machine    = create_item_checkbox(_L("Multi device management"), _L("With this option enabled, you can send a task to multiple devices at the same time and manage multiple devices."), "enable_multi_machine", _L("(Requires restart)"));
     g_sizer->Add(item_multi_machine);
+#endif
 
 #if 0
     g_sizer->Add(create_item_title(_L("Filament Grouping")), 1, wxEXPAND);
@@ -1660,18 +1662,21 @@ void PreferencesDialog::create_items()
     auto item_region           = create_item_region_combobox(_L("Login region"), "");
     g_sizer->Add(item_region);
  
+#if 0 
     auto item_stealth_mode     = create_item_checkbox(_L("Stealth mode"), _L("This disables all cloud features, including Orca Cloud profile syncing. Users who prefer to work entirely offline can enable this option.\nNote: When Stealth Mode is enabled, your user profiles will not be backed up to Orca Cloud."), "stealth_mode");
     g_sizer->Add(item_stealth_mode);
 
     auto item_hide_login_side_panel = create_item_checkbox(_L("Hide login side panel"), _L("Hide the login side panel on the home page."), "hide_login_side_panel");
     g_sizer->Add(item_hide_login_side_panel);
-
+    
+#endif
     auto item_network_test     = create_item_button(_L("Network test"), _L("Test") + " " + dots, "", _L("Open Network Test"), []() {
         NetworkTestDialog dlg(wxGetApp().mainframe);
         dlg.ShowModal();
     });
     g_sizer->Add(item_network_test);
 
+#if 0
     //// ONLINE > Cloud Providers
     g_sizer->Add(create_item_title(_L("Cloud Providers")), 1, wxEXPAND);
 
@@ -1711,28 +1716,35 @@ void PreferencesDialog::create_items()
 
         g_sizer->Add(sizer);
     }
+#endif
 
     //// ONLINE > Update & sync
     g_sizer->Add(create_item_title(_L("Update & sync")), 1, wxEXPAND);
 
+#if 0
     auto item_stable_updates   = create_item_checkbox(_L("Check for stable updates only"), "", "check_stable_update_only");
     g_sizer->Add(item_stable_updates);
+#endif
 
     auto item_user_sync        = create_item_checkbox(_L("Auto sync user presets (Printer/Filament/Process)"), "", "sync_user_preset");
     g_sizer->Add(item_user_sync);
 
+#if 0
     if (app_config->get_stealth_mode()) {
         if (m_bambu_cloud_checkbox)      m_bambu_cloud_checkbox->Enable(false);
         if (m_sync_user_preset_checkbox) m_sync_user_preset_checkbox->Enable(false);
     }
+#endif
 
     auto item_system_sync      = create_item_checkbox(_L("Update built-in Presets automatically."), "", "sync_system_preset");
     g_sizer->Add(item_system_sync);
 
+#if 0
     auto item_token_storage    = create_item_checkbox(_L("Use encrypted file for token storage"),
                                                       _L("Store authentication tokens in an encrypted file instead of the system keychain. (Requires restart)"),
                                                       SETTING_USE_ENCRYPTED_TOKEN_FILE);
     g_sizer->Add(item_token_storage);
+
 
     //// ONLINE > Filament Sync Options
     g_sizer->Add(create_item_title(_L("Filament Sync Options")), 1, wxEXPAND);
@@ -1793,8 +1805,6 @@ void PreferencesDialog::create_items()
 
     m_network_version_combo->SetSelection(current_selection);
     m_network_version_sizer->Add(m_network_version_combo, 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
-//ELEGOO
-#if 0 
     m_network_version_combo->GetDropDown().Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& e) {
         int selection = e.GetSelection();
         if (selection >= 0 && selection < (int)m_available_versions.size()) {
@@ -1855,9 +1865,9 @@ void PreferencesDialog::create_items()
         }
         e.Skip();
     });
-#endif
-    g_sizer->Add(m_network_version_sizer);
 
+    g_sizer->Add(m_network_version_sizer);
+#endif
     g_sizer->AddSpacer(FromDIP(10));
     sizer_page->Add(g_sizer, 0, wxEXPAND);
 
@@ -1891,12 +1901,12 @@ void PreferencesDialog::create_items()
     g_sizer->AddGrowableCol(0, 1);
 
     //// ASSOCIATE > Extensions
-    g_sizer->Add(create_item_title(_L("Associate files to OrcaSlicer")), 1, wxEXPAND);
+    g_sizer->Add(create_item_title(_L("Associate files to ElegooSlicer")), 1, wxEXPAND);
 
-    auto item_associate_3mf    = create_item_checkbox(_L("Associate 3MF files to ElegooSlicer"), _L("If enabled, sets OrcaSlicer as default application to open 3MF files.") , "associate_3mf");
+    auto item_associate_3mf    = create_item_checkbox(_L("Associate 3MF files to ElegooSlicer"), _L("If enabled, sets ElegooSlicer as default application to open 3MF files.") , "associate_3mf");
     g_sizer->Add(item_associate_3mf);
 
-    auto item_associate_drc = create_item_checkbox(_L("Associate DRC files to ElegooSlicer"), _L("If enabled, sets OrcaSlicer as default application to open DRC files."), "associate_drc");
+    auto item_associate_drc = create_item_checkbox(_L("Associate DRC files to ElegooSlicer"), _L("If enabled, sets ElegooSlicer as default application to open DRC files."), "associate_drc");
     g_sizer->Add(item_associate_drc);
 
     auto item_associate_stl    = create_item_checkbox(_L("Associate STL files to ElegooSlicer"), _L("If enabled, sets ElegooSlicer as default application to open STL files.") , "associate_stl");
@@ -1933,12 +1943,15 @@ void PreferencesDialog::create_items()
     //// DEVELOPER > Settings
     g_sizer->Add(create_item_title(_L("Settings")), 1, wxEXPAND);
 
+#if ELEGOO_INTERNAL_TESTING
     auto item_develop_mode     = create_item_checkbox(_L("Developer mode"), "", "developer_mode");
     g_sizer->Add(item_develop_mode);
+#endif
 
+#if 0
     auto item_ams_blacklist    = create_item_checkbox(_L("Skip AMS blacklist check"), "", "skip_ams_blacklist_check");
     g_sizer->Add(item_ams_blacklist);
-
+#endif
     auto item_keep_painting    = create_item_checkbox(_L("(Experimental) Keep painted feature after mesh change"), _L("Attempt to keep painted features (color/seam/support/fuzzy etc.) after changing the object mesh (such as cut/reload from disk/simplify/fix etc.)\nHighly experimental! Slow and may create artifact."), "keep_painting");
     g_sizer->Add(item_keep_painting);
 
@@ -1949,11 +1962,14 @@ void PreferencesDialog::create_items()
     auto item_allow_abnormal_storage = create_item_checkbox(_L("Allow Abnormal Storage"), _L("This allows the use of Storage that is marked as abnormal by the Printer.\nUse at your own risk, can cause issues!"), "allow_abnormal_storage");
     g_sizer->Add(item_allow_abnormal_storage);
 
+#if ELEGOO_INTERNAL_TESTING
     g_sizer->Add(create_item_title(_L("Log Level")), 1, wxEXPAND);
     auto log_level_list  = std::vector<wxString>{_L("fatal"), _L("error"), _L("warning"), _L("info"), _L("debug"), _L("trace")};
     auto loglevel_combox = create_item_loglevel_combobox(_L("Log Level"), _L("Log Level"), log_level_list);
     g_sizer->Add(loglevel_combox);
+#endif
 
+#if 0
     g_sizer->Add(create_item_title(_L("Network plug-in")), 1, wxEXPAND);
     auto item_reload_plugin = create_item_button(_L("Network plug-in"), _L("Reload"), _L("Reload the network plug-in without restarting the application"), "", [this]() {
         if (wxGetApp().hot_reload_network_plugin()) {
@@ -1965,7 +1981,7 @@ void PreferencesDialog::create_items()
         }
     });
     g_sizer->Add(item_reload_plugin);
-
+#endif
     //// DEVELOPER > Debug
 #if !BBL_RELEASE_TO_PUBLIC
     g_sizer->Add(create_item_title(_L("Debug")), 1, wxEXPAND);

@@ -4,7 +4,6 @@ import argparse
 import sys
 from pathlib import Path
 
-<<<<<<< HEAD
 BOM = b'\xef\xbb\xbf'
 
 
@@ -17,9 +16,7 @@ def _check_bom(file_path):
             return True
     return False
 
-=======
 from assign_vendor_setting_ids import generate_preset_setting_id
->>>>>>> release/v2.4
 
 OBSOLETE_KEYS = {
     "acceleration", "scale", "rotate", "duplicate", "duplicate_grid",

@@ -56,6 +56,8 @@ BBLNetworkPlugin::~BBLNetworkPlugin()
 
 int BBLNetworkPlugin::initialize(bool using_backup, const std::string& version)
 {
+    return -1;//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+
     clear_load_error();
 
     std::string library;
@@ -218,23 +220,23 @@ bool BBLNetworkPlugin::is_loaded() const
 
 std::string BBLNetworkPlugin::get_version() const
 {
-    bool consistent = true;
-    // Check the debug consistent first
-    if (m_check_debug_consistent) {
-#if defined(NDEBUG)
-        consistent = m_check_debug_consistent(false);
-#else
-        consistent = m_check_debug_consistent(true);
-#endif
-    }
-    if (!consistent) {
-        BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(", inconsistent library, return 00.00.00.00!");
-        return "00.00.00.00";
-    }
-    if (m_get_version) {
-        return m_get_version();
-    }
-    BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(", get_version not supported, return 00.00.00.00!");
+//     bool consistent = true;
+//     // Check the debug consistent first
+//     if (m_check_debug_consistent) {
+// #if defined(NDEBUG)
+//         consistent = m_check_debug_consistent(false);
+// #else
+//         consistent = m_check_debug_consistent(true);
+// #endif
+//     }
+//     if (!consistent) {
+//         BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(", inconsistent library, return 00.00.00.00!");
+//         return "00.00.00.00";
+//     }
+//     if (m_get_version) {
+//         return m_get_version();
+//     }
+//     BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << boost::format(", get_version not supported, return 00.00.00.00!");
     return "00.00.00.00";
 }
 
@@ -244,15 +246,16 @@ std::string BBLNetworkPlugin::get_version() const
 
 void* BBLNetworkPlugin::create_agent(const std::string& log_dir)
 {
-    if (m_agent) {
-        return m_agent;
-    }
+    return nullptr;
+    // if (m_agent) {
+    //     return m_agent;
+    // }
 
-    if (m_create_agent) {
-        m_agent = m_create_agent(log_dir);
-    }
+    // if (m_create_agent) {
+    //     m_agent = m_create_agent(log_dir);
+    // }
 
-    return m_agent;
+    // return m_agent;
 }
 
 int BBLNetworkPlugin::destroy_agent()
@@ -386,18 +389,19 @@ bool BBLNetworkPlugin::versioned_library_exists(const std::string& version)
 
 bool BBLNetworkPlugin::legacy_library_exists()
 {
-    std::string data_dir_str = data_dir();
-    boost::filesystem::path data_dir_path(data_dir_str);
-    auto plugin_folder = data_dir_path / "plugins";
+    return false;
+//     std::string data_dir_str = data_dir();
+//     boost::filesystem::path data_dir_path(data_dir_str);
+//     auto plugin_folder = data_dir_path / "plugins";
 
-#if defined(_MSC_VER) || defined(_WIN32)
-    auto legacy_path = plugin_folder / (std::string(BAMBU_NETWORK_LIBRARY) + ".dll");
-#elif defined(__WXMAC__)
-    auto legacy_path = plugin_folder / (std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + ".dylib");
-#else
-    auto legacy_path = plugin_folder / (std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + ".so");
-#endif
-    return boost::filesystem::exists(legacy_path);
+// #if defined(_MSC_VER) || defined(_WIN32)
+//     auto legacy_path = plugin_folder / (std::string(BAMBU_NETWORK_LIBRARY) + ".dll");
+// #elif defined(__WXMAC__)
+//     auto legacy_path = plugin_folder / (std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + ".dylib");
+// #else
+//     auto legacy_path = plugin_folder / (std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + ".so");
+// #endif
+//     return boost::filesystem::exists(legacy_path);
 }
 
 void BBLNetworkPlugin::remove_legacy_library()
@@ -422,48 +426,49 @@ void BBLNetworkPlugin::remove_legacy_library()
 
 std::vector<std::string> BBLNetworkPlugin::scan_plugin_versions()
 {
-    std::vector<std::string> discovered_versions;
-    std::string data_dir_str = data_dir();
-    boost::filesystem::path plugin_folder = boost::filesystem::path(data_dir_str) / "plugins";
+    return std::vector<std::string>{};
+//     std::vector<std::string> discovered_versions;
+//     std::string data_dir_str = data_dir();
+//     boost::filesystem::path plugin_folder = boost::filesystem::path(data_dir_str) / "plugins";
 
-    if (!boost::filesystem::is_directory(plugin_folder)) {
-        return discovered_versions;
-    }
+//     if (!boost::filesystem::is_directory(plugin_folder)) {
+//         return discovered_versions;
+//     }
 
-#if defined(_MSC_VER) || defined(_WIN32)
-    std::string prefix = std::string(BAMBU_NETWORK_LIBRARY) + "_";
-    std::string extension = ".dll";
-#elif defined(__WXMAC__)
-    std::string prefix = std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + "_";
-    std::string extension = ".dylib";
-#else
-    std::string prefix = std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + "_";
-    std::string extension = ".so";
-#endif
+// #if defined(_MSC_VER) || defined(_WIN32)
+//     std::string prefix = std::string(BAMBU_NETWORK_LIBRARY) + "_";
+//     std::string extension = ".dll";
+// #elif defined(__WXMAC__)
+//     std::string prefix = std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + "_";
+//     std::string extension = ".dylib";
+// #else
+//     std::string prefix = std::string("lib") + std::string(BAMBU_NETWORK_LIBRARY) + "_";
+//     std::string extension = ".so";
+// #endif
 
-    boost::system::error_code ec;
-    for (auto& entry : boost::filesystem::directory_iterator(plugin_folder, ec)) {
-        if (ec) {
-            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << ": error iterating directory: " << ec.message();
-            break;
-        }
-        if (!boost::filesystem::is_regular_file(entry.status()))
-            continue;
+//     boost::system::error_code ec;
+//     for (auto& entry : boost::filesystem::directory_iterator(plugin_folder, ec)) {
+//         if (ec) {
+//             BOOST_LOG_TRIVIAL(warning) << __FUNCTION__ << ": error iterating directory: " << ec.message();
+//             break;
+//         }
+//         if (!boost::filesystem::is_regular_file(entry.status()))
+//             continue;
 
-        std::string filename = entry.path().filename().string();
+//         std::string filename = entry.path().filename().string();
 
-        if (filename.rfind(prefix, 0) != 0)
-            continue;
-        if (filename.size() <= extension.size() ||
-            filename.compare(filename.size() - extension.size(), extension.size(), extension) != 0)
-            continue;
+//         if (filename.rfind(prefix, 0) != 0)
+//             continue;
+//         if (filename.size() <= extension.size() ||
+//             filename.compare(filename.size() - extension.size(), extension.size(), extension) != 0)
+//             continue;
 
-        std::string version = filename.substr(prefix.size(),
-                                               filename.size() - prefix.size() - extension.size());
-        discovered_versions.push_back(version);
-    }
+//         std::string version = filename.substr(prefix.size(),
+//                                                filename.size() - prefix.size() - extension.size());
+//         discovered_versions.push_back(version);
+//     }
 
-    return discovered_versions;
+//     return discovered_versions;
 }
 
 // ============================================================================
@@ -740,62 +745,65 @@ void BBLNetworkPlugin::clear_all_function_pointers()
 
 std::vector<NetworkLibraryVersionInfo> get_all_available_versions()
 {
-    std::vector<NetworkLibraryVersionInfo> result;
-    std::set<std::string> known_base_versions;
-    std::set<std::string> all_known_versions;
+    return {};
+// #if 0
+//     std::vector<NetworkLibraryVersionInfo> result;
+//     std::set<std::string> known_base_versions;
+//     std::set<std::string> all_known_versions;
 
-    for (size_t i = 0; i < AVAILABLE_NETWORK_VERSIONS_COUNT; ++i) {
-        result.push_back(NetworkLibraryVersionInfo::from_static(AVAILABLE_NETWORK_VERSIONS[i]));
-        known_base_versions.insert(AVAILABLE_NETWORK_VERSIONS[i].version);
-        all_known_versions.insert(AVAILABLE_NETWORK_VERSIONS[i].version);
-    }
+//     for (size_t i = 0; i < AVAILABLE_NETWORK_VERSIONS_COUNT; ++i) {
+//         result.push_back(NetworkLibraryVersionInfo::from_static(AVAILABLE_NETWORK_VERSIONS[i]));
+//         known_base_versions.insert(AVAILABLE_NETWORK_VERSIONS[i].version);
+//         all_known_versions.insert(AVAILABLE_NETWORK_VERSIONS[i].version);
+//     }
 
-    std::vector<std::string> discovered = BBLNetworkPlugin::scan_plugin_versions();
+//     std::vector<std::string> discovered = BBLNetworkPlugin::scan_plugin_versions();
 
-    std::vector<std::pair<std::string, std::string>> suffixed_versions;
+//     std::vector<std::pair<std::string, std::string>> suffixed_versions;
 
-    for (const auto& version : discovered) {
-        if (all_known_versions.count(version) > 0)
-            continue;
+//     for (const auto& version : discovered) {
+//         if (all_known_versions.count(version) > 0)
+//             continue;
 
-        std::string base = extract_base_version(version);
-        std::string suffix = extract_suffix(version);
+//         std::string base = extract_base_version(version);
+//         std::string suffix = extract_suffix(version);
 
-        if (suffix.empty())
-            continue;
+//         if (suffix.empty())
+//             continue;
 
-        if (known_base_versions.count(base) == 0)
-            continue;
+//         if (known_base_versions.count(base) == 0)
+//             continue;
 
-        suffixed_versions.emplace_back(base, version);
-        all_known_versions.insert(version);
-    }
+//         suffixed_versions.emplace_back(base, version);
+//         all_known_versions.insert(version);
+//     }
 
-    std::sort(suffixed_versions.begin(), suffixed_versions.end(),
-              [](const auto& a, const auto& b) {
-                  if (a.first != b.first) return a.first > b.first;
-                  return a.second < b.second;
-              });
+//     std::sort(suffixed_versions.begin(), suffixed_versions.end(),
+//               [](const auto& a, const auto& b) {
+//                   if (a.first != b.first) return a.first > b.first;
+//                   return a.second < b.second;
+//               });
 
-    for (const auto& [base, full] : suffixed_versions) {
-        size_t insert_pos = 0;
-        for (size_t i = 0; i < result.size(); ++i) {
-            if (result[i].base_version == base) {
-                insert_pos = i + 1;
-                while (insert_pos < result.size() &&
-                       result[insert_pos].base_version == base) {
-                    ++insert_pos;
-                }
-                break;
-            }
-        }
+//     for (const auto& [base, full] : suffixed_versions) {
+//         size_t insert_pos = 0;
+//         for (size_t i = 0; i < result.size(); ++i) {
+//             if (result[i].base_version == base) {
+//                 insert_pos = i + 1;
+//                 while (insert_pos < result.size() &&
+//                        result[insert_pos].base_version == base) {
+//                     ++insert_pos;
+//                 }
+//                 break;
+//             }
+//         }
 
-        std::string sfx = extract_suffix(full);
-        result.insert(result.begin() + insert_pos,
-                      NetworkLibraryVersionInfo::from_discovered(full, base, sfx));
-    }
+//         std::string sfx = extract_suffix(full);
+//         result.insert(result.begin() + insert_pos,
+//                       NetworkLibraryVersionInfo::from_discovered(full, base, sfx));
+//     }
 
-    return result;
+//     return result;
+// #endif
 }
 
 

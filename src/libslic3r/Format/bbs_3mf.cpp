@@ -1433,6 +1433,14 @@ void PlateData::parse_filament_info(GCodeProcessorResult *result)
             if (is_orca_3mf)
                 *is_orca_3mf = false;
         }
+
+        if(m_generator.find("ElegooSlicer") != std::string::npos){
+            if (m_bambuslicer_generator_version)
+                file_version = *m_bambuslicer_generator_version;
+            if (is_orca_3mf)
+                *is_orca_3mf = true;
+        }
+
         // save for restore
         if (result && m_load_aux && !m_load_restore) {
             save_string_file(model.get_backup_path() + "/origin.txt", filename);
