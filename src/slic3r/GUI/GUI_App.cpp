@@ -969,14 +969,11 @@ void GUI_App::post_init()
             }
 
             this->check_new_version_sf();
-//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
-#if 0 
             const auto cloud_provider = get_printer_cloud_provider();
             if (is_user_login(cloud_provider) && !app_config->get_stealth_mode()) {
               // this->check_privacy_version(0);
               request_user_handle(0, cloud_provider);
             }
-#endif
         });
     }
 
@@ -1231,6 +1228,8 @@ static std::string decode(std::string const& extra, std::string const& path = {}
 
 int GUI_App::download_plugin(std::string name, std::string package_name, InstallProgressFn pro_fn, WasCancelledFn cancel_fn)
 {
+return 0;
+#if 0 // Disable networking plugin
     int result = 0;
     json j;
     std::string err_msg;
@@ -1394,10 +1393,14 @@ int GUI_App::download_plugin(std::string name, std::string package_name, Install
     j["result"] = result < 0 ? "failed" : "success";
     j["error_msg"] = err_msg;
     return result;
+#endif
 }
 
 int GUI_App::install_plugin(std::string name, std::string package_name, InstallProgressFn pro_fn, WasCancelledFn cancel_fn)
 {
+return 0;
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     bool cancel = false;
     std::string target_file_path = (fs::temp_directory_path() / package_name).string();
 
@@ -1614,6 +1617,7 @@ int GUI_App::install_plugin(std::string name, std::string package_name, InstallP
         app_config->set_bool("installed_networking", true);
     BOOST_LOG_TRIVIAL(info) << "[install_plugin] success";
     return 0;
+#endif
 }
 
 void GUI_App::restart_networking()
@@ -4285,20 +4289,22 @@ bool GUI_App::TryShowBeginnerGuideOnPreparePage()
 
 void GUI_App::ShowUserLogin(bool show, const std::string& provider)
 {
-    // Show user Login Dialog for specified cloud
-    if (show) {
-        try {
-            delete login_dlg;
-            auto cloud_agent = m_agent->get_cloud_agent(provider);
-            login_dlg        = new ZUserLogin(cloud_agent);
-            login_dlg->ShowModal();
-        } catch (std::exception &) {
-            ;
-        }
-    } else {
-        if (login_dlg)
-            login_dlg->EndModal(wxID_OK);
-    }
+    UserLoginView::ShowLoginDialog();
+
+    // // Show user Login Dialog for specified cloud
+    // if (show) {
+    //     try {
+    //         delete login_dlg;
+    //         auto cloud_agent = m_agent->get_cloud_agent(provider);
+    //         login_dlg        = new ZUserLogin(cloud_agent);
+    //         login_dlg->ShowModal();
+    //     } catch (std::exception &) {
+    //         ;
+    //     }
+    // } else {
+    //     if (login_dlg)
+    //         login_dlg->EndModal(wxID_OK);
+    // }
 }
 
 
@@ -4588,23 +4594,31 @@ void GUI_App::request_user_handle(int online_login, const std::string& provider/
 
 void GUI_App::request_user_login(int online_login, const std::string& provider/* = ORCA_CLOUD_PROVIDER*/)
 {
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     auto evt = new wxCommandEvent(EVT_USER_LOGIN);
     evt->SetInt(online_login);
     evt->SetString(wxString::FromUTF8(provider));
     wxQueueEvent(this, evt);
+#endif
 }
 
 void GUI_App::post_logout_to_webview(const std::string& provider)
 {
+    //ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     std::string logout_cmd = m_agent->build_logout_cmd(provider);
     if (!logout_cmd.empty()) {
         wxString strJS = wxString::Format("window.postMessage(%s)", logout_cmd);
         GUI::wxGetApp().run_script(strJS);
     }
+#endif
 }
 
 void GUI_App::request_user_logout(const std::string& provider/* = ORCA_CLOUD_PROVIDER*/)
 {
+    //ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     if (m_agent && m_agent->is_user_login(provider)) {
         m_agent->user_logout(true, provider);
 
@@ -4632,6 +4646,7 @@ void GUI_App::request_user_logout(const std::string& provider/* = ORCA_CLOUD_PRO
 
         post_logout_to_webview(provider);
     }
+#endif
 }
 
 int GUI_App::request_user_unbind(std::string dev_id, const std::string& provider/* = ORCA_CLOUD_PROVIDER*/)
@@ -5069,6 +5084,8 @@ void GUI_App::on_http_error(wxCommandEvent &evt)
         return;
     }
 
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled   
+#if 0 
     if (status == 409 && provider == ORCA_CLOUD_PROVIDER) {
         BOOST_LOG_TRIVIAL(info) << "Http error 409.";
         // Parse the conflict body to extract the error code and server profile id
@@ -5152,6 +5169,7 @@ void GUI_App::on_http_error(wxCommandEvent &evt)
     if (provider == ORCA_CLOUD_PROVIDER && status >= 400 && code != HttpErrorVersionLimited) {
         BOOST_LOG_TRIVIAL(warning) << "API call to OrcaCloud failed with status=" << status;
     }
+#endif
 }
 
 void GUI_App::enable_user_preset_folder(bool enable)
@@ -6967,6 +6985,8 @@ bool GUI_App::unsubscribe_bundle(const std::string& id)
 
 void GUI_App::start_sync_user_preset(bool with_progress_dlg)
 {
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     if (app_config->get_stealth_mode())
         return;
 
@@ -7261,6 +7281,7 @@ void GUI_App::start_sync_user_preset(bool with_progress_dlg)
                 }
             }
         });
+#endif
 }
 
 void GUI_App::stop_sync_user_preset()
@@ -7279,6 +7300,8 @@ void GUI_App::stop_sync_user_preset()
 
 void GUI_App::restart_sync_user_preset()
 {
+//ELEGOO: ElegooSlicer does not need this feature, temporarily disabled
+#if 0
     // A manual sync's progress dialog is already on screen — ignore repeat triggers so a
     // second modal dialog can never stack. This matters most offline: each attempt blocks
     // on a long HTTP timeout and can't be cancelled mid-request, and on macOS the global
@@ -7314,6 +7337,7 @@ void GUI_App::restart_sync_user_preset()
                     start_sync_user_preset(true);
             });
     }).detach();
+#endif
 }
 
 void GUI_App::force_push_conflicting_preset(const std::string& setting_id)
