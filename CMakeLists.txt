@@ -982,6 +982,16 @@ set (CPACK_PACKAGE_FILE_NAME "ElegooSlicer_Windows_Installer_V${ELEGOOSLICER_VER
 set (CPACK_PACKAGE_DESCRIPTION_SUMMARY "ElegooSlicer is an open source slicer for FDM printers")
 set (CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/ELEGOO-3D/ElegooSlicer")
 set (CPACK_PACKAGE_INSTALL_DIRECTORY ${CPACK_PACKAGE_NAME})
+# Suffix the Windows installer with its target arch so the x64 and arm64 builds
+# produce distinct filenames (matches ARCH_SUFFIX in build_orca.yml). Same
+# CMAKE_SYSTEM_PROCESSOR mapping used by orcaslicer_copy_dlls() above.
+if (WIN32)
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "ARM64")
+        string (APPEND CPACK_PACKAGE_FILE_NAME "_arm64")
+    else ()
+        string (APPEND CPACK_PACKAGE_FILE_NAME "_x64")
+    endif ()
+endif ()
 set (CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/resources/images\\\\ElegooSlicer.ico")
 set (CPACK_NSIS_MUI_ICON "${CPACK_PACKAGE_ICON}")
 set (CPACK_NSIS_MUI_UNIICON "${CPACK_PACKAGE_ICON}")

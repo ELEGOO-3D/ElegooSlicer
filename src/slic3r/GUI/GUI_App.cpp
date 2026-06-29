@@ -758,6 +758,14 @@ void GUI_App::post_init()
     if (m_post_init_started)
         return;
     m_post_init_started = true;
+#if wxUSE_WEBVIEW_EDGE
+    // Ensure the Microsoft WebView2 runtime is installed before any WebView is
+    // created. The setup wizard and several dialogs render entirely through
+    // WebView2; without the runtime they come up blank. This runs here (not in the
+    // constructor) so that wxWidgets is fully initialized and the event loop is
+    // running, and so it precedes the first WebView creation (the setup wizard).
+    init_webview_runtime();
+#endif
 
     m_open_method = "double_click";
     std::string telemetry_launch_target;
@@ -988,7 +996,7 @@ void GUI_App::post_init()
             MessageDialog dlg(nullptr,
                 _L("Since version 2.4.0, OrcaSlicer syncs user profiles through Orca Cloud instead of Bambu Cloud.\n\n"
                    "To migrate your existing profiles, log in to Orca Cloud and they will be transferred automatically. "
-                   "If any profiles are still missing afterwards, follow the guide in our wiki to restore them.\n\n"
+                   "To learn more about how OrcaSlicer stores and syncs your profiles, or to migrate your presets manually, check out our wiki.\n\n"
                    "If you did not use Bambu Cloud to sync profiles, this change does not affect you and you can safely ignore this message."),
                 _L("Profile syncing change"),
                 wxOK,
@@ -1098,9 +1106,10 @@ GUI_App::GUI_App()
 	//app config initializes early becasuse it is used in instance checking in ElegooSlicer.cpp
     this->init_app_config();
     this->init_download_path();
-#if wxUSE_WEBVIEW_EDGE
-    this->init_webview_runtime();
-#endif
+    // Note: the WebView2 runtime check (init_webview_runtime) used to run here, but
+    // the constructor executes before wxWidgets is fully initialized and before the
+    // event loop starts, so its modal prompt/installer could silently fail to appear.
+    // It now runs in post_init(), before the first WebView (the setup wizard) is created.
 
     reset_to_active();
 }
@@ -2365,13 +2374,37 @@ void GUI_App::init_download_path()
 #if wxUSE_WEBVIEW_EDGE
 void GUI_App::init_webview_runtime()
 {
-    // Check WebView Runtime
-    if (!WebView::CheckWebViewRuntime()) {
-        int nRet = wxMessageBox(_L("ElegooSlicer requires the Microsoft WebView2 Runtime to operate certain features.\nClick Yes to install it now."),
-                                _L("WebView2 Runtime"), wxYES_NO);
-        if (nRet == wxYES) {
-            WebView::DownloadAndInstallWebViewRuntime();
-        }
+    // Check whether the Microsoft WebView2 runtime is already present.
+    if (WebView::CheckWebViewRuntime()) {
+        BOOST_LOG_TRIVIAL(info) << "WebView2 runtime detected.";
+        return;
+    }
+
+    BOOST_LOG_TRIVIAL(warning) << "WebView2 runtime not found; prompting user to install.";
+    int nRet = wxMessageBox(_L("ElegooSlicer requires the Microsoft WebView2 Runtime to operate certain features.\nClick Yes to install it now."),
+                            _L("WebView2 Runtime"), wxYES_NO);
+    if (nRet != wxYES) {
+        BOOST_LOG_TRIVIAL(warning) << "User declined WebView2 runtime installation.";
+        return;
+    }
+
+    // The bootstrapper auto-detects the device architecture (x64/x86/ARM64) and
+    // installs the matching runtime. The install is synchronous, and because this
+    // runs before the first WebView is created, a successful install takes effect
+    // in this same process without a restart.
+    bool installed = WebView::DownloadAndInstallWebViewRuntime();
+
+    // Re-check: the install can still fail (declined UAC elevation, no network, 
+    // etc.). Without the runtime the setup wizard and other WebView dialogs render
+    // blank, so surface an explicit message rather than failing silently.
+    if (installed && WebView::CheckWebViewRuntime()) {
+        BOOST_LOG_TRIVIAL(info) << "WebView2 runtime installed successfully.";
+    } else {
+        BOOST_LOG_TRIVIAL(error) << "WebView2 runtime installation failed or still not detected.";
+        wxMessageBox(_L("The Microsoft WebView2 Runtime could not be installed.\n"
+                        "Some features, including the setup wizard, may appear blank until it is installed.\n"
+                        "Please install it manually from https://developer.microsoft.com/microsoft-edge/webview2/ and restart ElegooSlicer."),
+                     _L("WebView2 Runtime"), wxOK | wxICON_WARNING);
     }
 }
 #endif
@@ -2848,26 +2881,24 @@ bool GUI_App::on_init_inner()
 #endif
 #endif
 
-    if (m_last_config_version) {
-        int last_major = m_last_config_version->maj();
-        int last_minor = m_last_config_version->min();
-        int last_patch = m_last_config_version->patch()/100;
-        int xxx = m_last_config_version->patch();
-        const char *yyy = m_last_config_version->prerelease();
-        auto curr_version = Semver::parse(SLIC3R_VERSION);
-        if (curr_version) {
-            int cur_major = curr_version->maj();
-            int cur_minor = curr_version->min();
-            int cur_patch = curr_version->patch();
-            BOOST_LOG_TRIVIAL(info) << boost::format("last app version {%1%.%2%.%3%}, current version {%4%.%5%.%6%}")
-                %last_major%last_minor%last_patch%cur_major%cur_minor%cur_patch;
-            if ((last_major != cur_major)
-                ||(last_minor != cur_minor)
-                ||(last_patch != cur_patch)) {
-                //remove_old_networking_plugins();
-            }
-        }
-    }
+    // Orca: we allow user to pin the version of plugin, so we don't need to remove old networking plugins when the app version is updated
+    //
+    // if (m_last_config_version) {
+    //     int last_major = m_last_config_version->maj();
+    //     int last_minor = m_last_config_version->min();
+    //     int last_patch = m_last_config_version->patch()/100;
+    //     std::string studio_ver = SLIC3R_VERSION;
+    //     int cur_major = atoi(studio_ver.substr(0,2).c_str());
+    //     int cur_minor = atoi(studio_ver.substr(3,2).c_str());
+    //     int cur_patch = atoi(studio_ver.substr(6,2).c_str());
+    //     BOOST_LOG_TRIVIAL(info) << boost::format("last app version {%1%.%2%.%3%}, current version {%4%.%5%.%6%}")
+    //         %last_major%last_minor%last_patch%cur_major%cur_minor%cur_patch;
+    //     if ((last_major != cur_major)
+    //         ||(last_minor != cur_minor)
+    //         ||(last_patch != cur_patch)) {
+    //         remove_old_networking_plugins();
+    //     }
+    // }
 
     //Orca: write OrcaSlicer version
     if(app_config->get("version") != ELEGOOSLICER_VERSION) {

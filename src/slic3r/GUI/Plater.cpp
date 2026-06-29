@@ -16407,6 +16407,8 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn)
     const bool  use_3mf     = use_3mf_opt != nullptr && use_3mf_opt->value;
 
     upload_job.upload_data.use_3mf = use_3mf;
+    // Orca: the concrete plate to export/send (PLATE_CURRENT_IDX resolves to the current plate).
+    const int resolved_plate_idx = plate_idx == PLATE_CURRENT_IDX ? get_partplate_list().get_curr_plate_index() : plate_idx;
 
     // Obtain default output path
     fs::path default_output_file;
@@ -16468,7 +16470,7 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn)
             upload_job.upload_data.post_action   = pDlg->getPostAction();
             upload_job.upload_data.extended_info = pDlg->getExtendedInfo();
         } else {
-        const auto host_type_opt        = physical_printer_config->option<ConfigOptionEnum<PrintHostType>>("host_type");
+                    const auto host_type_opt        = physical_printer_config->option<ConfigOptionEnum<PrintHostType>>("host_type");
         const auto host_type            = host_type_opt != nullptr ? host_type_opt->value : htElegooLink;
         const auto* ff_serial_opt       = physical_printer_config->option<ConfigOptionString>("flashforge_serial_number");
         const auto* ff_code_opt         = physical_printer_config->option<ConfigOptionString>("printhost_apikey");
@@ -16476,7 +16478,11 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn)
                                           ff_code_opt != nullptr && !ff_code_opt->value.empty();
 
         std::unique_ptr<PrintHostSendDialog> pDlg;
-        if (host_type == htCrealityPrint) {
+        if (host_type == htElegooLink) {
+            pDlg = std::make_unique<PrintHostSendDialog>(default_output_file, upload_job.printhost->get_post_upload_actions(), groups,
+                                                               storage_paths, storage_names,
+                                                               config->get_bool("open_device_tab_post_upload"));
+        } else if (host_type == htCrealityPrint) {
             pDlg = std::make_unique<CrealityPrintHostSendDialog>(default_output_file, upload_job.printhost->get_post_upload_actions(), groups,
                                                                  storage_paths, storage_names,
                                                                  config->get_bool("open_device_tab_post_upload"),
@@ -16504,7 +16510,6 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn)
             DynamicPrintConfig          cfg                 = wxGetApp().preset_bundle->full_config();
             const auto*                 filament_color      = dynamic_cast<const ConfigOptionStrings*>(cfg.option("filament_colour"));
             const auto*                 filament_id_opt     = dynamic_cast<const ConfigOptionStrings*>(cfg.option("filament_ids"));
-            const int                   resolved_plate_idx  = plate_idx == PLATE_CURRENT_IDX ? get_partplate_list().get_curr_plate_index() : plate_idx;
             auto enrich_project_filaments = [&](std::vector<FilamentInfo>& filaments) {
                 for (auto& filament : filaments) {
                     if (filament.id < 0)
@@ -16552,19 +16557,32 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn)
                                                                    supports_material_station,
                                                                    std::move(slots),
                                                                    project_filaments);
+        } else {
+            pDlg = std::make_unique<PrintHostSendDialog>(default_output_file, upload_job.printhost->get_post_upload_actions(), groups,
+                                                         storage_paths, storage_names, config->get_bool("open_device_tab_post_upload"));
+        }
 
-            pDlg->init();
-            if (pDlg->ShowModal() != wxID_OK) {
-                return;
-            }
+        pDlg->init();
+        if (pDlg->ShowModal() != wxID_OK) {
+            return;
+        }
 
-            config->set_bool("open_device_tab_post_upload", pDlg->switch_to_device_tab());
-            // PrintHostUpload upload_data;
-            upload_job.switch_to_device_tab    = pDlg->switch_to_device_tab();
-            upload_job.upload_data.upload_path = pDlg->filename();
-            upload_job.upload_data.post_action = pDlg->post_action();
-            upload_job.upload_data.group       = pDlg->group();
-            upload_job.upload_data.storage     = pDlg->storage();
+        config->set_bool("open_device_tab_post_upload", pDlg->switch_to_device_tab());
+        // PrintHostUpload upload_data;
+        upload_job.switch_to_device_tab    = pDlg->switch_to_device_tab();
+        upload_job.upload_data.upload_path = pDlg->filename();
+        upload_job.upload_data.post_action = pDlg->post_action();
+        upload_job.upload_data.group       = pDlg->group();
+        upload_job.upload_data.storage     = pDlg->storage();
+        upload_job.upload_data.extended_info = pDlg->extendedInfo();
+        // Orca: gcode inside a .gcode.3mf is index-coded (Metadata/plate_<N>.gcode) and a bundle may
+        // carry several of them, so the upload must name which plate to print via a 1-based plateindex.
+        // Even a single-plate bundle needs it, since its gcode entry is still indexed. The host upload
+        // forwards the field and servers that don't use it ignore it. "All plates" points at the
+        // current plate — the bundle still carries every plate's gcode.
+        if (use_3mf) {
+            const int plateindex = (plate_idx == PLATE_ALL_IDX ? get_partplate_list().get_curr_plate_index() : resolved_plate_idx) + 1;
+            upload_job.upload_data.extended_info["plateindex"] = std::to_string(plateindex);
         }
         }
     }
@@ -16577,8 +16595,7 @@ void Plater::send_gcode_legacy(int plate_idx, Export3mfProgressFn proFn)
         }
     if (use_3mf) {
         // Process gcode
-        const int export_plate_idx = plate_idx == PLATE_CURRENT_IDX ? get_partplate_list().get_curr_plate_index() : plate_idx;
-        const int result = send_gcode(export_plate_idx, nullptr);
+        const int result = send_gcode(resolved_plate_idx, nullptr);
 
         if (result < 0) {
             wxString msg = _L("Abnormal print file data. Please slice again");
