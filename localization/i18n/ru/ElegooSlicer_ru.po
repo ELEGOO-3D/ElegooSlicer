@@ -1892,7 +1892,7 @@ msgstr ""
 "Нет - Не изменять эти настройки"
 
 msgid "Suggestion"
-msgstr ""
+msgstr "Рекомендация"
 
 msgid "Text"
 msgstr "Текст"
@@ -3277,7 +3277,7 @@ msgid "Calibration"
 msgstr "Калибровка"
 
 msgid "Continue"
-msgstr ""
+msgstr "Продолжить"
 
 msgid "Open Folder"
 msgstr "Открыть папку"
@@ -6358,7 +6358,7 @@ msgstr ""
 msgid ""
 "Would you like OrcaSlicer to automatically fix this by clearing the rotation "
 "template settings?"
-msgstr ""
+msgstr "Сбросить настройки поворота шаблона заполнения?"
 
 #, c-format, boost-format
 msgid ""
@@ -18809,10 +18809,10 @@ msgid ""
 msgstr ""
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "Добавление рельефного текста"
 
 msgid "Created text volume is empty. Change text or font."
-msgstr ""
+msgstr "Текст имеет нулевой объём. Попробуйте изменить текст или шрифт."
 
 msgid ""
 "It is used default volume for embossed text, try to change text or font to "
@@ -18822,16 +18822,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "Изменение свойств рельефа"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "Добавление объёма рельефного текста"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "В шрифте отсутствуют данные для создания формы введённого текста."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "Невозможно спроецировать текст."
 
 msgid "Head diameter"
 msgstr "Диаметр уха"
@@ -18883,16 +18883,16 @@ msgid "Please select single object."
 msgstr "Пожалуйста, выберите один объект."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
-msgstr ""
+msgstr "Отключите разнесение и выберите сборку из нескольких частей."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Выберите хотя бы две модели."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(подвижная)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Сборка по точкам"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18901,10 +18901,10 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "Сборка по граням"
 
 msgid "Success"
-msgstr ""
+msgstr "Успех"
 
 msgid "An unknown error occurred. Please try again later."
 msgstr ""
@@ -19118,36 +19118,38 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "Параметры импорта STEP"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"Уменьшение линейного и углового отклонений повышает качество поверхности и "
+"время обработки."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Линейное отклонение"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
-msgstr ""
+msgstr "Укажите допустимое значение линейного отклонения (от 0.001 до 0.1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Угловое отклонение"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "Укажите допустимое значение углового отклонения (от 0.01 до 1.0)"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "Разделять модель из нескольких тел на части"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Количество треугольников"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Расчёт, подождите..."
 
 msgid "The download has failed"
 msgstr ""

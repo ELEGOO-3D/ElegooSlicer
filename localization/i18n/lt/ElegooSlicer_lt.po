@@ -232,7 +232,7 @@ msgid "Error: Please close all toolbar menus first"
 msgstr "Klaida: Prašome pirmiau uždaryti visus įrankių juostos meniu"
 
 msgid "in"
-msgstr ""
+msgstr "in"
 
 msgid "mm"
 msgstr "mm"
@@ -1867,7 +1867,7 @@ msgstr ""
 "Ne - Nekeisti šių nustatymų"
 
 msgid "Suggestion"
-msgstr ""
+msgstr "Suggestion"
 
 msgid "Text"
 msgstr "Teskstas"
@@ -3232,7 +3232,7 @@ msgid "Calibration"
 msgstr "Kalibravimas"
 
 msgid "Continue"
-msgstr ""
+msgstr "Tęsti"
 
 msgid "Open Folder"
 msgstr "Atverti katalogą"
@@ -18442,10 +18442,10 @@ msgid ""
 msgstr ""
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "Add Emboss text object"
 
 msgid "Created text volume is empty. Change text or font."
-msgstr ""
+msgstr "Created text volume is empty. Change text or font."
 
 msgid ""
 "It is used default volume for embossed text, try to change text or font to "
@@ -18455,16 +18455,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "Emboss attribute change"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "Add Emboss text Volume"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "Font doesn't have any shape for given text."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "There is no valid surface for text projection."
 
 msgid "Head diameter"
 msgstr "Galvutės skersmuo"
@@ -18516,16 +18516,16 @@ msgid "Please select single object."
 msgstr "Pasirinkite vieną objektą."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
-msgstr ""
+msgstr "Please confirm explosion ratio = 1 and select at least two volumes."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Please select at least two volumes."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(Moving)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Point and point assembly"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18537,7 +18537,7 @@ msgid "Face and face assembly"
 msgstr ""
 
 msgid "Success"
-msgstr ""
+msgstr "Success"
 
 msgid "An unknown error occurred. Please try again later."
 msgstr ""
@@ -18751,36 +18751,38 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "Step file import parameters"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"Smaller linear and angular deflections result in higher-quality "
+"transformations but increase the processing time."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Linear Deflection"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
-msgstr ""
+msgstr "Please input a valid value (0.001 < linear deflection < 0.1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Angle Deflection"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "Please input a valid value (0.01 < angle deflection < 1.0)"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "Split compound and compsolid into multiple objects"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Number of triangular facets"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Calculating, please wait..."
 
 msgid "The download has failed"
 msgstr ""

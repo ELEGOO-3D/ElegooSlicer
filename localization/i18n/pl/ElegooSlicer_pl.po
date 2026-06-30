@@ -22,7 +22,7 @@ msgid "Ctrl+"
 msgstr "Ctrl+"
 
 msgid "Alt+"
-msgstr ""
+msgstr "Alt+"
 
 msgid "Shift+"
 msgstr "Shift+"
@@ -157,7 +157,7 @@ msgid "Height range"
 msgstr "Zakres wysokości"
 
 msgid "Enter"
-msgstr ""
+msgstr "Drukarka"
 
 msgid "Toggle Wireframe"
 msgstr "Przełącz rysunek techniczny"
@@ -234,19 +234,19 @@ msgid "mm"
 msgstr "mm"
 
 msgid "Part selection"
-msgstr ""
+msgstr "Wybór części"
 
 msgid "Fixed step drag"
-msgstr ""
+msgstr "Skok przesunięcia"
 
 msgid "Single sided scaling"
-msgstr ""
+msgstr "Skalowanie jednostronne"
 
 msgid "Position"
 msgstr "Pozycja"
 
 msgid "Rotate (relative)"
-msgstr ""
+msgstr "Obróć (względnie)"
 
 msgid "Scale ratios"
 msgstr "Współczynniki skali"
@@ -283,15 +283,16 @@ msgstr "Współrzędne"
 
 msgid "Reset current rotation to the value when open the rotation tool."
 msgstr ""
+"Zresetuj bieżący obrót do wartości ustawionej przy otwarciu narzędzia obrotu."
 
 msgid "Rotate (absolute)"
-msgstr ""
+msgstr "Obrót (bezwzględny)"
 
 msgid "Reset current rotation to real zeros."
-msgstr ""
+msgstr "Zresetuj bieżący obrót do wartości zerowej."
 
 msgid "Part coordinates"
-msgstr ""
+msgstr "Koordynaty części"
 
 #. TRN - Input label. Be short as possible
 msgid "Size"
@@ -1823,7 +1824,7 @@ msgid "Delete the selected object"
 msgstr "Usuń wybrany obiekt"
 
 msgid "Backspace"
-msgstr ""
+msgstr "Wstecz"
 
 msgid "Load..."
 msgstr "Wczytaj..."
@@ -2218,7 +2219,7 @@ msgstr ""
 "ustawienia procesu dla wybranych obiektów."
 
 msgid "Remove paint-on fuzzy skin"
-msgstr ""
+msgstr "Usuń malowanie Fuzzy Skin"
 
 msgid "Delete connector from object which is a part of cut"
 msgstr "Usuń łącznik z obiektu będącego częścią przecięcia"
@@ -3065,10 +3066,10 @@ msgid "AMS Slots"
 msgstr "Gniazda AMS"
 
 msgid "Left AMS"
-msgstr ""
+msgstr "Lewy AMS"
 
 msgid "Right AMS"
-msgstr ""
+msgstr "Prawy AMS"
 
 msgid ""
 "Note: Only the AMS slots loaded with the same material type can be selected."
@@ -4446,7 +4447,7 @@ msgid "part selection"
 msgstr ""
 
 msgid "number keys"
-msgstr ""
+msgstr "klawisze numeryczne"
 
 msgid "number keys can quickly change the color of objects"
 msgstr ""
@@ -4563,7 +4564,7 @@ msgid "Assemble Control"
 msgstr "Kontrola montażu"
 
 msgid "Selection Mode"
-msgstr ""
+msgstr "Tryb wyboru"
 
 msgid "Total Volume:"
 msgstr "Całkowita objętość:"
@@ -5544,7 +5545,7 @@ msgid "Camera"
 msgstr "Kamera"
 
 msgid "Storage"
-msgstr ""
+msgstr "Pamięć"
 
 msgid "Camera Setting"
 msgstr "Ustawienia kamery"
@@ -5577,10 +5578,10 @@ msgid "Debug Info"
 msgstr "Informacje debugowania"
 
 msgid "No Storage"
-msgstr ""
+msgstr "Brak pamięci"
 
 msgid "Storage Abnormal"
-msgstr ""
+msgstr "Anomalia pamięci"
 
 msgid "Cancel print"
 msgstr "Anuluj drukowanie"
@@ -5974,7 +5975,7 @@ msgid "Cut connectors"
 msgstr "Utnij łącznik"
 
 msgid "Paint-on fuzzy skin"
-msgstr ""
+msgstr "Malowanie Fuzzy Skin"
 
 msgid "Layers"
 msgstr "Warstwy"
@@ -6253,7 +6254,7 @@ msgid "Collapse sidebar"
 msgstr "Zwiń pasek boczny"
 
 msgid "Tab"
-msgstr ""
+msgstr "Karty"
 
 #, c-format, boost-format
 msgid "Loading file: %s"
@@ -8059,7 +8060,7 @@ msgid "Support filament"
 msgstr "Filament podpory"
 
 msgid "Support ironing"
-msgstr ""
+msgstr "Prasowanie podpory"
 
 msgid "Tree supports"
 msgstr "Drzewo"
@@ -8275,7 +8276,7 @@ msgid "Dependencies"
 msgstr "Zależności"
 
 msgid "Compatible printers"
-msgstr ""
+msgstr "Kompatybilne drukarki"
 
 msgid "Compatible process profiles"
 msgstr "Kompatybilne profile procesów"
@@ -8788,7 +8789,7 @@ msgid "Total ramming"
 msgstr ""
 
 msgid "Volume"
-msgstr ""
+msgstr "Objętość"
 
 msgid "Ramming line"
 msgstr ""
@@ -9032,7 +9033,7 @@ msgid "Gizmo mesh boolean"
 msgstr "Gizmo operacje boolowskie na siatce"
 
 msgid "Gizmo FDM paint-on fuzzy skin"
-msgstr ""
+msgstr "Uchwyt malowania Fuzzy Skin FDM"
 
 msgid "Gizmo SLA support points"
 msgstr "Punkty podpór SLA za pomocą \"uchwytów\""
@@ -9249,7 +9250,7 @@ msgstr ""
 "przejdź do kroku 3, aby rozwiązać problemy z siecią"
 
 msgid "Air Pump"
-msgstr ""
+msgstr "Pompa powietrza"
 
 msgid "Laser 10 W"
 msgstr ""
@@ -9258,7 +9259,7 @@ msgid "Laser 40 W"
 msgstr ""
 
 msgid "Cutting Module"
-msgstr ""
+msgstr "Moduł tnący"
 
 msgid "Model:"
 msgstr "Model:"
@@ -12071,6 +12072,8 @@ msgstr ""
 msgid ""
 "Using multiple lines for the infill pattern, if supported by infill pattern."
 msgstr ""
+"Wypełnienie przy użyciu wielu linii, jeśli jest to obsługiwane przez wybrany "
+"wzór wypełnienia."
 
 msgid "Sparse infill pattern"
 msgstr "Wzór wypełnienia"
@@ -12079,13 +12082,13 @@ msgid "Line pattern for internal sparse infill."
 msgstr "Wzór dla wewnętrznego wypełnienia"
 
 msgid "Zig Zag"
-msgstr ""
+msgstr "Zig Zag"
 
 msgid "Cross Zag"
-msgstr ""
+msgstr "Wypełnienie krzyżowe"
 
 msgid "Locked Zag"
-msgstr ""
+msgstr "Blokada Zag"
 
 msgid "Line"
 msgstr "Linie"
@@ -12403,7 +12406,7 @@ msgstr ""
 "dłuższy czas."
 
 msgid "Ironing fan speed"
-msgstr ""
+msgstr "Prędkość wentylatora przy prasowaniu"
 
 msgid ""
 "This part cooling fan speed is applied when ironing. Setting this parameter "
@@ -12455,7 +12458,7 @@ msgid "Whether to apply fuzzy skin on the first layer."
 msgstr "Określa czy zastosować skórę fuzzy od pierwszej warstwy"
 
 msgid "Fuzzy skin generator mode"
-msgstr ""
+msgstr "Tryb generatora skóry fuzzy"
 
 #, c-format, boost-format
 msgid ""
@@ -12482,10 +12485,10 @@ msgid ""
 msgstr ""
 
 msgid "Displacement"
-msgstr ""
+msgstr "Przesunięcie"
 
 msgid "Extrusion"
-msgstr ""
+msgstr "Ekstruzja"
 
 msgid "Combined"
 msgstr "Połączony"
@@ -12842,12 +12845,14 @@ msgstr ""
 "warstwy."
 
 msgid "Infill shift step"
-msgstr ""
+msgstr "Krok przesunięcia wypełnienia"
 
 msgid ""
 "This parameter adds a slight displacement to each layer of infill to create "
 "a cross texture."
 msgstr ""
+"Ten parametr dodaje niewielkie przesunięcie dla każdej warstwy wypełnienia, "
+"tworząc teksturę krzyżową."
 
 msgid "Sparse infill rotation template"
 msgstr ""
@@ -12878,7 +12883,7 @@ msgid ""
 msgstr ""
 
 msgid "Skeleton infill density"
-msgstr ""
+msgstr "Gęstość wypełnienia szkieletu"
 
 msgid ""
 "The remaining part of the model contour after removing a certain depth from "
@@ -12889,7 +12894,7 @@ msgid ""
 msgstr ""
 
 msgid "Skin infill density"
-msgstr ""
+msgstr "Gęstość wypełnienia skóry"
 
 msgid ""
 "The portion of the model's outer surface within a certain depth range is "
@@ -12900,28 +12905,28 @@ msgid ""
 msgstr ""
 
 msgid "Skin infill depth"
-msgstr ""
+msgstr "Głębokość wypełnienia skóry"
 
 msgid "The parameter sets the depth of skin."
-msgstr ""
+msgstr "Parametr ustawia głębokość skóry."
 
 msgid "Infill lock depth"
-msgstr ""
+msgstr "Głębokość blokady wypełnienia"
 
 msgid "The parameter sets the overlapping depth between the interior and skin."
-msgstr ""
+msgstr "Parametr określa głębokość nakładania się wnętrza i skóry."
 
 msgid "Skin line width"
-msgstr ""
+msgstr "Szerokość linii skóry"
 
 msgid "Adjust the line width of the selected skin paths."
-msgstr ""
+msgstr "Dostosuj szerokość linii wybranych ścieżek skóry."
 
 msgid "Skeleton line width"
-msgstr ""
+msgstr "Szerokość linii szkieletu"
 
 msgid "Adjust the line width of the selected skeleton paths."
-msgstr ""
+msgstr "Dostosuj szerokość linii wybranych ścieżek szkieletu."
 
 msgid "Symmetric infill Y axis"
 msgstr ""
@@ -15140,7 +15145,7 @@ msgstr ""
 "absolutnie określona przez górne warstwy powłoki"
 
 msgid "Top surface density"
-msgstr ""
+msgstr "Gęstość górnej powierzchni"
 
 msgid ""
 "Density of top surface layer. A value of 100% creates a fully solid, smooth "
@@ -15151,7 +15156,7 @@ msgid ""
 msgstr ""
 
 msgid "Bottom surface density"
-msgstr ""
+msgstr "Gęstość dolnej powierzchni"
 
 msgid ""
 "Density of the bottom surface layer. Intended for aesthetic or functional "
@@ -15304,7 +15309,7 @@ msgid ""
 msgstr ""
 
 msgid "Extra rib length"
-msgstr ""
+msgstr "Dodatkowa długość użebrowania"
 
 msgid ""
 "Positive values can increase the size of the rib wall, while negative values "
@@ -15313,10 +15318,10 @@ msgid ""
 msgstr ""
 
 msgid "Rib width"
-msgstr ""
+msgstr "Szerokość użebrowania"
 
 msgid "Fillet wall"
-msgstr ""
+msgstr "Zaokrąglij ścianę"
 
 msgid "The wall of prime tower will fillet."
 msgstr ""
@@ -16355,9 +16360,12 @@ msgid ""
 "is also fuzzy skin painted.\n"
 "XY Size compensation cannot be combined with fuzzy skin painting."
 msgstr ""
+"Obiekt ma włączoną kompensację rozmiaru XY, która nie będzie używana, "
+"ponieważ jest również włączona skóra fuzzy.\n"
+"Kompensacji rozmiaru XY nie można łączyć ze skórą fuzzy."
 
 msgid "Object name"
-msgstr ""
+msgstr "Nazwa obiektu"
 
 msgid "Support: generate contact points"
 msgstr "Podpory: Tworzenie miejsc kontaktowych"
@@ -18392,7 +18400,7 @@ msgid "Font doesn't have any shape for given text."
 msgstr "Czcionka nie ma żadnego kształtu dla danego tekstu."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "Nie ma prawidłowej powierzchni do rzutowania tekstu."
 
 msgid "Head diameter"
 msgstr "Średnica łącznika"
@@ -18432,7 +18440,7 @@ msgstr ""
 "będą działać!"
 
 msgid "Set the brim type of this object to \"painted\""
-msgstr ""
+msgstr "Ustaw typ brimu tego obiektu na \"malowane\"."
 
 msgid " invalid brim ears"
 msgstr " nieprawidłowe uszy brim"
@@ -18445,15 +18453,17 @@ msgstr "Proszę wybrać pojedynczy obiekt."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
 msgstr ""
+"Proszę potwierdzić współczynnik eksplozji = 1 i wybrać co najmniej dwie "
+"objętości."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Proszę wybrać przynajmniej dwa obiekty."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(Przesuwanie)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Montaż - punkt do punktu"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18462,7 +18472,7 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "Montaż - powierzchnia do powierzchni"
 
 msgid "Success"
 msgstr ""
@@ -18679,36 +18689,38 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "Parametry importu pliku Step"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"Mniejsze ugięcia liniowe i kątowe przyczyniają się do lepszej jakości "
+"transformacji, ale zwiększają czas przetwarzania."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Ugięcie liniowe"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
-msgstr ""
+msgstr "Proszę wprowadzić prawidłową wartość (0.001 < ugięcie liniowe < 0.1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Ugięcie kątowe"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "Proszę wprowadzić prawidłową wartość (0.01 < kąt odchylenia < 1.0)"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "Podziel złożenie i bryłę zespoloną na wiele obiektów"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Liczba trójkątnych faset"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Obliczanie, proszę czekać..."
 
 msgid "The download has failed"
 msgstr ""

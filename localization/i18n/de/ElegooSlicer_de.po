@@ -1893,7 +1893,7 @@ msgstr ""
 "Nein - Ändern Sie diese Einstellungen nicht für mich"
 
 msgid "Suggestion"
-msgstr ""
+msgstr "Vorschlag"
 
 msgid "Text"
 msgstr "T"
@@ -18803,20 +18803,28 @@ msgid ""
 "Connection timed out. Please check if the printer and computer network are "
 "functioning properly, and confirm that they are on the same network."
 msgstr ""
+"Zeitüberschreitung der Verbindung. Bitte überprüfen Sie, ob der Drucker und "
+"das Computernetzwerk ordnungsgemäß funktionieren, und bestätigen Sie, dass "
+"sie sich im selben Netzwerk befinden."
 
 msgid "The Hostname/IP/URL could not be parsed, please check it and try again."
 msgstr ""
+"Der Hostname/IP/URL konnte nicht analysiert werden, bitte überprüfen Sie ihn "
+"und versuchen Sie es erneut."
 
 msgid ""
 "File/data transfer interrupted. Please check the printer and network, then "
 "try it again."
 msgstr ""
+"Datei-/Datenübertragung unterbrochen. Bitte überprüfen Sie den Drucker und "
+"das Netzwerk und versuchen Sie es erneut."
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "Füge Emboss-Textobjekt hinzu"
 
 msgid "Created text volume is empty. Change text or font."
 msgstr ""
+"Erstelltes Textvolumen ist leer. Ändern Sie den Text oder die Schriftart."
 
 msgid ""
 "It is used default volume for embossed text, try to change text or font to "
@@ -18826,16 +18834,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "Präge Attribut ändern"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "Füge Emboss-Textvolumen hinzu"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "Schrift hat keine Form für den angegebenen Text."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "Da ist keine gültige Oberfläche für die Textprojektion."
 
 msgid "Head diameter"
 msgstr "Kopfdurchmesser"
@@ -18888,15 +18896,17 @@ msgstr "Bitte wählen Sie ein einzelnes Objekt aus."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
 msgstr ""
+"Bitte bestätigen Sie das Explosionsverhältnis = 1 und wählen Sie mindestens "
+"zwei Volumen aus."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Bitte wählen Sie mindestens zwei Volumen aus."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(Bewegen)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Punkt-zu-Punkt-Montage"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18905,10 +18915,10 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "Face und Face Zusammenbau"
 
 msgid "Success"
-msgstr ""
+msgstr "Erfolgreich"
 
 msgid "An unknown error occurred. Please try again later."
 msgstr ""
@@ -19122,39 +19132,43 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "STEP-Datei-Importparameter"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"kleinere lineare und Winkelabweichungen führen zu qualitativ hochwertigeren "
+"Transformationen, erhöhen jedoch die Verarbeitungszeit."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Lineare Ablenkung"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
 msgstr ""
+"Bitte geben Sie einen gültigen Wert ein (0,001 < lineare Ablenkung < 0,1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Winkelabweichung"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
 msgstr ""
+"Bitte geben Sie einen gültigen Wert ein (0,01 < Winkelabweichung < 1,0)"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "Teile Verbund- und Komposid-Objekte in mehrere Objekte auf"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Anzahl der dreieckigen Facetten"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Berechnung läuft, bitte warten..."
 
 msgid "The download has failed"
-msgstr ""
+msgstr "Der Download ist fehlgeschlagen"
 
 #: resources/data/hints.ini: [hint:G-code window]
 msgid ""

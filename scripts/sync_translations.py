@@ -4,7 +4,6 @@
 Translation Sync Script for ElegooSlicer
 """
 
-import os
 from pathlib import Path
 import argparse
 from openpyxl import Workbook
@@ -496,26 +495,45 @@ class TranslationSyncer:
         wb.save('translation_changes.xlsx')
 
 
+def _pick_orca_folder():
+    """弹窗让用户选择 OrcaSlicer 根目录（Windows 原生文件夹选择框）。"""
+    import tkinter as tk
+    from tkinter import filedialog
+
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+    folder = filedialog.askdirectory(title='Select OrcaSlicer root directory')
+    root.destroy()
+    return folder
+
+
 def main():
     parser = argparse.ArgumentParser(description='Sync translations from OrcaSlicer to ElegooSlicer')
-    parser.add_argument('--elegoo-path', default='../localization/i18n', 
-                       help='Path to ElegooSlicer i18n directory (default: current directory)')
-    parser.add_argument('--orca-path', default='../../SoftFever/OrcaSlicer/localization/i18n',
-                       help='Path to OrcaSlicer i18n directory')
-    
+    parser.add_argument('--elegoo-path',
+                       help='Path to ElegooSlicer i18n directory (default: <script dir>/../localization/i18n)')
+
     args = parser.parse_args()
-    
-    elegoo_path = Path(args.elegoo_path)
-    orca_path = Path(args.orca_path)
-    
+
+    # ElegooSlicer 路径：以脚本实际所在目录为基准，拼上原先的相对路径
+    elegoo_path = Path(args.elegoo_path) if args.elegoo_path else Path(__file__).resolve().parent / '../localization/i18n'
+    elegoo_path = elegoo_path.resolve()
+
     if not elegoo_path.exists():
         print(f"Error: ElegooSlicer path does not exist: {elegoo_path}")
         return
-        
+
+    # OrcaSlicer 路径：直接弹窗让用户选择其根目录
+    print("Please select the OrcaSlicer root directory in the dialog...")
+    orca_root = _pick_orca_folder()
+    if not orca_root:
+        print("Error: no OrcaSlicer path selected.")
+        return
+    orca_path = (Path(orca_root) / 'localization' / 'i18n').resolve()
     if not orca_path.exists():
         print(f"Error: OrcaSlicer path does not exist: {orca_path}")
         return
-    
+
     syncer = TranslationSyncer(elegoo_path, orca_path)
     syncer.sync_translations()
 

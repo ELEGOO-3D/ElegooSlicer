@@ -26,7 +26,7 @@ msgid "Ctrl+"
 msgstr "Ctrl+"
 
 msgid "Alt+"
-msgstr ""
+msgstr "Alt+"
 
 msgid "Shift+"
 msgstr "Shift+"
@@ -161,16 +161,16 @@ msgid "Height range"
 msgstr "높이 범위"
 
 msgid "Enter"
-msgstr ""
+msgstr "Enter"
 
 msgid "Toggle Wireframe"
 msgstr "와이어프레임 전환"
 
 msgid "Remap filaments"
-msgstr ""
+msgstr "필라멘트 재매핑"
 
 msgid "Remap"
-msgstr ""
+msgstr "재매핑"
 
 msgid "Cancel"
 msgstr "취소"
@@ -237,19 +237,19 @@ msgid "mm"
 msgstr "밀리미터"
 
 msgid "Part selection"
-msgstr ""
+msgstr "파트 선택"
 
 msgid "Fixed step drag"
-msgstr ""
+msgstr "고정 단계 드래그"
 
 msgid "Single sided scaling"
-msgstr ""
+msgstr "단면 스케일링"
 
 msgid "Position"
 msgstr "위치"
 
 msgid "Rotate (relative)"
-msgstr ""
+msgstr "회전 (상대)"
 
 msgid "Scale ratios"
 msgstr "배율비"
@@ -285,16 +285,16 @@ msgid "World coordinates"
 msgstr "영역 좌표"
 
 msgid "Reset current rotation to the value when open the rotation tool."
-msgstr ""
+msgstr "회전 도구를 열었을 때의 값으로 현재 회전을 초기화합니다."
 
 msgid "Rotate (absolute)"
-msgstr ""
+msgstr "회전 (절대)"
 
 msgid "Reset current rotation to real zeros."
-msgstr ""
+msgstr "현재 회전을 0으로 초기화합니다."
 
 msgid "Part coordinates"
-msgstr ""
+msgstr "파트 좌표"
 
 #. TRN - Input label. Be short as possible
 msgid "Size"
@@ -692,7 +692,7 @@ msgid "Horizontal text"
 msgstr "가로 텍스트"
 
 msgid "Mouse move up or down"
-msgstr ""
+msgstr "마우스 위 또는 아래로 이동"
 
 msgid "Rotate text"
 msgstr "텍스트 회전"
@@ -1538,7 +1538,7 @@ msgstr "WebView2 런타임"
 
 #, c-format, boost-format
 msgid "Resources path does not exist or is not a directory: %s"
-msgstr ""
+msgstr "리소스 경로가 존재하지 않거나 디렉토리가 아닙니다: %s"
 
 #, c-format, boost-format
 msgid ""
@@ -1727,7 +1727,7 @@ msgid "Top Minimum Shell Thickness"
 msgstr "상단 최소 쉘 두께"
 
 msgid "Top Surface Density"
-msgstr ""
+msgstr "상단 표면 밀도"
 
 msgid "Bottom Solid Layers"
 msgstr "하단 꽉찬 레이어"
@@ -1736,7 +1736,7 @@ msgid "Bottom Minimum Shell Thickness"
 msgstr "하단 최소 쉘 두께"
 
 msgid "Bottom Surface Density"
-msgstr ""
+msgstr "하단 표면 밀도"
 
 msgid "Ironing"
 msgstr "다림질"
@@ -1802,7 +1802,7 @@ msgid "Delete the selected object"
 msgstr "선택된 개체 삭제"
 
 msgid "Backspace"
-msgstr ""
+msgstr "Backspace"
 
 msgid "Load..."
 msgstr "불러오기..."
@@ -1857,7 +1857,7 @@ msgstr ""
 "아니요 - 이 설정을 변경하지 않음"
 
 msgid "Suggestion"
-msgstr ""
+msgstr "제안"
 
 msgid "Text"
 msgstr "텍스트"
@@ -2137,7 +2137,7 @@ msgid_plural "%1$d non-manifold edges"
 msgstr[0] "%1$d 비다양체 가장자리"
 
 msgid "Click the icon to repair model object"
-msgstr ""
+msgstr "아이콘을 클릭하여 모델 객체를 수리하세요"
 
 msgid "Right button click the icon to drop the object settings"
 msgstr "아이콘을 마우스 우클릭하여 개체 설정을 드롭합니다"
@@ -2184,7 +2184,7 @@ msgid ""
 msgstr "개체별 설정 모드로 전환하여 선택한 개체의 프로세스 설정을 편집합니다."
 
 msgid "Remove paint-on fuzzy skin"
-msgstr ""
+msgstr "칠한 퍼지 스킨 제거"
 
 msgid "Delete connector from object which is a part of cut"
 msgstr "잘라내기의 일부인 개체에서 커넥터 삭제"
@@ -2757,7 +2757,7 @@ msgstr "성공적으로 전송되었습니다. %ss의 다음 페이지로 자동
 
 #, c-format, boost-format
 msgid "Access code:%s IP address:%s"
-msgstr ""
+msgstr "액세스 코드:%s IP 주소:%s"
 
 msgid "An SD card needs to be inserted before printing via LAN."
 msgstr "LAN을 통해 출력하기 전에 SD 카드를 삽입해야 합니다."
@@ -3003,10 +3003,10 @@ msgid "AMS Slots"
 msgstr "AMS 슬롯"
 
 msgid "Left AMS"
-msgstr ""
+msgstr "왼쪽 AMS"
 
 msgid "Right AMS"
-msgstr ""
+msgstr "오른쪽 AMS"
 
 msgid ""
 "Note: Only the AMS slots loaded with the same material type can be selected."
@@ -3174,7 +3174,7 @@ msgid "Calibration"
 msgstr "교정"
 
 msgid "Continue"
-msgstr ""
+msgstr "계속"
 
 msgid "Open Folder"
 msgstr "폴더 열기"
@@ -3767,16 +3767,20 @@ msgstr ""
 "심_경사_시작_높이는 레이어_높이보다 작아야 합니다.\n"
 "0으로 재설정합니다."
 
-#, c-format, boost-format
+#, fuzzy, no-c-format, no-boost-format
 msgid ""
 "Lock depth should smaller than skin depth.\n"
 "Reset to 50% of skin depth."
 msgstr ""
+"잠금 깊이는 스킨 깊이보다 작아야 합니다.\n"
+"스킨 깊이의 50%로 재설정됩니다."
 
 msgid ""
 "Both [Extrusion] and [Combined] modes of Fuzzy Skin require the Arachne Wall "
 "Generator to be enabled."
 msgstr ""
+"퍼지 스킨의 [압출] 및 [결합] 모드에는 아라크네 벽 생성기가 활성화되어야 합니"
+"다."
 
 msgid ""
 "Change these settings automatically?\n"
@@ -3784,6 +3788,9 @@ msgid ""
 "No  - Disable Arachne Wall Generator and set [Displacement] mode of the "
 "Fuzzy Skin"
 msgstr ""
+"이 설정을 자동으로 변경하시겠습니까?\n"
+"예 - 아라크네 벽 생성기 활성화\n"
+"아니오 - 아라크네 벽 생성기 비활성화 및 퍼지 스킨 [변위] 모드 설정"
 
 msgid ""
 "Spiral mode only works when wall loops is 1, support is disabled, top shell "
@@ -4102,19 +4109,21 @@ msgid "Some extension in the input is invalid"
 msgstr "입력의 일부 확장자가 유효하지 않습니다"
 
 msgid "This parameter expects a valid template."
-msgstr ""
+msgstr "이 매개변수에는 유효한 템플릿이 필요합니다."
 
 msgid ""
 "Invalid pattern. Use N, N#K, or a comma-separated list with optional #K per "
 "entry. Examples: 5, 5#2, 1,7,9, 5,9#2,18."
 msgstr ""
+"잘못된 패턴입니다. N, N#K 또는 항목당 선택적 #K가 있는 쉼표로 구분된 목록을 "
+"사용하세요. 예: 5, 5#2, 1,7,9, 5,9#2,18."
 
 #, boost-format
 msgid "Invalid format. Expected vector format: \"%1%\""
 msgstr "잘못된 형식입니다. 필요한 벡터 형식: \"%1%\""
 
 msgid "Pick"
-msgstr ""
+msgstr "선택"
 
 msgid "Layer Height"
 msgstr "레이어 높이"
@@ -4207,7 +4216,7 @@ msgid "Time"
 msgstr "시간"
 
 msgid "Usage"
-msgstr ""
+msgstr "사용량"
 
 msgid "Layer Height (mm)"
 msgstr "레이어 높이(mm)"
@@ -4342,7 +4351,7 @@ msgid "part selection"
 msgstr ""
 
 msgid "number keys"
-msgstr ""
+msgstr "숫자 키"
 
 msgid "number keys can quickly change the color of objects"
 msgstr ""
@@ -4432,10 +4441,10 @@ msgid "Failed"
 msgstr "실패"
 
 msgid "All Plates"
-msgstr ""
+msgstr "전체 플레이트"
 
 msgid "Stats"
-msgstr ""
+msgstr "통계"
 
 msgid "All Plates Stats"
 msgstr ""
@@ -4459,7 +4468,7 @@ msgid "Assemble Control"
 msgstr "조립 제어"
 
 msgid "Selection Mode"
-msgstr ""
+msgstr "선택 모드"
 
 msgid "Total Volume:"
 msgstr "총 용량:"
@@ -4747,7 +4756,7 @@ msgid "Open a project file"
 msgstr "프로젝트 파일 열기"
 
 msgid "Recent files"
-msgstr ""
+msgstr "최근 파일"
 
 msgid "Save Project"
 msgstr "프로젝트 저장"
@@ -4982,16 +4991,16 @@ msgid "Junction Deviation calibration"
 msgstr ""
 
 msgid "Cornering"
-msgstr ""
+msgstr "코너링"
 
 msgid "Input Shaping Frequency"
-msgstr ""
+msgstr "입력 셰이핑 주파수"
 
 msgid "Input Shaping Damping/zeta factor"
-msgstr ""
+msgstr "입력 셰이핑 감쇠/제타 계수"
 
 msgid "Input Shaping"
-msgstr ""
+msgstr "입력 셰이핑"
 
 msgid "VFA"
 msgstr "VFA"
@@ -5409,7 +5418,7 @@ msgid "Camera"
 msgstr "카메라"
 
 msgid "Storage"
-msgstr ""
+msgstr "저장 장치"
 
 msgid "Camera Setting"
 msgstr "카메라 설정"
@@ -5442,10 +5451,10 @@ msgid "Debug Info"
 msgstr "디버그 정보"
 
 msgid "No Storage"
-msgstr ""
+msgstr "저장 장치 없음"
 
 msgid "Storage Abnormal"
-msgstr ""
+msgstr "저장 장치 이상"
 
 msgid "Cancel print"
 msgstr "출력 취소"
@@ -5827,7 +5836,7 @@ msgid "Cut connectors"
 msgstr "잘라내기 커넥터"
 
 msgid "Paint-on fuzzy skin"
-msgstr ""
+msgstr "퍼지 스킨 칠하기"
 
 msgid "Layers"
 msgstr "레이어"
@@ -7847,7 +7856,7 @@ msgid "Support filament"
 msgstr "지지대 필라멘트"
 
 msgid "Support ironing"
-msgstr ""
+msgstr "지지대 다림질"
 
 msgid "Tree supports"
 msgstr "나무 지지대"
@@ -8702,7 +8711,7 @@ msgid "Collapse/Expand the sidebar"
 msgstr "사이드바 접기/펼치기"
 
 msgid "Any arrow"
-msgstr ""
+msgstr "모든 화살표"
 
 msgid "Movement in camera space"
 msgstr "카메라 공간에서 이동"
@@ -9004,7 +9013,7 @@ msgstr ""
 "네트워크 문제를 해결하려면 3단계로 이동하세요"
 
 msgid "Air Pump"
-msgstr ""
+msgstr "공기 펌프"
 
 msgid "Laser 10 W"
 msgstr ""
@@ -9013,7 +9022,7 @@ msgid "Laser 40 W"
 msgstr ""
 
 msgid "Cutting Module"
-msgstr ""
+msgstr "커팅 모듈"
 
 msgid "Model:"
 msgstr "모델:"
@@ -11648,7 +11657,7 @@ msgstr ""
 
 msgid ""
 "Using multiple lines for the infill pattern, if supported by infill pattern."
-msgstr ""
+msgstr "채우기 패턴에서 지원되는 경우 채우기 패턴에 여러 줄을 사용합니다."
 
 msgid "Sparse infill pattern"
 msgstr "드문 채우기 패턴"
@@ -11657,13 +11666,13 @@ msgid "Line pattern for internal sparse infill."
 msgstr "드문 내부 채우기의 선 패턴"
 
 msgid "Zig Zag"
-msgstr ""
+msgstr "지그재그"
 
 msgid "Cross Zag"
-msgstr ""
+msgstr "크로스 재그"
 
 msgid "Locked Zag"
-msgstr ""
+msgstr "잠긴 재그"
 
 msgid "Line"
 msgstr "선"
@@ -11966,7 +11975,7 @@ msgstr ""
 "이 가해져 파트가 뒤틀리는 현상을 줄일 수 있습니다."
 
 msgid "Ironing fan speed"
-msgstr ""
+msgstr "다림질 속도"
 
 msgid ""
 "This part cooling fan speed is applied when ironing. Setting this parameter "
@@ -12014,7 +12023,7 @@ msgid "Whether to apply fuzzy skin on the first layer."
 msgstr "첫 번째 레이어에 퍼지 스킨을 적용할지 여부"
 
 msgid "Fuzzy skin generator mode"
-msgstr ""
+msgstr "솜털 스킨 생성기 모드"
 
 #, c-format, boost-format
 msgid ""
@@ -12041,10 +12050,10 @@ msgid ""
 msgstr ""
 
 msgid "Displacement"
-msgstr ""
+msgstr "배수량"
 
 msgid "Extrusion"
-msgstr ""
+msgstr "압출"
 
 msgid "Combined"
 msgstr "결합"
@@ -12387,12 +12396,13 @@ msgstr ""
 "다. 벽은 여전히 설정된 레이어 높이로 출력됩니다."
 
 msgid "Infill shift step"
-msgstr ""
+msgstr "인필 시프트 단계"
 
 msgid ""
 "This parameter adds a slight displacement to each layer of infill to create "
 "a cross texture."
 msgstr ""
+"이 파라미터는 각 인필 레이어에 약간의 변위를 추가하여 교차 텍스처를 만듭니다."
 
 msgid "Sparse infill rotation template"
 msgstr ""
@@ -12423,7 +12433,7 @@ msgid ""
 msgstr ""
 
 msgid "Skeleton infill density"
-msgstr ""
+msgstr "골격 채우기 밀도"
 
 msgid ""
 "The remaining part of the model contour after removing a certain depth from "
@@ -12434,7 +12444,7 @@ msgid ""
 msgstr ""
 
 msgid "Skin infill density"
-msgstr ""
+msgstr "표면 채우기 밀도"
 
 msgid ""
 "The portion of the model's outer surface within a certain depth range is "
@@ -12445,28 +12455,28 @@ msgid ""
 msgstr ""
 
 msgid "Skin infill depth"
-msgstr ""
+msgstr "표면 채우기 깊이"
 
 msgid "The parameter sets the depth of skin."
-msgstr ""
+msgstr "매개변수는 표면의 깊이를 설정합니다."
 
 msgid "Infill lock depth"
-msgstr ""
+msgstr "채우기 잠금 깊이"
 
 msgid "The parameter sets the overlapping depth between the interior and skin."
-msgstr ""
+msgstr "매개변수는 내부와 표면 사이의 겹치는 깊이를 설정합니다."
 
 msgid "Skin line width"
-msgstr ""
+msgstr "표면 선 폭"
 
 msgid "Adjust the line width of the selected skin paths."
-msgstr ""
+msgstr "선택한 표면 경로의 선 폭를 조정합니다."
 
 msgid "Skeleton line width"
-msgstr ""
+msgstr "골격 선 폭"
 
 msgid "Adjust the line width of the selected skeleton paths."
-msgstr ""
+msgstr "선택한 골격 경로의 선 폭를 조정합니다."
 
 msgid "Symmetric infill Y axis"
 msgstr ""
@@ -14555,7 +14565,7 @@ msgstr ""
 "로 상단 쉘 레이어에 의해 결정됨을 의미합니다"
 
 msgid "Top surface density"
-msgstr ""
+msgstr "상단 표면 밀도"
 
 msgid ""
 "Density of top surface layer. A value of 100% creates a fully solid, smooth "
@@ -14566,7 +14576,7 @@ msgid ""
 msgstr ""
 
 msgid "Bottom surface density"
-msgstr ""
+msgstr "하단 표면 밀도"
 
 msgid ""
 "Density of the bottom surface layer. Intended for aesthetic or functional "
@@ -14710,7 +14720,7 @@ msgid ""
 msgstr ""
 
 msgid "Extra rib length"
-msgstr ""
+msgstr "추가 리브 길이"
 
 msgid ""
 "Positive values can increase the size of the rib wall, while negative values "
@@ -14719,10 +14729,10 @@ msgid ""
 msgstr ""
 
 msgid "Rib width"
-msgstr ""
+msgstr "리브 너비"
 
 msgid "Fillet wall"
-msgstr ""
+msgstr "필렛 벽"
 
 msgid "The wall of prime tower will fillet."
 msgstr ""
@@ -15706,9 +15716,12 @@ msgid ""
 "is also fuzzy skin painted.\n"
 "XY Size compensation cannot be combined with fuzzy skin painting."
 msgstr ""
+"물체가 XY 크기 교정을 활성화했으며, 이 교정도 솜털 표면이 페인팅되었기 때문"
+"에 사용되지 않습니다.\n"
+"XY 크기 교정은 솜털 표면 페인팅과 결합할 수 없습니다."
 
 msgid "Object name"
-msgstr ""
+msgstr "물체 이름"
 
 msgid "Support: generate contact points"
 msgstr "지지대: 접점 생성"
@@ -17642,10 +17655,10 @@ msgid ""
 msgstr ""
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "엠보스 텍스트 객체 추가"
 
 msgid "Created text volume is empty. Change text or font."
-msgstr ""
+msgstr "생성된 텍스트 볼륨이 비어 있습니다. 텍스트 또는 글꼴을 변경하세요."
 
 msgid ""
 "It is used default volume for embossed text, try to change text or font to "
@@ -17655,16 +17668,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "엠보스 속성 변경"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "엠보스 텍스트 볼륨 추가"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "글꼴에 지정된 텍스트의 형태가 없습니다."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "텍스트 프로젝션에 유효한 표면이 없습니다."
 
 msgid "Head diameter"
 msgstr "헤드 직경"
@@ -17704,7 +17717,7 @@ msgstr ""
 "다!"
 
 msgid "Set the brim type of this object to \"painted\""
-msgstr ""
+msgstr "이 개체의 테두리 유형을 \"페인트\"로 설정합니다"
 
 msgid " invalid brim ears"
 msgstr " 유효하지 않은 브림 귀"
@@ -17716,16 +17729,16 @@ msgid "Please select single object."
 msgstr "단일 객체를 선택하세요."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
-msgstr ""
+msgstr "분해 비율이 1인지 확인하고 최소 두 개의 볼륨을 선택하세요."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "최소 두 개의 볼륨을 선택하세요."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(이동 중)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "점과 점 조립"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -17734,7 +17747,7 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "면과 면 조립"
 
 msgid "Success"
 msgstr ""
@@ -17951,36 +17964,37 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "스텝 파일 가져오기 매개변수"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"선형 및 각도 편향이 작을수록 고품질 변환이 가능하지만 처리 시간이 늘어납니다."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "선형 편향"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
-msgstr ""
+msgstr "유효한 값(0.001 < 선형 편향 < 0.1)을 입력하세요"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "각도 편향"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "유효한 값(0.01 < 각도 편향 < 1.0)을 입력하세요"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "컴파운드 및 컴솔리드를 여러 개체로 분할하고 통합하기"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "삼각형 패싯 수"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "계산 중, 잠시만 기다려주세요..."
 
 msgid "The download has failed"
 msgstr ""

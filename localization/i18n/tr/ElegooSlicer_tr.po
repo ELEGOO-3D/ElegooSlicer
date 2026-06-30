@@ -1874,7 +1874,7 @@ msgstr ""
 "Hayır - Bu ayarları benim için değiştirme"
 
 msgid "Suggestion"
-msgstr ""
+msgstr "Telkin"
 
 msgid "Text"
 msgstr "Metin"
@@ -3220,7 +3220,7 @@ msgid "Calibration"
 msgstr "Kalibrasyon"
 
 msgid "Continue"
-msgstr ""
+msgstr "Devam etmek"
 
 msgid "Open Folder"
 msgstr "Klasörü Aç"
@@ -18373,10 +18373,10 @@ msgid ""
 msgstr ""
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "Kabartma metin nesnesi ekle"
 
 msgid "Created text volume is empty. Change text or font."
-msgstr ""
+msgstr "Oluşturulan metin birimi boş. Metni veya yazı tipini değiştirin."
 
 msgid ""
 "It is used default volume for embossed text, try to change text or font to "
@@ -18386,16 +18386,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "Kabartma özelliği değişikliği"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "Kabartma metni hacmi ekle"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "Yazı tipinin verilen metin için herhangi bir şekli yoktur."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "Metin yansıtma için geçerli bir yüzey yoktur."
 
 msgid "Head diameter"
 msgstr "Kafa çapı"
@@ -18448,15 +18448,16 @@ msgstr "Lütfen tek bir nesne seçin."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
 msgstr ""
+"Lütfen patlama oranının = 1 olduğunu doğrulayın ve en az iki cilt seçin."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Lütfen en az iki cilt seçin."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(Hareketli)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Nokta ve nokta montajı"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18465,10 +18466,10 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "Yüz ve yüz montajı"
 
 msgid "Success"
-msgstr ""
+msgstr "Başarı"
 
 msgid "An unknown error occurred. Please try again later."
 msgstr ""
@@ -18682,36 +18683,38 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "Adım dosyası içe aktarma parametreleri"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"Daha küçük doğrusal ve açısal sapmalar daha yüksek kalitede dönüşümlerle "
+"sonuçlanır ancak işlem süresini artırır."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Doğrusal Sapma"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
-msgstr ""
+msgstr "Lütfen geçerli bir değer girin (0,001 < doğrusal sapma < 0,1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Açı Sapması"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "Lütfen geçerli bir değer girin (0,01 < açı sapması < 1,0)"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "Bileşiği ve birleştirmeyi birden fazla nesneye ayırın"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Üçgen yüzeylerin sayısı"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Hesaplanıyor, lütfen bekleyin..."
 
 msgid "The download has failed"
 msgstr ""

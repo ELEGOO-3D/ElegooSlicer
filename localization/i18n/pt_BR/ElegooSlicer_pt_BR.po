@@ -1885,7 +1885,7 @@ msgstr ""
 "Não - Não alterar essas configurações para mim"
 
 msgid "Suggestion"
-msgstr ""
+msgstr "Sugestão"
 
 msgid "Text"
 msgstr "Texto"
@@ -5102,7 +5102,7 @@ msgid "Junction Deviation calibration"
 msgstr ""
 
 msgid "Cornering"
-msgstr ""
+msgstr "Quinas"
 
 msgid "Input Shaping Frequency"
 msgstr "Frequência da Modelagem de Entrada"
@@ -6552,7 +6552,7 @@ msgstr ""
 "importe manualmente."
 
 msgid "INFO:"
-msgstr ""
+msgstr "INFO:"
 
 msgid ""
 "No accelerations provided for calibration. Use default acceleration value "
@@ -15473,10 +15473,10 @@ msgid "Rib width"
 msgstr "Largura da nervura"
 
 msgid "Fillet wall"
-msgstr ""
+msgstr "Parede chanfrada"
 
 msgid "The wall of prime tower will fillet."
-msgstr ""
+msgstr "A parede ta torre de preparo terá um chanfro."
 
 msgid ""
 "The extruder to use when printing perimeter of the wipe tower. Set to 0 to "
@@ -15892,13 +15892,13 @@ msgid "export 3mf with minimum size."
 msgstr "exportar 3mf com tamanho mínimo."
 
 msgid "mtcpp"
-msgstr ""
+msgstr "mtcpp"
 
 msgid "max triangle count per plate for slicing."
 msgstr "contagem máxima de triângulos por placa para fatiar."
 
 msgid "mstpp"
-msgstr ""
+msgstr "mstpp"
 
 msgid "max slicing time per plate in seconds."
 msgstr "tempo máximo de fatiamento por placa em segundos."
@@ -17286,7 +17286,7 @@ msgid "Test model"
 msgstr "Modelo de teste"
 
 msgid "Ringing Tower"
-msgstr ""
+msgstr "Torre de Anéis"
 
 msgid "Fast Tower"
 msgstr "Torre Rápida"
@@ -18574,10 +18574,10 @@ msgid ""
 msgstr ""
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "Adicionar objeto de texto em relevo"
 
 msgid "Created text volume is empty. Change text or font."
-msgstr ""
+msgstr "O volume de texto criado está vazio. Altere o texto ou a fonte."
 
 msgid ""
 "It is used default volume for embossed text, try to change text or font to "
@@ -18587,16 +18587,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "Alteração do atributo de relevo"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "Adicionar volume ao texto em relevo"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "A fonte não possui nenhuma forma para o texto fornecido."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "Não existe uma superfície válida para projeção de texto."
 
 msgid "Head diameter"
 msgstr "Diâmetro da cabeça"
@@ -18649,15 +18649,17 @@ msgstr "Por favor selecione um único objeto."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
 msgstr ""
+"Por favor, confirme a taxa de explosão = 1 e selecione pelo menos dois "
+"volumes."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Por favor selecione pelo menos dois volumes."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(Movendo)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Montagem ponto a ponto"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18666,10 +18668,10 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "Montagem face a face"
 
 msgid "Success"
-msgstr ""
+msgstr "Sucesso"
 
 msgid "An unknown error occurred. Please try again later."
 msgstr ""
@@ -18883,36 +18885,38 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "Parâmetros de importação de arquivo STEP"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
 "transformations but increase the processing time."
 msgstr ""
+"Deflexões lineares e angulares menores resultam em transformações de maior "
+"qualidade, mas aumentam o tempo de processamento."
 
 msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Deflexão Linear"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
-msgstr ""
+msgstr "Insira um valor válido (0,001 < deflexão linear < 0,1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Deflexão Angular"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "Insira um valor válido (0,01 < deflexão angular < 1,0)"
 
 msgid "Split compound and compsolid into multiple objects"
-msgstr ""
+msgstr "Dividir composto e compsolid em múltiplos objetos"
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Numero de facetas triangulares"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Calculando, por favor aguarde…"
 
 msgid "The download has failed"
 msgstr ""

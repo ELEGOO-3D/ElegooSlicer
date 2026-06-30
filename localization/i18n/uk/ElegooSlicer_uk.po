@@ -27,7 +27,7 @@ msgid "Ctrl+"
 msgstr "Ctrl+"
 
 msgid "Alt+"
-msgstr ""
+msgstr "Alt+"
 
 msgid "Shift+"
 msgstr "Shift+"
@@ -163,7 +163,7 @@ msgid "Height range"
 msgstr "Діапазон висот"
 
 msgid "Enter"
-msgstr ""
+msgstr "Друкарка"
 
 msgid "Toggle Wireframe"
 msgstr "Переключення каркасу"
@@ -239,19 +239,19 @@ msgid "mm"
 msgstr "мм"
 
 msgid "Part selection"
-msgstr ""
+msgstr "Вибір частини"
 
 msgid "Fixed step drag"
-msgstr ""
+msgstr "Фіксоване перетягування кроками"
 
 msgid "Single sided scaling"
-msgstr ""
+msgstr "Масштабування в одну сторону"
 
 msgid "Position"
 msgstr "Позиція"
 
 msgid "Rotate (relative)"
-msgstr ""
+msgstr "Повернути (відносно)"
 
 msgid "Scale ratios"
 msgstr "Коефіцієнти масштабування"
@@ -288,15 +288,16 @@ msgstr "Світові координати"
 
 msgid "Reset current rotation to the value when open the rotation tool."
 msgstr ""
+"Скинути поточне обертання до значення при відкритті інструмента обертання."
 
 msgid "Rotate (absolute)"
-msgstr ""
+msgstr "Обертання (абсолютне)"
 
 msgid "Reset current rotation to real zeros."
-msgstr ""
+msgstr "Скинути поточне обертання до нульових значень."
 
 msgid "Part coordinates"
-msgstr ""
+msgstr "Координати частини"
 
 #. TRN - Input label. Be short as possible
 msgid "Size"
@@ -1823,7 +1824,7 @@ msgid "Delete the selected object"
 msgstr "Видалення вибраних моделей"
 
 msgid "Backspace"
-msgstr ""
+msgstr "Назад"
 
 msgid "Load..."
 msgstr "Завантажити..."
@@ -2218,7 +2219,7 @@ msgstr ""
 "вибраних моделей."
 
 msgid "Remove paint-on fuzzy skin"
-msgstr ""
+msgstr "Видалити намальовану текстурну оболонку"
 
 msgid "Delete connector from object which is a part of cut"
 msgstr "Видалити конектор з об'єкта, який є частиною розрізу"
@@ -3246,7 +3247,7 @@ msgid "Calibration"
 msgstr "Калібрування"
 
 msgid "Continue"
-msgstr ""
+msgstr "Продовжити"
 
 msgid "Open Folder"
 msgstr "Відкрити папку"
@@ -4441,7 +4442,7 @@ msgid "part selection"
 msgstr ""
 
 msgid "number keys"
-msgstr ""
+msgstr "клавіші з числами"
 
 msgid "number keys can quickly change the color of objects"
 msgstr ""
@@ -4558,7 +4559,7 @@ msgid "Assemble Control"
 msgstr "Складання керування"
 
 msgid "Selection Mode"
-msgstr ""
+msgstr "Режим вибору"
 
 msgid "Total Volume:"
 msgstr "Загальний обсяг:"
@@ -5976,7 +5977,7 @@ msgid "Cut connectors"
 msgstr "Вирізати з'єднувачі"
 
 msgid "Paint-on fuzzy skin"
-msgstr ""
+msgstr "Нанесення текстури"
 
 msgid "Layers"
 msgstr "Шари"
@@ -6255,7 +6256,7 @@ msgid "Collapse sidebar"
 msgstr "Згорнути бічну панель"
 
 msgid "Tab"
-msgstr ""
+msgstr "Табуляції"
 
 #, c-format, boost-format
 msgid "Loading file: %s"
@@ -8268,7 +8269,7 @@ msgid "Dependencies"
 msgstr "Залежності"
 
 msgid "Compatible printers"
-msgstr ""
+msgstr "Сумісні принтери"
 
 msgid "Compatible process profiles"
 msgstr "Сумісні профілі процесів"
@@ -8776,12 +8777,14 @@ msgstr ""
 #, boost-format
 msgid "For constant flow rate, hold %1% while dragging."
 msgstr ""
+"Для постійної об'ємної витрати утримуйте натиснутою клавішу %1% під час "
+"перетягування."
 
 msgid "Total ramming"
 msgstr ""
 
 msgid "Volume"
-msgstr ""
+msgstr "Об'єм"
 
 msgid "Ramming line"
 msgstr ""
@@ -8935,7 +8938,7 @@ msgid "Collapse/Expand the sidebar"
 msgstr "Згорнути/розгорнути бічну панель"
 
 msgid "Any arrow"
-msgstr ""
+msgstr "Будь-яка стрілка"
 
 msgid "Movement in camera space"
 msgstr "Рух у просторі камери"
@@ -9022,7 +9025,7 @@ msgid "Gizmo mesh boolean"
 msgstr "Булеві операції Gizmo"
 
 msgid "Gizmo FDM paint-on fuzzy skin"
-msgstr ""
+msgstr "Інструмент - 'Малювання текстурної оболонки'"
 
 msgid "Gizmo SLA support points"
 msgstr "Точки підтримки Gizmo SL"
@@ -9727,6 +9730,8 @@ msgstr ""
 msgid ""
 "One or more object were assigned an extruder that the printer does not have."
 msgstr ""
+"Одному або декільком об’єктам було призначено екструдер, якого принтер не "
+"має."
 
 msgid "Too small line width"
 msgstr "Надто маленька ширина лінії"
@@ -12051,7 +12056,7 @@ msgid "Line pattern for internal sparse infill."
 msgstr "Шаблон ліній внутрішнього часткового заповнення"
 
 msgid "Zig Zag"
-msgstr ""
+msgstr "Зіг-Заг"
 
 msgid "Cross Zag"
 msgstr ""
@@ -13047,7 +13052,7 @@ msgid "Orientation of interlock beams."
 msgstr ""
 
 msgid "Interlocking beam layers"
-msgstr ""
+msgstr "Кількість шарів взаємопов'язаних балок"
 
 msgid ""
 "The height of the beams of the interlocking structure, measured in number of "
@@ -13057,7 +13062,7 @@ msgstr ""
 "шарів забезпечує більшу міцність, але підвищує ризик дефектів."
 
 msgid "Interlocking depth"
-msgstr ""
+msgstr "Глибина взаємопов'язаної структури"
 
 msgid ""
 "The distance from the boundary between filaments to generate interlocking "
@@ -15758,10 +15763,10 @@ msgid "Rotation angle around the Z axis in degrees."
 msgstr "Кут обертання навколо осі Z у градусах."
 
 msgid "Rotate around X"
-msgstr ""
+msgstr "Обертання навколо X"
 
 msgid "Rotation angle around the X axis in degrees."
-msgstr ""
+msgstr "Кут обертання навколо осі Х у градусах."
 
 msgid "Rotate around Y"
 msgstr "Обертати навколо осі Y"
@@ -16019,10 +16024,12 @@ msgstr ""
 "Вектор bool, що вказує на те, чи використовується даний екструдер у друці."
 
 msgid "Has single extruder MM priming"
-msgstr ""
+msgstr "Є перед-заряджання одиночного багато-кольорового екструдера"
 
 msgid "Are the extra multi-material priming regions used in this print?"
 msgstr ""
+"Чи використовуються в цій печатці додаткові області перед-зарядки для "
+"декількох матеріалів?"
 
 msgid "Volume per extruder"
 msgstr "Об'єм на один екструдер"
@@ -16273,9 +16280,12 @@ msgid ""
 "is also fuzzy skin painted.\n"
 "XY Size compensation cannot be combined with fuzzy skin painting."
 msgstr ""
+"Увімкнено компенсацію розмірів за XY, яка не може працювати одночасно з "
+"текстурною оболонкою. \n"
+"Тому компенсація розмірів за XY не буде використана."
 
 msgid "Object name"
-msgstr ""
+msgstr "Назва об'єкту"
 
 msgid "Support: generate contact points"
 msgstr "Підтримка: створення точок контакту"
@@ -18298,7 +18308,7 @@ msgid ""
 msgstr ""
 
 msgid "Add Emboss text object"
-msgstr ""
+msgstr "Додати об’єкт тексту з рельєфом"
 
 msgid "Created text volume is empty. Change text or font."
 msgstr ""
@@ -18311,16 +18321,16 @@ msgstr ""
 #. TRN: This is the title of the action appearing in undo/redo stack.
 #. It is same for Text and SVG.
 msgid "Emboss attribute change"
-msgstr ""
+msgstr "Зміна атрибута рельєфу"
 
 msgid "Add Emboss text Volume"
-msgstr ""
+msgstr "Додати об’єм тексту з рельєфом"
 
 msgid "Font doesn't have any shape for given text."
-msgstr ""
+msgstr "Шрифт не має жодної форми для вказаного тексту."
 
 msgid "There is no valid surface for text projection."
-msgstr ""
+msgstr "Немає дійсної поверхні для проекції тексту."
 
 msgid "Head diameter"
 msgstr "Діаметр голови"
@@ -18360,7 +18370,7 @@ msgstr ""
 "матимуть ефекту!"
 
 msgid "Set the brim type of this object to \"painted\""
-msgstr ""
+msgstr "Встановити тип краєчка для цього об'єкту на “намальований“"
 
 msgid " invalid brim ears"
 msgstr " Неправильні краєчки"
@@ -18373,15 +18383,17 @@ msgstr "Будь ласка, виберіть один об’єкт."
 
 msgid "Please confirm explosion ratio = 1 and select at least two volumes."
 msgstr ""
+"Будь ласка, підтвердіть коефіцієнт вибуху = 1 та виберіть принаймні два "
+"об’єми."
 
 msgid "Please select at least two volumes."
-msgstr ""
+msgstr "Будь ласка, виберіть принаймні два об’єми."
 
 msgid "(Moving)"
-msgstr ""
+msgstr "(Переміщення)"
 
 msgid "Point and point assembly"
-msgstr ""
+msgstr "Збірка точка до точки"
 
 msgid ""
 "It is recommended to assemble the objects first,\n"
@@ -18390,7 +18402,7 @@ msgid ""
 msgstr ""
 
 msgid "Face and face assembly"
-msgstr ""
+msgstr "Збірка грань до грані"
 
 msgid "Success"
 msgstr ""
@@ -18607,7 +18619,7 @@ msgid "%1% connection failed. Please check and try again."
 msgstr ""
 
 msgid "Step file import parameters"
-msgstr ""
+msgstr "Параметри імпорту STEP-файлу"
 
 msgid ""
 "Smaller linear and angular deflections result in higher-quality "
@@ -18618,25 +18630,26 @@ msgid "View Wiki for more information"
 msgstr ""
 
 msgid "Linear Deflection"
-msgstr ""
+msgstr "Лінійне відхилення"
 
 msgid "Please input a valid value (0.001 < linear deflection < 0.1)"
 msgstr ""
+"Будь ласка, введіть допустиме значення (0.001 < лінійне відхилення < 0.1)"
 
 msgid "Angle Deflection"
-msgstr ""
+msgstr "Відхилення кута"
 
 msgid "Please input a valid value (0.01 < angle deflection < 1.0)"
-msgstr ""
+msgstr "Будь ласка, введіть допустиме значення (0.01 < відхилення кута < 1.0)"
 
 msgid "Split compound and compsolid into multiple objects"
 msgstr ""
 
 msgid "Number of triangular facets"
-msgstr ""
+msgstr "Кількість трикутних граней"
 
 msgid "Calculating, please wait..."
-msgstr ""
+msgstr "Розрахунок, будь ласка, зачекайте…"
 
 msgid "The download has failed"
 msgstr ""
