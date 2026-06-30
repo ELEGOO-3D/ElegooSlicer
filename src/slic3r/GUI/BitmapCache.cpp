@@ -324,7 +324,7 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
 
     // map of color replaces
     std::map<std::string, std::string> replaces;
-    replaces["\"#0x00AE42\""] = "\"#0066bd\"";
+    replaces["\"#0x00AE42\""] = "\"#1677ff\"";
     replaces["\"#00FF00\""] = "\"#5296c7\"";
     if (dark_mode) {
         replaces["\"#262E30\""] = "\"#EFEFF0\"";
@@ -335,8 +335,8 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
         replaces["\"#6B6B6B\""] = "\"#818182\"";
         replaces["\"#909090\""] = "\"#FFFFFF\"";
         replaces["\"#00FF00\""] = "\"#FF0000\"";
-        replaces["\"#0066bd\""] = "\"#143E9E\"";
-        replaces["\"#009688\""] = "\"#00675b\"";
+        replaces["\"#1677ff\""] = "\"#143E9E\"";
+        replaces["\"#1677ff\""] = "\"#00675b\"";
         replaces["\"#F1F1F1\""] = "\"#36363B\"";
         replaces["#DBDBDB"] = "#4A4A51"; // ORCA border color
         replaces["#F0F0F1"] = "#333337"; // ORCA disabled background color
@@ -346,10 +346,10 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
     }
 
     if (strstr(bitmap_name.c_str(), "toggle_on") != NULL && dark_mode) // ORCA only replace color of toggle button
-        replaces["#0066bd"] = "#0055BF";
+        replaces["#1677ff"] = "#0055BF";
 
     if (!new_color.empty())
-        replaces["\"#009688\""] = "\"" + new_color + "\"";
+        replaces["\"#1677ff\""] = "\"" + new_color + "\"";
 
      NSVGimage *image = nullptr;
     if (strstr(bitmap_name.c_str(), "printer_thumbnail") == NULL) {

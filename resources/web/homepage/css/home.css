@@ -426,7 +426,7 @@ body
 
 .MenuItem:hover
 {
-	border-color: #4066b6;
+	border-color: #0056b3;
 	background-color: #E0E8FC;
 }
 
@@ -840,7 +840,7 @@ body
 #HotModel_RIGHT_Title:hover
 {
 	cursor: pointer;	
-	color:#0066bd;	
+	color:#1677ff;	
 }
 
 .HotModelPiece

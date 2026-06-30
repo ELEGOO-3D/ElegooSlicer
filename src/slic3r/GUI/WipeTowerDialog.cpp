@@ -396,8 +396,8 @@ WipingDialog::WipingDialog(wxWindow* parent, const int max_flush_volume) :
     applied_size = { std::min(applied_size.x, scaled_screen_size.x), std::min(applied_size.y, scaled_screen_size.y) };
 
     // Ensure a reasonable minimum size so the dialog is usable even when clamped
-    applied_size.x = std::max(applied_size.x, FromDIP(350));
-    applied_size.y = std::max(applied_size.y, FromDIP(450));
+    applied_size.x = std::max(applied_size.x, FromDIP(500));
+    applied_size.y = std::max(applied_size.y, FromDIP(600));
     m_webview = wxWebView::New(this, wxID_ANY,
         wxEmptyString,
         wxDefaultPosition,
