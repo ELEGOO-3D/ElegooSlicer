@@ -31,7 +31,7 @@
                     <div class="model-info">
                         <div class="model-name-edit">
                             <el-input v-model="printInfo.modelName" type="text" @blur="stopEditing"
-                                @keydown.enter="stopEditing" @input="adjustModelNameWidth" ref="modelNameInput"
+                                @keydown.enter="stopEditing" @input="onModelNameInput" ref="modelNameInput"
                                 id="model-name" class="model-name-input" maxlength="50"></el-input>
                             <button class="edit-name-btn" @click="startEditing">
                                 <img src="img/edit.svg" alt="" />

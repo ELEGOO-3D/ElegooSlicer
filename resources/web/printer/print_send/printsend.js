@@ -193,6 +193,9 @@ const PrintSendApp = {
                     printerId: this.curPrinter.printerId
                 };
                 const response = await this.ipcRequest('request_print_task', params);
+                if (response && response.modelName) {
+                    response.modelName = this.filterModelName(response.modelName);
+                }
                 this.printInfo = { ...this.printInfo, ...response };
             } catch (error) {
                 // Failure: set to null to indicate request failed (not a valid state)
@@ -313,8 +316,26 @@ const PrintSendApp = {
             this.adjustModelNameWidth();
         },
 
+        onModelNameInput(value) {
+            const filtered = this.filterModelName(value);
+            if (filtered !== value) {
+                this.printInfo.modelName = filtered;
+            }
+            this.adjustModelNameWidth();
+        },
+
         filterModelName(str) {
-            return str.replace(/[\\/:*?"<>|]/g, '');
+            if (!str) return '';
+            // Remove characters not allowed in Windows filenames: \ / : * ? " < > |
+            let filtered = str.replace(/[\\/:*?"<>|]/g, '');
+            // Windows reserved device names
+            const reservedNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+            if (reservedNames.test(filtered)) {
+                filtered = filtered + '_';
+            }
+            // Remove trailing spaces and dots (not allowed in Windows filenames)
+            filtered = filtered.replace(/[\s.]+$/, '');
+            return filtered;
         },
 
         adjustModelNameWidth() {
