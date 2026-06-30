@@ -444,7 +444,7 @@ static void make_bold(wxString& str)
 static void highlight(wxString& str)
 {
 #if defined(SUPPORTS_MARKUP) && !defined(__APPLE__)
-    str = format_wxstr("<span bgcolor=\"#0066bd\">%1%</span>", str);
+    str = format_wxstr("<span bgcolor=\"#1677ff\">%1%</span>", str);
 #endif
 }
 

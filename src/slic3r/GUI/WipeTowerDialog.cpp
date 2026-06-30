@@ -326,7 +326,7 @@ wxString WipingDialog::BuildTextObjStr(bool multi_language)
     wxString cancel_btn_label;
 
     if (multi_language) {
-        auto_flush_tip = _L("Orca would re-calculate your flushing volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in Orca Slicer > Preferences");
+        auto_flush_tip = _L("ElegooSlicer would re-calculate your flushing volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in ElegooSlicer > Preferences");
         volume_desp_panel = _L("Flushing volume (mm³) for each filament pair.");
         volume_range_panel = wxString::Format(_L("Suggestion: Flushing Volume in range [%d, %d]"), 0, 700);
         multiplier_range_panel = wxString::Format(_L("The multiplier should be in range [%.2f, %.2f]."), 0, 3);
@@ -337,7 +337,7 @@ wxString WipingDialog::BuildTextObjStr(bool multi_language)
         ok_btn_label = _L("OK");
         cancel_btn_label = _L("Cancel");
     } else {
-        auto_flush_tip = "Orca would re-calculate your flushing volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in Orca Slicer > Preferences";
+        auto_flush_tip = "ElegooSlicer would re-calculate your flushing volumes everytime the filaments color changed or filaments changed. You could disable the auto-calculate in ElegooSlicer > Preferences";
         volume_desp_panel = wxString::FromUTF8("Flushing volume (mm³) for each filament pair.");
         volume_range_panel = wxString::Format("Suggestion: Flushing Volume in range [%d, %d]", 0, 700);
         multiplier_range_panel = wxString::Format("The multiplier should be in range [%.2f, %.2f].", 0, 3);
@@ -396,8 +396,8 @@ WipingDialog::WipingDialog(wxWindow* parent, const int max_flush_volume) :
     applied_size = { std::min(applied_size.x, scaled_screen_size.x), std::min(applied_size.y, scaled_screen_size.y) };
 
     // Ensure a reasonable minimum size so the dialog is usable even when clamped
-    applied_size.x = std::max(applied_size.x, FromDIP(350));
-    applied_size.y = std::max(applied_size.y, FromDIP(450));
+    applied_size.x = std::max(applied_size.x, FromDIP(500));
+    applied_size.y = std::max(applied_size.y, FromDIP(600));
     m_webview = wxWebView::New(this, wxID_ANY,
         wxEmptyString,
         wxDefaultPosition,

@@ -74,7 +74,7 @@ body
 {
 	font-size:28px;
 	line-height: 28px;
-	color: #0066bd;
+	color: #1677ff;
 	padding: 0px 10mm;
 }
 
@@ -115,7 +115,7 @@ body
 /*---HyperLink---*/
 .HyperLink
 {
-	color: #0066bd;
+	color: #1677ff;
 	text-decoration: underline;
     font-weight: 700;
 	cursor: pointer;

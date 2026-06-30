@@ -79,6 +79,8 @@
         position: relative;
         width: 40px;
         height: 25px;
+        vertical-align: middle;
+        line-height: 25px;
       }
 
       thead th {
@@ -113,23 +115,24 @@
       }
 
       .icon-button {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         width: 16px;
         height: 16px;
         border: 1px solid #999;
         text-align: center;
-        line-height: 15px;
         color: #fff;
         font-weight: bold;
         font-size: 12px;
-        border-radius: 4px;
+        border-radius: 2px;
         cursor: default;
         user-select: none;
         padding: 1px;
       }
 
       input[type="number"].table-input {
-        width: 30px;
+        width: 42px;
         height: 20px;
         text-align: center;
         -moz-appearance: textfield;
@@ -261,9 +264,9 @@
   <body>
     <div class="container">
       <div class="tip-panel" id="auto_flush_tip">
-        Orca would re-calculate your flushing volumes every time the filament
+        ElegooSlicer would re-calculate your flushing volumes every time the filament
         color changed or filaments changed. You could disable the auto-calculate
-        in Orca Slicer &gt; Preferences.
+        in ElegooSlicer &gt; Preferences.
       </div>
 
       <div style="margin-bottom: 10px; display: flex; align-items: center; flex-shrink: 0;">

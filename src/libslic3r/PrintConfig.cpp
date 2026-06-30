@@ -825,7 +825,7 @@ void PrintConfigDef::init_common_params()
 
     def = this->add("use_3mf", coBool);
     def->label = L("Use 3MF instead of G-code");
-    def->tooltip = L("Enable this if the printer accepts a 3MF file as the print job. When enabled, Orca Slicer "
+    def->tooltip = L("Enable this if the printer accepts a 3MF file as the print job. When enabled, ElegooSlicer "
                      "sends the sliced file as a .gcode.3mf, instead of a plain .gcode file.");
     def->mode = comAdvanced;
     def->cli = ConfigOptionDef::nocli;

@@ -123,7 +123,7 @@ void ButtonsListCtrl::SetSelection(int sel)
     if (m_selection == sel)
         return;
     // BBS: change button color
-    wxColour selected_btn_bg("#0066bd");    // Gradient #0066bd
+    wxColour selected_btn_bg("#1677ff");    // Gradient #1677ff
     if (m_selection >= 0) {
         StateColor bg_color = StateColor(
         std::pair{wxColour(107, 107, 107), (int) StateColor::Hovered},

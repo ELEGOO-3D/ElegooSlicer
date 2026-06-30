@@ -1423,7 +1423,7 @@ bool Sidebar::priv::sync_extruder_list(bool &only_external_material)
 
 void Sidebar::priv::update_sync_status(const MachineObject *obj)
 {
-    StateColor not_synced_colour(std::pair<wxColour, int>(wxColour("#009688"), StateColor::Normal));
+    StateColor not_synced_colour(std::pair<wxColour, int>(wxColour("#1677ff"), StateColor::Normal));
     auto clear_all_sync_status = [this, &not_synced_colour]() {
         panel_printer_preset->ShowBadge(false);
         panel_printer_bed->ShowBadge(false);

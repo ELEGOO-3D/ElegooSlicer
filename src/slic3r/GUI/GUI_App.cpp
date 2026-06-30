@@ -3889,7 +3889,7 @@ void GUI_App::UpdateDarkUI(wxWindow* window, bool highlited/* = false*/, bool ju
         auto orig_col = window->GetBackgroundColour();
         auto bg_col = StateColor::darkModeColorFor(orig_col);
         // there are cases where the background color of an item is bright, specifically:
-        // * the background color of a button: #0066bd  -- 73
+        // * the background color of a button: #1677ff  -- 73
         if (bg_col != orig_col) {
             window->SetBackgroundColour(bg_col);
         }
@@ -7844,7 +7844,7 @@ bool GUI_App::load_language(wxString language, bool initial)
 
     if (!wxLocale::IsAvailable(locale_language_info->Language)) {
     	// Loading the language dictionary failed.
-	    wxString message = "Switching Orca Slicer to language " + requested_language_code + " failed.";
+	    wxString message = "Switching ElegooSlicer to language " + requested_language_code + " failed.";
 #if !defined(_WIN32) && !defined(__APPLE__)
         // likely some linux system
         message += "\nYou may need to reconfigure the missing locales, likely by running the \"locale-gen\" and \"dpkg-reconfigure locales\" commands.\n";
