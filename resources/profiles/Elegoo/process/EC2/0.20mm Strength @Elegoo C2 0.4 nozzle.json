@@ -1,6 +1,4 @@
 {
-	"type": "process",
-	"from": "system",
 	"inherits": "0.20mm Standard @Elegoo C2 0.4 nozzle",
 	"name": "0.20mm Strength @Elegoo C2 0.4 nozzle",
 	"wall_sequence": "inner wall/outer wall",
@@ -12,6 +10,5 @@
 	"top_shell_layers": "6",
 	"wall_loops": "5",
 	"top_solid_infill_flow_ratio": "1.09",
-	"setting_id": "qE1gwHDiHsBUar05",
 	"instantiation": "true"
 }

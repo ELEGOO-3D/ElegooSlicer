@@ -3,7 +3,7 @@
 	"name": "Elegoo PC @ECC",
 	"inherits": "Elegoo PC @base",
 	"from": "system",
-	"setting_id": "z0xZCiFziKFsPc3P",
+	"setting_id": "EPCECC",
 	"instantiation": "true",
 	"pressure_advance": [
 		"0.024"

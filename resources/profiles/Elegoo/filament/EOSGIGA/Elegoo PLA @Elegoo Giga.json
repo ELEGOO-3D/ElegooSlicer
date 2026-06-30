@@ -3,7 +3,7 @@
 	"name": "Elegoo PLA @Elegoo Giga",
 	"inherits": "Elegoo PLA @base",
 	"from": "system",
-	"setting_id": "DzHDGa5SJa8wdZkD",
+	"setting_id": "EPLAEOSG00",
 	"instantiation": "true",
 	"filament_max_volumetric_speed": [
 		"30"

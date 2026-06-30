@@ -3,7 +3,7 @@
 	"name": "Generic PLA @Elegoo Centauri",
 	"inherits": "Generic PLA @base",
 	"from": "system",
-	"setting_id": "WDTVrLnXWUixyMcl",
+	"setting_id": "GPLA00",
 	"instantiation": "true",
 	"filament_max_volumetric_speed": [
 		"21"

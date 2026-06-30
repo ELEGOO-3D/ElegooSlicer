@@ -3,7 +3,7 @@
 	"name": "Elegoo Centauri Carbon 0.4 nozzle",
 	"inherits": "fdm_elegoo_3dp_001_common",
 	"from": "system",
-	"setting_id": "LyL8izVzYFaXHlPb",
+	"setting_id": "ECC04",
 	"instantiation": "true",
 	"nozzle_diameter": [
 		"0.4"
@@ -47,9 +47,6 @@
 	"default_print_profile": "0.20mm Standard @Elegoo CC 0.4 nozzle",
 	"extruder_offset": [
 		"0x0"
-	],
-	"retract_length_toolchange": [
-		"0"
 	],
 	"default_bed_type": "4",
 	"auto_toolchange_command": "0",

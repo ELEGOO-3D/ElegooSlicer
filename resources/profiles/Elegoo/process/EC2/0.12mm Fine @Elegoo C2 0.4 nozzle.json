@@ -1,6 +1,4 @@
 {
-	"type": "process",
-	"from": "system",
 	"inherits": "0.20mm Standard @Elegoo C2 0.4 nozzle",
 	"layer_height": "0.12",
 	"name": "0.12mm Fine @Elegoo C2 0.4 nozzle",
@@ -8,6 +6,5 @@
 	"support_bottom_z_distance": "0.2",
 	"support_top_z_distance": "0.2",
 	"top_solid_infill_flow_ratio": "1.09",
-	"setting_id": "NbPHZPuFyAdAwYxw",
 	"instantiation": "true"
 }

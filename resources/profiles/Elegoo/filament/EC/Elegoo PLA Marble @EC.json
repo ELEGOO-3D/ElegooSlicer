@@ -3,7 +3,7 @@
 	"name": "Elegoo PLA Marble @EC",
 	"inherits": "Elegoo PLA @base",
 	"from": "system",
-	"setting_id": "lZOlnGqn1G7V5NBY",
+	"setting_id": "EPLAMARBLEEC",
 	"instantiation": "true",
 	"fan_min_speed": [
 		"80"
