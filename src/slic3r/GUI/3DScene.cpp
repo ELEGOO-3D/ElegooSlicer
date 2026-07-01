@@ -956,6 +956,7 @@ int GLVolumeCollection::load_real_wipe_tower_preview(
     TriangleMesh wipe_tower_shell = mesh.convex_hull_3d();
     v.model.init_from(wipe_tower_shell);
     v.mesh_raycaster = std::make_unique<GUI::MeshRaycaster>(std::make_shared<const TriangleMesh>(wipe_tower_shell));
+    v.raycaster_ready = true;
     v.set_convex_hull(wipe_tower_shell);
     v.set_volume_offset(Vec3d(pos_x, pos_y, 0.0));
     v.set_volume_rotation(Vec3d(0., 0., (M_PI / 180.) * rotation_angle));
