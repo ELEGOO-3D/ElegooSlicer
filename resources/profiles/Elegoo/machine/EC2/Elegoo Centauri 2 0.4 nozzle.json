@@ -49,8 +49,8 @@
 		"0x1.5"
 	],
 	"fan_speedup_time": "0.5",
-	"machine_load_filament_time": "29",
-	"machine_unload_filament_time": "28",
+	"machine_load_filament_time": "51",
+	"machine_unload_filament_time": "0",
 	"nozzle_type": "hardened_steel",
 	"scan_first_layer": "1",
 	"upward_compatible_machine": [],
