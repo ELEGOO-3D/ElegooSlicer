@@ -570,6 +570,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     });
     Bind(EVT_USER_LOGOUT, [this](wxCommandEvent&) {
         wxGetApp().CallAfter([this]() {
+            CrashReporter::setEnabled(false);
             if (m_home_view) {
                 m_home_view->refreshUserInfo();
             }
@@ -2905,7 +2906,7 @@ static wxMenu* generate_help_menu()
             dlg.ShowModal();
         });
 
-#if 0
+#if 1
     // Test crash (for testing crash reporting)
     helpMenu->AppendSeparator();
     append_menu_item(helpMenu, wxID_ANY, _L("Test Crash Report"), _L("Trigger a test crash to verify crash reporting"),

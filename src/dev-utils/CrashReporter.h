@@ -5,8 +5,8 @@
 /**
  * @brief Crash reporter using Sentry Native SDK (Crashpad backend)
  *
- * Captures crashes on Windows/macOS/Linux and uploads reports to Sentry.
- * Crash reports are stored in dataDir/sentry/ before upload.
+ * Captures crashes on Windows/macOS/Linux. Local crash data is stored in
+ * dataDir/sentry/. Uploading is controlled separately by setEnabled().
  */
 class CrashReporter
 {
@@ -24,9 +24,10 @@ public:
     static void close();
 
     /**
-     * @brief Enable or disable crash report sending
+     * @brief Enable or disable crash report uploading
      *
-     * Crash events are silently dropped when disabled.
+     * The crash handler stays installed either way so local crash data can
+     * still be generated. Events are not uploaded while disabled.
      * @param enabled true to allow sending, false to suppress
      */
     static void setEnabled(bool enabled);

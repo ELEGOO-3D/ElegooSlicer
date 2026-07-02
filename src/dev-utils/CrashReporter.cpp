@@ -1,9 +1,5 @@
 #include "CrashReporter.h"
 
-#include <algorithm>
-#include <ctime>
-#include <vector>
-
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
@@ -19,44 +15,8 @@
 #include <windows.h>
 #endif
 
-static bool sInitialized = false;
-static bool sEnabled      = false;
-
-static sentry_value_t beforeSend(sentry_value_t event, void* hint, void* closure)
-{
-    (void)hint;
-    (void)closure;
-    if (!sEnabled) {
-        BOOST_LOG_TRIVIAL(info) << "Crash report suppressed (not logged in)";
-        return sentry_value_new_null();
-    } else {
-        BOOST_LOG_TRIVIAL(info) << "Crash report captured and will be sent to Sentry";
-    }
-    return event;
-}
-
-static void pruneOldRuns(const boost::filesystem::path& sentryDir, int keepCount)
-{
-    try {
-        std::vector<std::pair<std::time_t, boost::filesystem::path>> runs;
-        for (auto& entry : boost::filesystem::directory_iterator(sentryDir)) {
-            if (boost::filesystem::is_directory(entry)) {
-                runs.emplace_back(boost::filesystem::last_write_time(entry), entry.path());
-            }
-        }
-        if (runs.size() <= static_cast<size_t>(keepCount))
-            return;
-
-        std::sort(runs.begin(), runs.end(), [](auto& a, auto& b) { return a.first > b.first; });
-        for (size_t i = keepCount; i < runs.size(); ++i) {
-            boost::filesystem::remove_all(runs[i].second);
-            BOOST_LOG_TRIVIAL(debug) << "Pruned old sentry run: " << runs[i].second.string();
-        }
-        BOOST_LOG_TRIVIAL(info) << "Pruned " << (runs.size() - keepCount) << " old sentry run(s), keeping latest " << keepCount;
-    } catch (...) {
-        BOOST_LOG_TRIVIAL(warning) << "Failed to prune old sentry runs";
-    }
-}
+static bool sInitialized   = false;
+static bool sUploadEnabled = false;
 
 bool CrashReporter::init(const std::string& dataDir)
 {
@@ -109,19 +69,25 @@ bool CrashReporter::init(const std::string& dataDir)
             handlerPath = exeDir / "crashpad_handler";
         }
 #endif
+        if (!boost::filesystem::exists(handlerPath)) {
+            BOOST_LOG_TRIVIAL(error) << "crashpad_handler not found: " << handlerPath.string();
+            return false;
+        }
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << "Failed to locate crashpad_handler: " << e.what();
         return false;
     }
-
-    pruneOldRuns(sentryDir, 3);
 
     sentry_options_t* options = sentry_options_new();
     sentry_options_set_dsn(options, dsn);
     sentry_options_set_database_path(options, sentryDir.string().c_str());
     sentry_options_set_release(options, "elegoo-slicer@" ELEGOOSLICER_VERSION);
     sentry_options_set_handler_path(options, handlerPath.string().c_str());
-    sentry_options_set_before_send(options, beforeSend, nullptr);
+    sentry_options_set_require_user_consent(options, 1);
+    sentry_options_set_cache_keep(options, SENTRY_CACHE_KEEP_OFFLINE);
+    sentry_options_set_cache_max_age(options, 30 * 24 * 60 * 60);
+    sentry_options_set_cache_max_size(options, 128 * 1024 * 1024);
+    sentry_options_set_cache_max_items(options, 10);
     sentry_options_set_shutdown_timeout(options, 5000);
 #ifndef NDEBUG
     sentry_options_set_debug(options, 1);
@@ -129,6 +95,10 @@ bool CrashReporter::init(const std::string& dataDir)
 
     int result = sentry_init(options);
     if (result == 0) {
+        if (sUploadEnabled)
+            sentry_user_consent_give();
+        else
+            sentry_user_consent_revoke();
         BOOST_LOG_TRIVIAL(info) << "Sentry crash reporter initialized successfully";
         BOOST_LOG_TRIVIAL(info) << "  Database: " << sentryDir.string();
         BOOST_LOG_TRIVIAL(info) << "  Handler: " << handlerPath.string();
@@ -152,9 +122,15 @@ void CrashReporter::close()
 
 void CrashReporter::setEnabled(bool enabled)
 {
-    if (sEnabled != enabled) {
-        sEnabled = enabled;
-        BOOST_LOG_TRIVIAL(info) << "Crash reporter " << (enabled ? "enabled" : "disabled");
+    if (sUploadEnabled != enabled) {
+        sUploadEnabled = enabled;
+        if (sInitialized) {
+            if (enabled)
+                sentry_user_consent_give();
+            else
+                sentry_user_consent_revoke();
+        }
+        BOOST_LOG_TRIVIAL(info) << "Crash report upload " << (enabled ? "enabled" : "disabled");
     }
 }
 
