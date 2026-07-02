@@ -2,6 +2,7 @@
 	"type": "filament",
 	"setting_id": "GFSG99",
 	"name": "Generic PETG PRO @Elegoo",
+	"renamed_from": "Elegoo Generic PETG PRO",
 	"from": "system",
 	"instantiation": "true",
 	"inherits": "Generic PETG @base",
