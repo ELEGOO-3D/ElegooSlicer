@@ -640,14 +640,16 @@ void Sidebar::priv::layout_printer(bool isBBL, bool isDual)
         vsizer_printer->AddSpacer(FromDIP(SidebarProps::ContentMarginV()));
     }
 
-    //btn_connect_printer->Show(!isBBL);
-    m_printer_connect->Show(!isBBL);
-    //btn_sync_printer->Show(isBBL);
-    m_printer_bbl_sync->Show(isBBL);
-
-    // ORCA show plate type combo box only when its supported
     PresetBundle &preset_bundle = *wxGetApp().preset_bundle;
     auto cfg = preset_bundle.printers.get_edited_preset().config;
+    const bool support_device_list = PrintHost::support_device_list_management(cfg);
+
+    //btn_connect_printer->Show(!isBBL);
+    m_printer_connect->Show(!isBBL && !support_device_list);
+    //btn_sync_printer->Show(isBBL);
+    m_printer_bbl_sync->Show(isBBL && support_device_list);
+
+    // ORCA show plate type combo box only when its supported
     // Orca: we use preset_bundle.is_bbl_vendor() instead of isBBL to determine if the plate type combo box should be shown
     // ref: https://github.com/OrcaSlicer/OrcaSlicer/pull/11610#discussion_r2607411847
     panel_printer_bed->Show(preset_bundle.is_bbl_vendor() || cfg.opt_bool("support_multi_bed_types"));
@@ -2461,6 +2463,7 @@ void Sidebar::update_all_preset_comboboxes()
 
     auto p_mainframe = wxGetApp().mainframe;
     auto cfg = preset_bundle.printers.get_edited_preset().config;
+    const bool support_device_list = PrintHost::support_device_list_management(cfg);
 
     if (preset_bundle.use_bbl_network()) {
         //only show connection button for not-BBL printer
@@ -2521,7 +2524,7 @@ void Sidebar::update_all_preset_comboboxes()
         p_mainframe->load_printer_url(url, apikey);
         p_mainframe->set_print_button_to_default(print_btn_type);
 
-        if (PrintHost::support_device_list_management(cfg)) {
+        if (support_device_list) {
             p->m_printer_connect->Hide();
         } else {
             p->m_printer_connect->Show();
@@ -2532,6 +2535,7 @@ void Sidebar::update_all_preset_comboboxes()
             ams_btn->Hide();
         }              
     }
+    p->m_printer_bbl_sync->Show(preset_bundle.use_bbl_network() && support_device_list);
 
     if (cfg.opt_bool("pellet_modded_printer")) {
 		p->m_staticText_filament_settings->SetLabel(_L("Pellets"));
