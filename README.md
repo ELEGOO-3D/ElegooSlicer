@@ -75,22 +75,8 @@ ElegooSlicer is an open-source slicer compatible with most FDM printers. Current
 
 # Developer tools
 
-- clangd  
-  - Reason: improves C/C++ navigation performance in this project.  
-  - Installation: install clangd via VS Code extension, or install it separately and configure environment variable, or set `clangd.path` in VS Code settings.  
-  - Usage: first build the project using `build_release_windows.bat`, then run `generate_clangd_config.bat` from the repository root (for example: `generate_clangd_config.bat debuginfo`). This will generate `compile_commands.json` and automatically install recommended VS Code settings and `.clangd` configuration.  
-  - Note: first-time navigation may take a few seconds while clangd is indexing the codebase.
+See [doc/DEVELOPER.md](doc/DEVELOPER.md) for developer tools and AI assistant rules.
 
-- AI assistant rules  
-  - AI rule templates (for VS Code, Cursor, Claude, and both English/Chinese workflows) are stored under `doc/rules/<lang>/<ide_type>`.  
-  - Run `python scripts/setup_rules.py <ide_type> [lang] [workspace_path]` to install or update these rules.  
-  - Examples: `python scripts/setup_rules.py cursor cn`, `python scripts/setup_rules.py vscode en`, `python scripts/setup_rules.py claude cn`.
-
-- CMakePresets.json  
-  - If you are developing in VS Code, you can copy `doc/vscode_settings/CMakePresets.json` to the repository root to enable CMake Tools extension auto-detection of build presets (configure and build with one click).  
-  - Note: you must build dependencies first using `build_release_windows.bat` before using this preset, as it expects `deps/build-*/ElegooSlicer_dep/` to exist.
-
-# How to Report Issues
 
 We recommend joining our Discord BETA channel to provide real-time feedback and engage in discussions. You can also report issues and track progress on GitHub Issues.
 

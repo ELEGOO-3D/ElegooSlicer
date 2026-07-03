@@ -1,139 +1,123 @@
 #!/usr/bin/env python3
+"""Install AI rule files from doc/rules/ templates to agent target locations."""
+
 import sys
 import shutil
 from pathlib import Path
 
-def setup_rules(workspace, ide_type, lang='zh-CN'):
-    """Setup IDE-specific rules"""
-    source_dir = workspace / 'doc' / 'rules' / lang / ide_type
-    
-    if not source_dir.exists():
-        print(f'[ERROR] source directory not found: {source_dir}')
-        return False
-    
-    rule_files = list(source_dir.glob('*'))
-    if not rule_files:
-        print(f'[WARNING] no rule files found in {source_dir}')
+ALL_AGENTS = ['claude', 'cursor', 'copilot', 'codex']
+
+def copy_file(src, dst, label=''):
+    """Copy a single file, print result."""
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        shutil.copy2(src, dst)
+        print(f'  [OK] {label or src.name} → {dst}')
         return True
-    
-    success = True
-    copied_count = 0
-    
-    if ide_type == 'cursor':
-        target_dir = workspace / '.cursor' / 'rules'
-        target_dir.mkdir(parents=True, exist_ok=True)
-
-        for source_file in rule_files:
-            if source_file.is_file():
-                target_file = target_dir / source_file.name
-                try:
-                    shutil.copy2(source_file, target_file)
-                    copied_count += 1
-                except Exception as e:
-                    print(f'[WARNING] failed to copy {source_file.name}: {e}')
-                    success = False
-
-        if copied_count > 0:
-            print(f'[OK] copied {copied_count} rule file(s) for Cursor')
-            print(f'     target: {target_dir}')
-    
-    elif ide_type == 'vscode':
-        github_dir = workspace / '.github'
-        github_dir.mkdir(parents=True, exist_ok=True)
-        
-        copilot_file = source_dir / 'copilot-instructions.md'
-        if copilot_file.exists():
-            try:
-                shutil.copy2(copilot_file, github_dir / 'copilot-instructions.md')
-                copied_count += 1
-                print(f'[OK] copied copilot-instructions.md to .github/')
-            except Exception as e:
-                print(f'[WARNING] failed to copy copilot-instructions.md: {e}')
-                success = False
-        
-        rules_dir = workspace / '.vscode' / 'rules'
-        rules_dir.mkdir(parents=True, exist_ok=True)
-        
-        for source_file in rule_files:
-            if source_file.is_file() and source_file.name != 'copilot-instructions.md':
-                target_file = rules_dir / source_file.name
-                try:
-                    shutil.copy2(source_file, target_file)
-                    copied_count += 1
-                except Exception as e:
-                    print(f'[WARNING] failed to copy {source_file.name}: {e}')
-                    success = False
-        
-        if copied_count > 1:
-            print(f'[OK] copied {copied_count - 1} reference file(s) to .vscode/rules/')
-    
-    elif ide_type == 'claude':
-        target_dir = workspace
-        target_dir.mkdir(parents=True, exist_ok=True)
-
-        for source_file in rule_files:
-            if source_file.is_file():
-                target_file = target_dir / source_file.name
-                try:
-                    shutil.copy2(source_file, target_file)
-                    copied_count += 1
-                except Exception as e:
-                    print(f'[WARNING] failed to copy {source_file.name}: {e}')
-                    success = False
-
-        if copied_count > 0:
-            print(f'[OK] copied {copied_count} rule file(s) for Claude')
-            print(f'     target: {target_dir}')
-    
-    else:
-        print(f'[ERROR] unknown IDE type: {ide_type}')
+    except Exception as e:
+        print(f'  [WARN] {src.name}: {e}')
         return False
-    
-    return success
+
+def install_agents(workspace, agents, lang):
+    """Install rules for the given agents and language."""
+    rules_dir = workspace / 'doc' / 'rules' / lang
+    if not rules_dir.exists():
+        print(f'[ERROR] rules directory not found: {rules_dir}')
+        return False
+
+    lang_label = '中文' if lang == 'zh-CN' else 'English'
+    print(f'\n=== 安装规则 [{lang_label}] ===\n')
+
+    ok = True
+
+    # 1. Always install AGENTS.md (shared by all agents)
+    agents_src = rules_dir / 'AGENTS.md'
+    if agents_src.exists():
+        if not copy_file(agents_src, workspace / 'AGENTS.md', 'AGENTS.md'):
+            ok = False
+    else:
+        print(f'  [WARN] AGENTS.md not found in {lang}')
+
+    # 2. Always install .ai_rules/ (on-demand rules)
+    ai_src = rules_dir / '.ai_rules'
+    if ai_src.exists():
+        ai_dst = workspace / '.ai_rules'
+        for f in ai_src.glob('*'):
+            if not copy_file(f, ai_dst / f.name, f'.ai_rules/{f.name}'):
+                ok = False
+
+    # 3. Install per-agent entry points
+    for agent in agents:
+        if agent not in ALL_AGENTS:
+            print(f'  [ERROR] unknown agent: {agent}')
+            ok = False
+            continue
+
+        if agent == 'claude':
+            src = rules_dir / 'claude' / 'CLAUDE.md'
+            if src.exists():
+                if not copy_file(src, workspace / 'CLAUDE.md', 'CLAUDE.md'):
+                    ok = False
+
+        elif agent == 'cursor':
+            src = rules_dir / 'cursor' / 'cursor.mdc'
+            if src.exists():
+                if not copy_file(src, workspace / '.cursor' / 'rules' / 'cursor.mdc', '.cursor/rules/cursor.mdc'):
+                    ok = False
+
+        elif agent == 'copilot':
+            src = rules_dir / 'copilot' / 'copilot-instructions.md'
+            if src.exists():
+                if not copy_file(src, workspace / '.github' / 'copilot-instructions.md', '.github/copilot-instructions.md'):
+                    ok = False
+
+    print(f'\n=== 安装完成 ===')
+    return ok
 
 def main():
-    if len(sys.argv) < 2 or len(sys.argv) > 4:
-        print('usage: setup_rules.py <ide_type> [lang] [workspace_path]')
-        print('       ide_type: vscode | cursor | claude')
-        print('       lang: en | cn (default: en)')
-        print('       workspace_path: optional, defaults to current directory')
+    if len(sys.argv) < 2:
+        print('用法: setup_rules.py <agent...> [lang]')
         print('')
-        print('examples:')
-        print('  setup_rules.py cursor')
-        print('  setup_rules.py cursor cn')
-        print('  setup_rules.py vscode en')
+        print('  agent:  claude | cursor | copilot | codex | all（可多个，空格分隔）')
+        print('  lang:   en（默认）| cn')
+        print('')
+        print('示例:')
+        print('  setup_rules.py claude cn          # Claude + 中文')
+        print('  setup_rules.py cursor copilot     # Cursor + Copilot + English')
+        print('  setup_rules.py all                # 全部 agent + English')
+        print('  setup_rules.py all cn             # 全部 agent + 中文')
         sys.exit(1)
-    
-    ide_type = sys.argv[1].lower()
-    
+
+    args = sys.argv[1:]
     lang = 'en'
-    workspace = Path.cwd()
-    
-    if len(sys.argv) >= 3:
-        if sys.argv[2] in ['cn', 'en']:
-            lang = 'zh-CN' if sys.argv[2] == 'cn' else 'en'
-            if len(sys.argv) == 4:
-                workspace = Path(sys.argv[3])
+    agents = []
+
+    for a in args:
+        if a.lower() in ['en', 'cn']:
+            lang = 'zh-CN' if a.lower() == 'cn' else 'en'
+        elif a.lower() == 'all':
+            agents = list(ALL_AGENTS)
+        elif a.lower() in ALL_AGENTS:
+            agents.append(a.lower())
         else:
-            workspace = Path(sys.argv[2])
-    
-    if ide_type not in ['vscode', 'cursor', 'claude']:
-        print(f'[ERROR] invalid IDE type: {ide_type}')
-        print('        supported: vscode, cursor, claude')
+            print(f'[ERROR] 未知参数: {a}')
+            sys.exit(1)
+
+    if not agents:
+        print('[ERROR] 请指定至少一个 agent（claude/cursor/copilot/all）')
         sys.exit(1)
-    
-    if lang not in ['zh-CN', 'en']:
-        print(f'[ERROR] invalid language: {lang}')
-        print('        supported: en, cn')
+
+    # Deduplicate while preserving order
+    seen = set()
+    agents = [x for x in agents if not (x in seen or seen.add(x))]
+
+    workspace = Path.cwd()
+    if not (workspace / 'doc' / 'rules').exists():
+        print('[ERROR] 请在项目根目录运行此脚本')
         sys.exit(1)
-    
-    if not workspace.exists():
-        print(f'[ERROR] workspace not found: {workspace}')
-        sys.exit(1)
-    
-    success = setup_rules(workspace, ide_type, lang)
+
+    success = install_agents(workspace, agents, lang)
     sys.exit(0 if success else 1)
 
 if __name__ == '__main__':
     main()
-
