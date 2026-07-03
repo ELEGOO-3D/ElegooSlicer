@@ -75,7 +75,7 @@ ElegooSlicer 是一款兼容大多数 FDM 打印机的开源切片软件。目�
 
 # 开发者工具
 
-详见 [doc/DEVELOPER_zh-CN.md](doc/DEVELOPER_zh-CN.md)。
+详见 [doc/DEVELOPER.zh-cn.md](doc/DEVELOPER.zh-cn.md)。
 
 
 # 问题反馈
