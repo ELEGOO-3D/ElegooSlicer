@@ -831,6 +831,7 @@ class Print;
         float m_preheat_time;
         int m_preheat_steps;
         bool m_disable_m73;
+        std::string m_printer_model;
 
         enum class EProducer
         {
@@ -1090,6 +1091,7 @@ class Print;
 
         //BBS: different path_type is only used for arc move
         void store_move_vertex(EMoveType type, EMovePathType path_type = EMovePathType::Noop_move, bool internal_only = false);
+        void add_time_to_estimate(float additional_time);
 
         void set_extrusion_role(ExtrusionRole role);
 

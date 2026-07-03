@@ -1961,6 +1961,7 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     m_parser.apply_config(config);
 
     m_flavor = config.gcode_flavor;
+    m_printer_model = config.printer_model.value;
 
     m_single_extruder_multi_material = config.single_extruder_multi_material;
 
@@ -2146,6 +2147,10 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
     const ConfigOptionString* printer_settings_id = config.option<ConfigOptionString>("printer_settings_id");
     if (printer_settings_id != nullptr)
         m_result.settings_ids.printer = printer_settings_id->value;
+
+    const ConfigOptionString* printer_model = config.option<ConfigOptionString>("printer_model");
+    if (printer_model != nullptr)
+        m_printer_model = printer_model->value;
 
     // BBS
     m_result.filaments_count = config.option<ConfigOptionFloats>("filament_diameter")->values.size();
@@ -5358,132 +5363,6 @@ void GCodeProcessor::process_M702(const GCodeReader::GCodeLine& line)
     }
 }
 
-void GCodeProcessor::process_M6211(const GCodeReader::GCodeLine& line)
-{
-    // Parse parameters
-    float length = 0.0f;
-    int filament_id = -1;
-
-    if (!line.has_value('L', length) || length <= 0.0f)
-        return;
-
-    float t = -1.0f;
-    if (!line.has_value('T', t) || t < 0)
-        return;
-
-    // T parameter is filament_id in the multi-filament-per-nozzle model
-    filament_id = static_cast<int>(std::round(t));
-
-    // Validate filament_id
-    if (filament_id < 0 || filament_id >= m_result.filaments_count)
-        return;
-
-    // Get the extruder_id from filament mapping (multiple filaments can map to one extruder)
-    int extruder_id = m_filament_maps[filament_id];
-
-    // Update extruder temperature
-    float new_extruder_temp = 0.0f;
-    if (line.has_value('S', new_extruder_temp)) {
-        if (extruder_id >= 0 && static_cast<size_t>(extruder_id) < m_extruder_temps.size())
-            m_extruder_temps[static_cast<size_t>(extruder_id)] = new_extruder_temp;
-    }
-
-    // Get nozzle volume for this extruder (nozzle volume is a physical property of the extruder)
-    float remaining_volume = 0.0f;
-    if (extruder_id >= 0 && static_cast<size_t>(extruder_id) < m_nozzle_volume.size())
-        remaining_volume = m_nozzle_volume[extruder_id];
-
-    // Get filament diameter by filament_id (filament diameter is a property of the filament)
-    const float filament_diameter = (static_cast<size_t>(filament_id) < m_result.filament_diameters.size())
-        ? m_result.filament_diameters[filament_id]
-        : m_result.filament_diameters.back();
-    const float area_filament_cross_section = static_cast<float>(M_PI) * sqr(0.5f * filament_diameter);
-    const float volume_flushed_filament = area_filament_cross_section * length;
-
-    auto get_clamped_param = [&line](char axis, float default_value, float min_value, float max_value) {
-        float value = default_value;
-        line.has_value(axis, value);
-        return std::clamp(value, min_value, max_value);
-    };
-
-    const float flush_length = std::clamp(length, 10.0f, 1000.0f);
-    const float flush_length_single = get_clamped_param('K', 75.0f, 10.0f, 300.0f);
-    const float old_filament_e_feedrate = get_clamped_param('M', 300.0f, 10.0f, 600.0f);
-    const float new_filament_e_feedrate = get_clamped_param('N', 300.0f, 10.0f, 600.0f);
-    const float cool_time = get_clamped_param('P', 3000.0f, 0.0f, 20000.0f) * 0.001f;
-    const float old_retract_length_toolchange = get_clamped_param('C', 2.0f, 0.0f, 10.0f);
-
-    static constexpr float e_flush_dist = 15.0f;
-    static constexpr float cut_retract_length_toolchange = 12.0f;
-    static constexpr float default_s813_retract = 2.0f;
-    static constexpr float retract_feedrate = 1800.0f;
-    static constexpr float s819_tail_flush_length = 10.0f;
-    static constexpr float s819_tail_feedrate = 400.0f;
-    static constexpr float wipe_after_flush_time = 4.0f; // G180 S818 wiping action, per macro notes.
-
-    const auto extrusion_time = [](float e_length, float feedrate) {
-        return feedrate > 0.0f && e_length > 0.0f ? e_length / feedrate * 60.0f : 0.0f;
-    };
-    const auto retract_time = [extrusion_time](float e_length) {
-        return extrusion_time(std::max(e_length, 0.0f), retract_feedrate);
-    };
-    const auto s819_time = [extrusion_time](float e_length, float feedrate) {
-        const float tail_length = std::min(std::max(e_length, 0.0f), s819_tail_flush_length);
-        const float main_length = std::max(e_length - tail_length, 0.0f);
-        return extrusion_time(main_length, feedrate) + extrusion_time(tail_length, s819_tail_feedrate);
-    };
-
-    const float flush_length_after_start = std::max(flush_length - e_flush_dist, 0.0f);
-    const int flush_times = std::max(1, static_cast<int>(std::ceil(flush_length_after_start / flush_length_single)));
-    const float flush_length_actual = flush_length_single;//flush_length_after_start / static_cast<float>(flush_times);
-
-    float m6211_time = 0.0f;
-    // m6211_time += retract_time(cut_retract_length_toolchange - default_s813_retract - old_retract_length_toolchange);
-    // m6211_time += extrusion_time(std::min(e_flush_dist, flush_length), old_filament_e_feedrate);
-
-    const int intermediate_flush_times = flush_times - 1;
-    const float intermediate_flush_time = s819_time(flush_length_actual, new_filament_e_feedrate) +
-                                          retract_time(6.0f) +
-                                          cool_time +
-                                          wipe_after_flush_time;
-    m6211_time += static_cast<float>(intermediate_flush_times) * intermediate_flush_time;
-    if(intermediate_flush_times>0){
-        // For intermediate flushes greater than 1, add 6 seconds of time because some additional actions will be performed
-        m6211_time += 6.0f;
-    }
-    m6211_time += s819_time(flush_length_actual, new_filament_e_feedrate * 0.8f) +
-                  retract_time(4.0f) +
-                  cool_time +
-                  wipe_after_flush_time;
-
-    // Check if this is the first extrusion or same filament (no actual filament change)
-    int curr_filament_id = get_filament_id(false);
-    bool isFirstExtrusion = (curr_filament_id == -1) || (filament_id == curr_filament_id);
-
-    // Use process_filament_change to handle filament/extruder switching
-    process_filament_change(filament_id, m6211_time);
-    if (curr_filament_id == filament_id)
-        simulate_st_synchronize(m6211_time);
-
-    // Update flush statistics and remaining volume tracking for this extruder
-    if (extruder_id >= 0 && static_cast<size_t>(extruder_id) < m_remaining_volume.size()) {
-        if (volume_flushed_filament >= remaining_volume) {
-            // At the beginning of the print, skip the first extrusion statistics
-            // because we cannot know which filament was remaining in the nozzle
-            if (!isFirstExtrusion)
-                m_used_filaments.update_flush_per_filament(curr_filament_id, remaining_volume);
-
-            m_used_filaments.update_flush_per_filament(filament_id, volume_flushed_filament - remaining_volume);
-            m_remaining_volume[extruder_id] = 0.0f;
-        }
-        else {
-            m_used_filaments.update_flush_per_filament(filament_id, volume_flushed_filament);
-            m_remaining_volume[extruder_id] -= volume_flushed_filament;
-        }
-    }
-}
-
-
 void GCodeProcessor::process_SYNC(const GCodeReader::GCodeLine& line)
 {
     float time = 0;
@@ -5576,7 +5455,7 @@ void GCodeProcessor::process_filament_change(int id, float extra_time_)
     float extra_time = static_cast<float>(extra_time_);
     unsigned int filament_changes_delta = 0;
     unsigned int extruder_changes_delta = 0;
-    float filament_load_time_delta = 0.0f;
+    float filament_load_time_delta = static_cast<float>(extra_time_);
     float filament_unload_time_delta = 0.0f;
     float tool_change_time_delta = 0.0f;
 
@@ -5653,7 +5532,8 @@ void GCodeProcessor::process_filament_change(int id, float extra_time_)
     }
 
     m_cp_color.current = m_extruder_colors[next_filament_id];
-    simulate_st_synchronize(extra_time);
+    simulate_st_synchronize();
+    add_time_to_estimate(extra_time);
     // store tool change move
     store_move_vertex(EMoveType::Tool_change);
 }
@@ -5745,6 +5625,25 @@ void GCodeProcessor::store_move_vertex(EMoveType type, EMovePathType path_type, 
 
             machine.stop_times.push_back({ m_g1_line_id, 0.0f });
         }
+    }
+}
+
+void GCodeProcessor::add_time_to_estimate(float additional_time)
+{
+    if (additional_time <= 0.0f)
+        return;
+
+    for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Count); ++i) {
+        TimeMachine& machine = m_time_processor.machines[i];
+        if (!machine.enabled)
+            continue;
+
+        machine.time += additional_time;
+        machine.gcode_time.cache += additional_time;
+        if (m_processing_start_custom_gcode)
+            machine.prepare_time += additional_time;
+        if (std::max<unsigned int>(1, m_layer_id) == 1)
+            machine.first_layer_time += additional_time;
     }
 }
 
