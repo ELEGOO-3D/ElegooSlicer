@@ -92,6 +92,13 @@ bool PrintHost::support_device_list_management(const DynamicPrintConfig &config)
     std::vector<PrintHostType> support_device_list_management_host_types = {htElegooLink};
     return std::find(support_device_list_management_host_types.begin(), support_device_list_management_host_types.end(), host_type) != support_device_list_management_host_types.end();
 }
+
+bool PrintHost::support_mms(const DynamicPrintConfig &config)
+{
+    const ConfigOptionBool* support_mms = config.option<ConfigOptionBool>("support_mms");
+    return support_mms != nullptr && support_mms->value;
+}
+
 PrintHostType PrintHost::get_print_host_type(const std::string &host_type_str)
 {
     if(host_type_str == "ElegooLink") {

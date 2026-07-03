@@ -89,6 +89,7 @@ public:
     static PrintHost* get_print_host(DynamicPrintConfig *config);
     static PrintHostType get_print_host_type(const DynamicPrintConfig &config);
     static bool support_device_list_management(const DynamicPrintConfig &config);
+    static bool support_mms(const DynamicPrintConfig &config);
     static PrintHostType get_print_host_type(const std::string &host_type_str);
     static std::string get_print_host_type_str(const PrintHostType host_type);
     static std::string get_print_host_webui(DynamicPrintConfig *config);

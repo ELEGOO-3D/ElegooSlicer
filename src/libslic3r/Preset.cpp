@@ -1393,7 +1393,7 @@ static std::vector<std::string> s_Preset_printer_options {
     "z_offset",
     "disable_m73", "preferred_orientation", "emit_machine_limits_to_gcode", "pellet_modded_printer", "support_multi_bed_types", "use_3mf", "default_bed_type", "bed_mesh_min","bed_mesh_max","bed_mesh_probe_distance", "adaptive_bed_mesh_margin", "enable_long_retraction_when_cut","long_retractions_when_cut","retraction_distances_when_cut",
     "bed_temperature_formula", "nozzle_flush_dataset",
-    "support_wan_network", "support_multi_filament"
+    "support_wan_network", "support_mms"
     };
 
 static std::vector<std::string> s_Preset_sla_print_options {

@@ -194,7 +194,6 @@ public:
     void load_ams_list(MachineObject* obj);
     std::map<int, DynamicPrintConfig> build_filament_ams_list(MachineObject* obj);
 
-    bool load_mms_list();
     void sync_ams_list(bool is_from_big_sync_btn = false);
     bool sync_extruder_list();
     bool need_auto_sync_extruder_list_after_connect_priner(const MachineObject* obj);
@@ -957,9 +956,6 @@ private:
 
     void cut_horizontal(size_t obj_idx, size_t instance_idx, double z, ModelObjectCutAttributes attributes);
 
-    // Auto-load missing vendor presets when loading 3MF files
-    int auto_load_missing_vendor_presets(PresetBundle* preset_bundle, DynamicPrintConfig& config, 
-                                        std::set<std::string>& modified_gcodes, const std::string& filename);
     void on_filament_map_mode_change();
     friend class SuppressBackgroundProcessingUpdate;
     friend class PlaterDropTarget;

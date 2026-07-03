@@ -59,7 +59,7 @@
 	"purge_in_prime_tower": "0",
 	"gcode_flavor": "klipper",
 	"machine_pause_gcode": "M600",
-	"support_multi_filament": "1",
+	"support_mms": "1",
 	"support_wan_network": "1",
 	"bed_mesh_max": "243,245",
 	"bed_mesh_min": "10,10",

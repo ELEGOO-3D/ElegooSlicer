@@ -3184,11 +3184,14 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
         auto ams_id     = ams.opt_string("ams_id", 0u);
         auto slot_id    = ams.opt_string("slot_id", 0u);
         auto is_placeholder = ams.has("filament_slot_placeholder") && ams.opt_bool("filament_slot_placeholder", 0u);
-        ams_infos.push_back({filament_id.empty() ? false : true, false, is_placeholder, filament_color});
+        std::string filament_preset_name  = ams.has("filament_preset_name")  ? ams.opt_string("filament_preset_name", 0u)  : std::string();
+        std::string filament_preset_alias = ams.has("filament_preset_alias") ? ams.opt_string("filament_preset_alias", 0u) : std::string();
+        bool has_filament = !filament_id.empty() || !filament_preset_name.empty() || !filament_preset_alias.empty();
+        ams_infos.push_back({has_filament, false, is_placeholder, filament_color});
         AMSMapInfo temp = {ams_id, slot_id};
         ams_array_maps.push_back(temp);
         index++;
-        if (filament_id.empty()) {
+        if (!has_filament) {
             if (use_map) {
                 for (int j = maps.size() - 1; j >= 0; j--) {
                     if (maps[j].slot_id == slot_id && maps[j].ams_id == ams_id) {
@@ -3220,10 +3223,25 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
             continue;
         }
         bool has_type = false;
-        auto filament_type = ams.opt_string("filament_type", 0u);
-        auto iter = std::find_if(filaments.begin(), filaments.end(), [this, &filament_id, &has_type, filament_type](auto &f) {
-            has_type |= f.config.opt_string("filament_type", 0u) == filament_type;
-            return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id; });
+        std::string filament_type = ams.opt_string("filament_type", 0u);
+        PresetCollection::Iterator iter = filaments.end();
+        if (!filament_preset_name.empty()) {
+            iter = std::find_if(filaments.begin(), filaments.end(), [this, &filament_preset_name](Preset& f) {
+                return f.is_compatible && filaments.get_preset_base(f) == &f && f.name == filament_preset_name;
+            });
+        }
+        if (iter == filaments.end() && !filament_preset_alias.empty()) {
+            const std::string& resolved_name = filaments.get_preset_name_by_alias(filament_preset_alias);
+            iter = std::find_if(filaments.begin(), filaments.end(), [this, &resolved_name](Preset& f) {
+                return f.is_compatible && filaments.get_preset_base(f) == &f && f.name == resolved_name;
+            });
+        }
+        if (iter == filaments.end() && !filament_id.empty()) {
+            iter = std::find_if(filaments.begin(), filaments.end(), [this, &filament_id, &has_type, filament_type](Preset& f) {
+                has_type |= f.config.opt_string("filament_type", 0u) == filament_type;
+                return f.is_compatible && filaments.get_preset_base(f) == &f && f.filament_id == filament_id;
+            });
+        }
         if (iter == filaments.end()) {
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": filament_id %1% not found or system or compatible") % filament_id;
             if (!filament_type.empty()) {
@@ -3292,6 +3310,8 @@ unsigned int PresetBundle::sync_ams_list(std::vector<std::pair<DynamicPrintConfi
                                                         L("The filament model is unknown. A random filament preset will be used.")));
             filament_id = iter->filament_id;
         }
+        if (ams.opt_string("filament_id", 0u).empty() && !iter->filament_id.empty())
+            ams.set_key_value("filament_id", new ConfigOptionStrings{iter->filament_id});
         ams_filament_presets.push_back(iter->name);
         ams_filament_colors.push_back(filament_color);
         ams_filament_color_types.push_back(filament_color_type);

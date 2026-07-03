@@ -86,6 +86,7 @@
 #include "wxExtensions.hpp"
 #include "../Utils/PrintHost.hpp"
 #include "MainFrame.hpp"
+#include "PlaterExt.hpp"
 #include "format.hpp"
 #include "3DScene.hpp"
 #include "GLCanvas3D.hpp"
@@ -173,7 +174,6 @@
 #include "CloneDialog.hpp"
 
 #include "Elegoo/PrintSendDialogEx.hpp"
-#include "Elegoo/PrinterMmsSyncView.hpp"
 #include "slic3r/GUI/Elegoo/TelemetryEvents.hpp"
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 #include "DeviceCore/DevFilaSystem.h"
@@ -647,7 +647,7 @@ void Sidebar::priv::layout_printer(bool isBBL, bool isDual)
     //btn_connect_printer->Show(!isBBL);
     m_printer_connect->Show(!isBBL && !support_device_list);
     //btn_sync_printer->Show(isBBL);
-    m_printer_bbl_sync->Show(isBBL && support_device_list);
+    m_printer_bbl_sync->Show(isBBL);
 
     // ORCA show plate type combo box only when its supported
     // Orca: we use preset_bundle.is_bbl_vendor() instead of isBBL to determine if the plate type combo box should be shown
@@ -2156,7 +2156,12 @@ Sidebar::Sidebar(Plater *parent)
                                                  wxBU_EXACTFIT | wxNO_BORDER, false, 18);
     ams_btn->SetToolTip(_L("Synchronize filament list"));
     ams_btn->Bind(wxEVT_BUTTON, [this, scrolled_sizer](wxCommandEvent &e) {
-        sync_ams_list();
+        PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+        const DynamicPrintConfig& cfg = preset_bundle->printers.get_edited_preset().config;
+        if (PrintHost::support_mms(cfg))
+            PlaterExt::sync_mms_filament();
+        else
+            sync_ams_list();
     });
 
     ams_btn->Bind(wxEVT_UPDATE_UI, &Sidebar::update_sync_ams_btn_enable, this);
@@ -2477,12 +2482,10 @@ void Sidebar::update_all_preset_comboboxes()
         //p->btn_connect_printer->Show();
         p->m_printer_connect->Show();
 
-        // ORCA: show/hide sync-ams button based on filament sync mode
         auto agent = wxGetApp().getAgent();
-        if (agent && agent->get_filament_sync_mode() != FilamentSyncMode::none)
-            p->m_bpButton_ams_filament->Show();
-        else
-            p->m_bpButton_ams_filament->Hide();
+        const bool support_filament_sync = PrintHost::support_mms(cfg) ||
+            (agent && agent->get_filament_sync_mode() != FilamentSyncMode::none);
+        p->m_bpButton_ams_filament->Show(support_filament_sync);
 
         // Orca: with "Support 3MF as gcode" (use_3mf) the local export is a .gcode.3mf bundle, so when no
         // printer host/IP is configured the default action is "Export plate sliced file" (mirrors the
@@ -2529,13 +2532,8 @@ void Sidebar::update_all_preset_comboboxes()
         } else {
             p->m_printer_connect->Show();
         }
-        if (cfg.has("support_multi_filament") && cfg.option<ConfigOptionBool>("support_multi_filament")->value) {
-            ams_btn->Show();
-        } else {
-            ams_btn->Hide();
-        }              
     }
-    p->m_printer_bbl_sync->Show(preset_bundle.use_bbl_network() && support_device_list);
+    p->m_printer_bbl_sync->Show(preset_bundle.use_bbl_network());
 
     if (cfg.opt_bool("pellet_modded_printer")) {
 		p->m_staticText_filament_settings->SetLabel(_L("Pellets"));
@@ -3488,45 +3486,6 @@ bool Sidebar::sync_extruder_list()
     bool only_external_material;
     return p->sync_extruder_list(only_external_material);
 }
-bool Sidebar::load_mms_list()
-{
-    auto printerMmsSyncView = new PrinterMmsSyncView(wxGetApp().mainframe);
-
-    if (printerMmsSyncView->ShowModal() != wxID_OK) {
-        delete printerMmsSyncView;
-        return false;
-    }
-    auto mmsInfo = printerMmsSyncView->getSyncedMmsGroup();
-    delete printerMmsSyncView;
-    std::map<int, DynamicPrintConfig> filament_mms_list;
-    int                               filament_index = 0;
-    for (const auto& mms : mmsInfo.mmsList) {
-
-        for (const auto& tray : mms.trayList) {
-            DynamicPrintConfig filament_config;
-            filament_config.set_key_value("filament_id", new ConfigOptionStrings{ tray.filamentId });
-            filament_config.set_key_value("filament_type", new ConfigOptionStrings{ tray.filamentType });
-            filament_config.set_key_value("filament_name", new ConfigOptionStrings{ tray.filamentName });
-            filament_config.set_key_value("filament_colour", new ConfigOptionStrings{tray.filamentColor});
-            filament_config.set_key_value("tray_name", new ConfigOptionStrings{ tray.trayName });
-            filament_config.set_key_value("filament_preset_name", new ConfigOptionStrings{ tray.filamentPresetName });
-            filament_config.set_key_value("filament_preset_alias", new ConfigOptionStrings{ tray.filamentPresetAlias });
-            filament_config.set_key_value("filament_multi_colors", new ConfigOptionStrings{});
-            filament_config.opt<ConfigOptionStrings>("filament_multi_colors")->values.push_back(tray.filamentColor);
-            filament_mms_list.emplace(filament_index, std::move(filament_config));
-            filament_index++;
-        }
-    }
-
-    p->ams_list_device = wxGetApp().preset_bundle->printers.get_edited_preset().base_id;
-    if (wxGetApp().preset_bundle->filament_ams_list == filament_mms_list)
-        return true;
-    wxGetApp().preset_bundle->filament_ams_list = filament_mms_list;
-
-    for (auto c : p->combos_filament)
-        c->update();
-    return true;
-}
 
 bool Sidebar::need_auto_sync_extruder_list_after_connect_priner(const MachineObject *obj)
 {
@@ -3617,8 +3576,6 @@ void Sidebar::load_ams_list(MachineObject* obj)
 
 void Sidebar::sync_ams_list(bool is_from_big_sync_btn)
 {
-    if(!load_mms_list())
-        return;
     wxBusyCursor cursor;
     // Force load ams list
     auto obj = wxGetApp().getDeviceManager()->get_selected_machine();
@@ -3737,8 +3694,8 @@ void Sidebar::sync_ams_list(bool is_from_big_sync_btn)
     wxGetApp().app_config ->set("ams_filament_ids", p->ams_list_device, ams_filament_ids);
     if (!unknowns.empty()) {
         MessageDialog dlg(this,
-            _L("There are some unknown filaments mapped to generic preset. Please update ElegooSlicer or restart ElegooSlicer to check if there is an update to system presets."),
-            _L("Sync filaments with MMS"), wxOK);
+            _L("There are some unknown or incompatible filaments mapped to generic preset.\nPlease update ElegooSlicer or restart ElegooSlicer to check if there is an update to system presets.") + detail,
+            _L("Sync filaments with AMS"), wxOK);
         dlg.ShowModal();
     }
     if (!sync_color_only) {
@@ -6567,7 +6524,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                             std::set<std::string> modified_gcodes;
                             int validated = preset_bundle->validate_presets(filename.string(), config, modified_gcodes);
                             if(validated != VALIDATE_PRESETS_MODIFIED_GCODES) {
-                                if(VALIDATE_PRESETS_SUCCESS == q->auto_load_missing_vendor_presets(preset_bundle, config, modified_gcodes, filename.string())) {
+                                if (VALIDATE_PRESETS_SUCCESS == PlaterExt::auto_load_missing_vendor_presets(config, filename.string())) {
                                     // if load success, validate again
                                     validated = preset_bundle->validate_presets(filename.string(), config, modified_gcodes);
                                 }
@@ -18954,67 +18911,6 @@ SuppressBackgroundProcessingUpdate::SuppressBackgroundProcessingUpdate() :
 SuppressBackgroundProcessingUpdate::~SuppressBackgroundProcessingUpdate()
 {
     wxGetApp().plater()->schedule_background_process(m_was_scheduled);
-}
-
-// Auto-load missing vendor presets when loading 3MF files
-int Plater::auto_load_missing_vendor_presets(PresetBundle*          preset_bundle,
-                                             DynamicPrintConfig&    config,
-                                             std::set<std::string>& modified_gcodes,
-                                             const std::string&     filename)
-{
-    std::string printer_preset = config.option<ConfigOptionString>("printer_settings_id", true)->value;
-    BOOST_LOG_TRIVIAL(info) << "Auto-load missing vendor presets: " << filename << " " << printer_preset;
-    if (printer_preset.empty()) {
-        return VALIDATE_PRESETS_PRINTER_NOT_FOUND;
-    }
-    std::string printer_model   = config.option<ConfigOptionString>("printer_model", true)->value;
-    std::string printer_variant = config.option<ConfigOptionString>("printer_variant", true)->value;
-
-    if(printer_model.empty() || printer_variant.empty()) {
-        BOOST_LOG_TRIVIAL(info) << "Auto-load missing vendor presets: " << filename << " " << printer_preset << " printer_model or printer_variant is empty";
-        return VALIDATE_PRESETS_PRINTER_NOT_FOUND;
-    }
-
-    std::string vendor_name;
-
-    PresetBundle temp_bundle;
-    auto [substitutions, errors] = temp_bundle.load_system_models_from_json(ForwardCompatibilitySubstitutionRule::EnableSilent);
-    for (const auto& vendor_pair : temp_bundle.vendors) {
-        const auto& vendor_profile = vendor_pair.second;
-        for (const auto& model : vendor_profile.models) {
-            if (!printer_model.empty() && model.id == printer_model) {
-                vendor_name = vendor_pair.first;
-                break;
-            }
-        }
-        if (!vendor_name.empty())
-            break;
-    }
-
-    if (vendor_name.empty()) {
-        BOOST_LOG_TRIVIAL(info) << "Auto-load missing vendor presets: " << filename << " " << printer_preset << " vendor_name is empty";
-        return VALIDATE_PRESETS_PRINTER_NOT_FOUND;
-    }
-
-    const auto vendor_dir  = (boost::filesystem::path(Slic3r::data_dir()) / PRESET_SYSTEM_DIR).make_preferred();
-    auto       vendor_file = vendor_dir / (vendor_name + ".json");
-
-    if (!fs::exists(vendor_file)) {
-        std::unique_ptr<PresetUpdater> updater = std::make_unique<PresetUpdater>();
-        std::vector<std::string>       install_bundles;
-        install_bundles.emplace_back(vendor_name);
-        if (!updater->install_bundles_rsrc(std::move(install_bundles), false)) {
-            BOOST_LOG_TRIVIAL(error) << "Failed to auto-install vendor bundle: " << vendor_name << " for " << filename << " " << printer_preset;
-            return VALIDATE_PRESETS_PRINTER_NOT_FOUND;
-        }
-        BOOST_LOG_TRIVIAL(info) << "Auto-installing vendor bundle: " << vendor_name << " for " << filename << " " << printer_preset;
-        // auto select the vendor and model
-        AppConfig* app_config = wxGetApp().app_config;
-        app_config->set_variant(vendor_name, printer_model, printer_variant, "true");
-    }
-
-    preset_bundle->load_presets(*wxGetApp().app_config, ForwardCompatibilitySubstitutionRule::Enable);
-    return VALIDATE_PRESETS_SUCCESS;
 }
 
 wxString get_view_type_string(Camera::ViewAngleType type) {

@@ -7338,7 +7338,7 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
 
-    def = this->add("support_multi_filament", coBool);
+    def = this->add("support_mms", coBool);
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
