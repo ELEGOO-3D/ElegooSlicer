@@ -2,11 +2,12 @@
 
 ## clangd
 
-在 Windows 下使用 C/C++ IntelliSense 开发此项目时，导航操作非常慢。clangd 可大幅提升跳转定义、查找引用等操作的速度。
+VS Code 自带的 C/C++ 扩展在此项目中导航（跳转定义、查找引用等）非常慢。clangd 可大幅提升速度。
 
-### 配置
+> **注意**：必须先完成构建，再执行 clangd 配置脚本 — 脚本需要读取构建产物来生成
+> `compile_commands.json`（基于 Ninja）。例如：`build_release_windows.bat`、`build_release_windows.bat debug` 等。
 
-先构建项目，然后运行：
+构建完成后，运行：
 
 ```bash
 generate_clangd_config.bat            # Release
@@ -14,12 +15,11 @@ generate_clangd_config.bat debug      # Debug
 generate_clangd_config.bat debuginfo  # RelWithDebInfo
 ```
 
-脚本会自动：
-1. 生成 `compile_commands.json`
-2. 拷贝 `.clangd` 和 VS Code 配置到项目根目录
-3. 智能合并已存在的配置
-
+脚本会从构建产物生成 `compile_commands.json`，并拷贝 `.clangd` 和 VS Code 配置到项目根目录。
 重新加载窗口（`Ctrl+Shift+P` > "Reload Window"）即可生效。
+
+> **需要重新执行的情况**：新增/删除文件、修改宏定义、改动函数签名、或更换构建配置后。
+> clangd 依赖最新的 `compile_commands.json` 才能保持准确。
 
 ### 配置文件
 

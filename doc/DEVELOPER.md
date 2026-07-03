@@ -2,12 +2,14 @@
 
 ## clangd
 
-C/C++ IntelliSense is very slow on Windows for this project. clangd provides much faster
+VS Code's built-in C/C++ extension is very slow for this project. clangd provides much faster
 navigation (go-to-definition, find references, etc.).
 
-### Setup
+> **Important**: you must build the project first before running the clangd config
+> script — it reads the build output to generate `compile_commands.json` (Ninja-based).
+> For example: `build_release_windows.bat`, `build_release_windows.bat debug`, etc.
 
-First build the project, then run:
+After building, run:
 
 ```bash
 generate_clangd_config.bat            # Release
@@ -15,12 +17,12 @@ generate_clangd_config.bat debug      # Debug
 generate_clangd_config.bat debuginfo  # RelWithDebInfo
 ```
 
-This automatically:
-1. Generates `compile_commands.json`
-2. Copies `.clangd` and VS Code settings to the project root
-3. Merges with any existing config
+This generates `compile_commands.json` from the build and copies `.clangd` + VS Code
+settings to the project root. Reload the window (`Ctrl+Shift+P` > "Reload Window").
 
-Reload the window (`Ctrl+Shift+P` > "Reload Window") to take effect.
+> **Re-run after**: adding/removing files, changing macros, modifying function signatures,
+> or rebuilding with different config. clangd needs the updated `compile_commands.json`
+> to stay accurate.
 
 ### Config Files
 
