@@ -14,6 +14,24 @@ class TranslationSyncer:
     def __init__(self, elegoo_i18n_path, orca_i18n_path):
         self.elegoo_i18n_path = Path(elegoo_i18n_path)
         self.orca_i18n_path = Path(orca_i18n_path)
+
+    @staticmethod
+    def make_translation_key(msgid_content, msgctxt_content=None):
+        return (msgctxt_content or "", msgid_content)
+
+    @staticmethod
+    def key_msgid(key):
+        return key[1] if isinstance(key, tuple) else key
+
+    @staticmethod
+    def key_msgctxt(key):
+        return key[0] if isinstance(key, tuple) else ""
+
+    @classmethod
+    def format_report_key(cls, key):
+        msgctxt = cls.key_msgctxt(key)
+        msgid = cls.key_msgid(key)
+        return f"msgctxt {msgctxt}\nmsgid {msgid}" if msgctxt else msgid
         
     def find_po_files(self):
         """Find all ElegooSlicer PO files"""
@@ -37,6 +55,18 @@ class TranslationSyncer:
             while i < len(lines):
                 line = lines[i]
                 
+                msgctxt_content = None
+
+                if line.startswith('msgctxt '):
+                    msgctxt_content = line[line.find('"'):].strip()
+                    i += 1
+                    while i < len(lines) and lines[i].startswith('"'):
+                        msgctxt_content += "\n" + lines[i]
+                        i += 1
+                    if i >= len(lines):
+                        break
+                    line = lines[i]
+
                 if line.startswith('msgid '):
                     # Read msgid content
                     msgid_content = line[line.find('"'):].strip()
@@ -62,10 +92,10 @@ class TranslationSyncer:
                         
                         # Save if msgstr is empty
                         if msgstr_content == '""' or not msgstr_content:
-                            translations[msgid_content] = ""
+                            translations[self.make_translation_key(msgid_content, msgctxt_content)] = ""
                     else:
                         # No msgstr found
-                        translations[msgid_content] = ""
+                        translations[self.make_translation_key(msgid_content, msgctxt_content)] = ""
                 else:
                     i += 1
                     
@@ -89,6 +119,18 @@ class TranslationSyncer:
             while i < len(lines):
                 line = lines[i]
                 
+                msgctxt_content = None
+
+                if line.startswith('msgctxt '):
+                    msgctxt_content = line[line.find('"'):].strip()
+                    i += 1
+                    while i < len(lines) and lines[i].startswith('"'):
+                        msgctxt_content += "\n" + lines[i]
+                        i += 1
+                    if i >= len(lines):
+                        break
+                    line = lines[i]
+
                 if line.startswith('msgid '):
                     # Read msgid content
                     msgid_content = line[line.find('"'):].strip()
@@ -115,7 +157,7 @@ class TranslationSyncer:
                         
                         # Save only if msgstr is non-empty
                         if msgstr_content and msgstr_content != '""':
-                            translations[msgid_content] = msgstr_content
+                            translations[self.make_translation_key(msgid_content, msgctxt_content)] = msgstr_content
                     else:
                         # No msgstr found - skip this entry
                         continue
@@ -148,6 +190,17 @@ class TranslationSyncer:
                     while i < len(lines) and not lines[i].strip():
                         i += 1
                 
+                msgctxt_content = None
+
+                if i < len(lines) and lines[i].strip().startswith('msgctxt '):
+                    msgctxt_line = lines[i].strip()
+                    msgctxt_content = msgctxt_line[msgctxt_line.find('"'):].strip()
+                    i += 1
+                    while i < len(lines) and (lines[i].strip().startswith('"') or not lines[i].strip()):
+                        if lines[i].strip() and not lines[i].strip().startswith('#~'):
+                            msgctxt_content += "\n" + lines[i].strip()
+                        i += 1
+
                 if i < len(lines) and lines[i].strip().startswith('msgid '):
                     # Read msgid content
                     msgid_line = lines[i].strip()
@@ -176,11 +229,12 @@ class TranslationSyncer:
                             i += 1
                         
                         # Save translation and comment line
-                        if msgstr_content == '""' or not msgstr_content or 'orca' in msgstr_content.lower():
+                        if msgstr_content == '""' or not msgstr_content:
                             continue
-                        translations[msgid_content] = msgstr_content
+                        key = self.make_translation_key(msgid_content, msgctxt_content)
+                        translations[key] = msgstr_content
                         if comment_line:
-                            comment_lines[msgid_content] = comment_line
+                            comment_lines[key] = comment_line
                     else:
                         # No msgstr found - skip this entry
                         i += 1
@@ -212,7 +266,7 @@ class TranslationSyncer:
                     i += 1
                     continue
                 
-                # Look for comment line before msgid (like #, fuzzy, c-format)
+                # Look for comment line before msgctxt/msgid (like #, fuzzy, c-format)
                 comment_line_idx = None
                 if line.startswith('#,'):
                     comment_line_idx = i
@@ -222,6 +276,24 @@ class TranslationSyncer:
                         i += 1
                     if i < len(lines):
                         line = lines[i].strip()
+
+                entry_start_idx = i
+                msgctxt_content = None
+
+                if line.startswith('msgctxt '):
+                    first_quote = line.find('"')
+                    if first_quote != -1:
+                        msgctxt_content = line[first_quote:].strip()
+                        ctx_end = i + 1
+                        while ctx_end < len(lines) and (lines[ctx_end].strip().startswith('"') or not lines[ctx_end].strip()):
+                            if lines[ctx_end].strip() and not lines[ctx_end].strip().startswith('#~'):
+                                msgctxt_content += "\n" + lines[ctx_end].strip()
+                            ctx_end += 1
+                        while ctx_end < len(lines) and (not lines[ctx_end].strip() or lines[ctx_end].strip().startswith('#~')):
+                            ctx_end += 1
+                        if ctx_end < len(lines):
+                            i = ctx_end
+                            line = lines[i].strip()
                 
                 if line.startswith('msgid '):
                     # Read msgid content
@@ -248,33 +320,31 @@ class TranslationSyncer:
                         # Look for msgstr
                         if j < len(lines) and lines[j].strip().startswith('msgstr '):
                             # Check if we need to update this msgid
-                            if msgid_content in elegoo_translations and msgid_content in orca_translations:
-                                orca_msgstr = orca_translations[msgid_content]
+                            msgid_key = self.make_translation_key(msgid_content, msgctxt_content)
+                            if msgid_key in elegoo_translations and msgid_key in orca_translations:
+                                orca_msgstr = orca_translations[msgid_key]
                                 
                                 # Skip if OrcaSlicer msgstr is empty
                                 if orca_msgstr.strip():
-                                    # Skip if OrcaSlicer translation contains "Orca"
-                                    if 'orca' in orca_msgstr.lower():
-                                        print(f"    Warning: Skipping translation containing 'Orca': {orca_msgstr}")
-                                        i = j
-                                        continue
-                                    
                                     # Record the change
                                     changes.append({
-                                        'msgid': msgid_content,
+                                        'key': msgid_key,
+                                        'msgid': self.format_report_key(msgid_key),
                                         'translation': orca_msgstr
                                     })
                                     
                                     # Update or add/remove comment line based on OrcaSlicer
-                                    if msgid_content in orca_comment_lines:
+                                    if msgid_key in orca_comment_lines:
                                         # OrcaSlicer has comment line - sync it
-                                        orca_comment = orca_comment_lines[msgid_content]
+                                        orca_comment = orca_comment_lines[msgid_key]
                                         if comment_line_idx is not None:
                                             # Update existing comment line
                                             lines[comment_line_idx] = orca_comment
                                         else:
-                                            # Add new comment line before msgid
-                                            lines.insert(i, orca_comment)
+                                            # Add new comment line before msgctxt/msgid
+                                            lines.insert(entry_start_idx, orca_comment)
+                                            if entry_start_idx <= i:
+                                                i += 1
                                             j += 1  # Adjust j since we inserted a line
                                     else:
                                         # OrcaSlicer has no comment line - remove ElegooSlicer's if exists
@@ -363,33 +433,29 @@ class TranslationSyncer:
             need_update = 0
             found_in_orca = 0
             empty_orca = 0
-            contains_orca = 0
-            
+
             # print(f"  ElegooSlicer msgids that need updating:")
             # for msgid in elegoo_translations:
             #     print(f"    - {msgid}")
-            
+
             print(f"  Checking OrcaSlicer translations:")
 
             for msgid in elegoo_translations:
+                display_msgid = self.format_report_key(msgid)
                 if msgid in orca_translations:
                     found_in_orca += 1
                     orca_msgstr = orca_translations[msgid]
-                    print(f"    Found: '{msgid}' -> '{orca_msgstr}'")
-                    # Only count if OrcaSlicer has non-empty translation and doesn't contain "Orca"
+                    print(f"    Found: '{display_msgid}' -> '{orca_msgstr}'")
+                    # Only count if OrcaSlicer has non-empty translation
                     if orca_msgstr.strip():
-                        if 'orca' not in orca_msgstr.lower():
-                            need_update += 1
-                        else:
-                            contains_orca += 1
+                        need_update += 1
                     else:
                         empty_orca += 1
                 else:
-                    print(f"    NOT FOUND: '{msgid}'")
+                    print(f"    NOT FOUND: '{display_msgid}'")
             
             print(f"  Found in OrcaSlicer: {found_in_orca}")
             print(f"  OrcaSlicer empty: {empty_orca}")
-            print(f"  Contains 'Orca': {contains_orca}")
             print(f"  Can update: {need_update} translations")
             
             # Update translations
@@ -448,13 +514,13 @@ class TranslationSyncer:
                 was_updated = False
                 orca_translation = ""
                 for change in changes:
-                    if change['msgid'] == msgid:
+                    if change.get('key') == msgid:
                         orca_translation = change['translation']
                         was_updated = True
                         break
                 
                 entry = {
-                    'msgid': msgid,
+                    'msgid': self.format_report_key(msgid),
                     'translation': orca_translation if was_updated else ""
                 }
                 
@@ -485,8 +551,8 @@ class TranslationSyncer:
             ws_t['B1'].font = header_font
             ws_t['B1'].fill = header_fill
 
-            for i, (msgid, translation) in enumerate(sorted(translated_entries.items()), 2):
-                ws_t[f'A{i}'] = msgid
+            for i, (msgid, translation) in enumerate(sorted(translated_entries.items(), key=lambda item: self.format_report_key(item[0])), 2):
+                ws_t[f'A{i}'] = self.format_report_key(msgid)
                 ws_t[f'B{i}'] = translation
             ws_t.column_dimensions['A'].width = 80
             ws_t.column_dimensions['B'].width = 80
