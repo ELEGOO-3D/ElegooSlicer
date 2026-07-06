@@ -1544,7 +1544,7 @@ void MainFrame::show_device(bool bBBLPrinter)
     auto cfg = wxGetApp().preset_bundle->printers.get_edited_preset().config;
     bool supportDeviceList = PrintHost::support_device_list_management(cfg);
 
-    if (bBBLPrinter) {
+    if (false && bBBLPrinter) {
         // Case 1: BBL devices - PrinterManagerView + Calibration
         if (m_tabpanel->FindPage(m_printer_manager_view) != wxNOT_FOUND && 
             m_tabpanel->FindPage(m_calibration) != wxNOT_FOUND)

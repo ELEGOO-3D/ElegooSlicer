@@ -645,9 +645,9 @@ void Sidebar::priv::layout_printer(bool isBBL, bool isDual)
     const bool support_device_list = PrintHost::support_device_list_management(cfg);
 
     //btn_connect_printer->Show(!isBBL);
-    m_printer_connect->Show(!isBBL && !support_device_list);
+    m_printer_connect->Show(!support_device_list);
     //btn_sync_printer->Show(isBBL);
-    m_printer_bbl_sync->Show(isBBL);
+    m_printer_bbl_sync->Show(false);
 
     // ORCA show plate type combo box only when its supported
     // Orca: we use preset_bundle.is_bbl_vendor() instead of isBBL to determine if the plate type combo box should be shown
@@ -2156,12 +2156,7 @@ Sidebar::Sidebar(Plater *parent)
                                                  wxBU_EXACTFIT | wxNO_BORDER, false, 18);
     ams_btn->SetToolTip(_L("Synchronize filament list"));
     ams_btn->Bind(wxEVT_BUTTON, [this, scrolled_sizer](wxCommandEvent &e) {
-        PresetBundle* preset_bundle = wxGetApp().preset_bundle;
-        const DynamicPrintConfig& cfg = preset_bundle->printers.get_edited_preset().config;
-        if (PrintHost::support_mms(cfg))
-            PlaterExt::sync_mms_filament();
-        else
-            sync_ams_list();
+        PlaterExt::sync_mms_filament();
     });
 
     ams_btn->Bind(wxEVT_UPDATE_UI, &Sidebar::update_sync_ams_btn_enable, this);
@@ -2470,7 +2465,7 @@ void Sidebar::update_all_preset_comboboxes()
     auto cfg = preset_bundle.printers.get_edited_preset().config;
     const bool support_device_list = PrintHost::support_device_list_management(cfg);
 
-    if (preset_bundle.use_bbl_network()) {
+    if (false && preset_bundle.use_bbl_network()) {
         //only show connection button for not-BBL printer
         //p->btn_connect_printer->Hide();
         p->m_printer_connect->Hide();
@@ -2533,7 +2528,7 @@ void Sidebar::update_all_preset_comboboxes()
             p->m_printer_connect->Show();
         }
     }
-    p->m_printer_bbl_sync->Show(preset_bundle.use_bbl_network());
+    //p->m_printer_bbl_sync->Show(preset_bundle.use_bbl_network());
 
     if (cfg.opt_bool("pellet_modded_printer")) {
 		p->m_staticText_filament_settings->SetLabel(_L("Pellets"));

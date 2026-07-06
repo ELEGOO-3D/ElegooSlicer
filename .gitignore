@@ -69,3 +69,6 @@ internal_docs/
 # Python bytecode
 __pycache__/
 *.pyc
+/.ai_rules/
+AGENTS.md
+/.github/copilot-instructions.md
