@@ -3571,11 +3571,22 @@ void Print::_make_wipe_tower()
         m_fake_wipe_tower.outer_wall = wipe_tower.get_outer_wall();
     } else {
         // Get wiping matrix to get number of extruders and convert vector<double> to vector<float>:
-        std::vector<float> flush_matrix(cast<float>(m_config.flush_volumes_matrix.values));
-        // Extract purging volumes for each extruder pair:
-        std::vector<std::vector<float>> wipe_volumes;
-        for (unsigned int i = 0; i<number_of_extruders; ++i)
-            wipe_volumes.push_back(std::vector<float>(flush_matrix.begin()+i*number_of_extruders, flush_matrix.begin()+(i+1)*number_of_extruders));
+        // Build per-nozzle flush matrix from flush_volumes_matrix.
+        size_t nozzle_nums = m_config.nozzle_diameter.values.size();
+        std::vector<std::vector<std::vector<float>>> multi_extruder_flush;
+        for (size_t nozzle_id = 0; nozzle_id < nozzle_nums; ++nozzle_id) {
+            std::vector<float> flush_matrix_for_nozzle(cast<float>(
+                get_flush_volumes_matrix(m_config.flush_volumes_matrix.values, nozzle_id, nozzle_nums)));
+            std::vector<std::vector<float>> nozzle_wipe_volumes;
+            for (unsigned int i = 0; i < number_of_extruders; ++i)
+                nozzle_wipe_volumes.push_back(std::vector<float>(
+                    flush_matrix_for_nozzle.begin() + i * number_of_extruders,
+                    flush_matrix_for_nozzle.begin() + (i + 1) * number_of_extruders));
+            multi_extruder_flush.emplace_back(nozzle_wipe_volumes);
+        }
+        // wipe_volumes for the tower constructor and SEMM logic (copy from multi_extruder_flush[0],
+        // so later modification to prime_volume doesn't corrupt the flush matrix values)
+        std::vector<std::vector<float>> wipe_volumes = multi_extruder_flush[0];
 
         // Orca: itertate over wipe_volumes and change the non-zero values to the prime_volume
         if ((!m_config.purge_in_prime_tower || !m_config.single_extruder_multi_material) && is_wipe_tower_type2) {
@@ -3604,7 +3615,20 @@ void Print::_make_wipe_tower()
         // Lets go through the wipe tower layers and determine pairs of extruder changes for each
         // to pass to wipe_tower (so that it can use it for planning the layout of the tower)
         {
+            std::vector<int> filament_maps = get_filament_maps();
+            std::vector<unsigned int> nozzle_cur_filament_ids(nozzle_nums, (unsigned int)-1);
+            auto nozzle_id_for_filament = [&filament_maps, nozzle_nums](unsigned int filament_id) -> int {
+                if (filament_id >= filament_maps.size())
+                    return -1;
+                int nozzle_id = filament_maps[filament_id] - 1;
+                return nozzle_id >= 0 && nozzle_id < (int)nozzle_nums ? nozzle_id : -1;
+            };
+
             unsigned int current_extruder_id = m_wipe_tower_data.tool_ordering.all_extruders().back();
+            // Initialize nozzle tracking for the first extruder (always valid since multi_extruder_flush is always built)
+            int first_nozzle = nozzle_id_for_filament(current_extruder_id);
+            if (first_nozzle >= 0)
+                nozzle_cur_filament_ids[first_nozzle] = current_extruder_id;
             for (auto &layer_tools : m_wipe_tower_data.tool_ordering.layer_tools()) { // for all layers
                 if (!layer_tools.has_wipe_tower)
                     continue;
@@ -3615,6 +3639,7 @@ void Print::_make_wipe_tower()
                     if ((first_layer && extruder_id == m_wipe_tower_data.tool_ordering.all_extruders().back()) || extruder_id !=
                         current_extruder_id) {
                         float volume_to_wipe = m_config.prime_volume;
+                        float volume_to_purge = -1.f; // flush/purge amount for G-code (separate from wipe volume)
                         if (m_config.purge_in_prime_tower && m_config.single_extruder_multi_material) {
                             volume_to_wipe = wipe_volumes[current_extruder_id][extruder_id]; // total volume to wipe after this toolchange
                             volume_to_wipe *= m_config.flush_multiplier.get_at(0);
@@ -3628,10 +3653,33 @@ void Print::_make_wipe_tower()
                             // add back the minimal amount toforce on the wipe tower:
                             volume_to_wipe += (float) m_config.filament_minimal_purge_on_wipe_tower.get_at(extruder_id);
                         }
+                        else if (!m_config.purge_in_prime_tower) {
+                            // Multi-extruder/toolchanger/IDEX/MMU flush logic:
+                            // Calculate purge volume from the per-nozzle flush matrix.
+                            // wipe_volume stays as prime_volume (controls tower depth);
+                            // purge_volume carries the matrix-derived flush amount to set_extruder.
+                            int nozzle_id = nozzle_id_for_filament(extruder_id);
+                            if (nozzle_id >= 0) {
+                                volume_to_purge = 0.f;
+                                unsigned int pre_filament_id = nozzle_cur_filament_ids[nozzle_id];
+                                if (pre_filament_id != (unsigned int)(-1) && pre_filament_id != extruder_id) {
+                                    volume_to_purge = multi_extruder_flush[nozzle_id][pre_filament_id][extruder_id];
+                                    volume_to_purge *= m_config.flush_multiplier.get_at(nozzle_id);
+                                    // Try to assign some infills/objects for the wiping:
+                                    volume_to_purge = layer_tools.wiping_extrusions().mark_wiping_extrusions(
+                                        *this, pre_filament_id, extruder_id, volume_to_purge);
+                                    // Subtract grab_length extrusion (filament change detection). If 0, no effect.
+                                    float grab_purge_volume = m_config.grab_length.get_at(nozzle_id) * 2.4f;
+                                    volume_to_purge = std::max(0.f, volume_to_purge - grab_purge_volume);
+                                }
+                                nozzle_cur_filament_ids[nozzle_id] = extruder_id;
+                            }
+                        }
 
-                        // request a toolchange at the wipe tower with at least volume_to_wipe purging amount
+                        // request a toolchange at the wipe tower with wipe_volume for depth
+                        // and purge_volume for the G-code flush amount
                         wipe_tower.plan_toolchange((float) layer_tools.print_z, (float) layer_tools.wipe_tower_layer_height,
-                                                   current_extruder_id, extruder_id, volume_to_wipe);
+                                                   current_extruder_id, extruder_id, volume_to_wipe, volume_to_purge);
                         current_extruder_id = extruder_id;
                     }
                 }

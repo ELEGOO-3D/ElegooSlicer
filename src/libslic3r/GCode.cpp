@@ -963,7 +963,7 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
                 config.set_key_value("filament_tower_interface_print_temp", new ConfigOptionInt(interface_temp));
 
                 int   flush_count = std::min(g_max_flush_count, (int) std::round(purge_volume / g_purge_volume_one_time));
-                float flush_unit  = purge_length / flush_count;
+                float flush_unit  = flush_count > 0 ? purge_length / flush_count : 0.f;
                 int   flush_idx   = 0;
                 for (; flush_idx < flush_count; flush_idx++) {
                     char key_value[64] = {0};
@@ -1218,7 +1218,7 @@ static std::vector<Vec2d> get_path_of_change_filament(const Print& print)
                     interface_temp = gcodegen.config().nozzle_temperature_range_high.get_at(new_extruder_id);
                 toolchange_temp_override = interface_temp;
             }
-            toolchange_gcode_str = gcodegen.set_extruder(new_extruder_id, tcr.print_z, false, toolchange_temp_override); // TODO: toolchange_z vs print_z
+            toolchange_gcode_str = gcodegen.set_extruder(new_extruder_id, tcr.print_z, false, toolchange_temp_override, tcr.purge_volume); // TODO: toolchange_z vs print_z
             if (gcodegen.config().enable_prime_tower) {
                 deretraction_str += gcodegen.writer().travel_to_z(z, "Force restore layer Z", true);
                 Vec3d position{gcodegen.writer().get_position()};
@@ -7775,7 +7775,7 @@ std::string GCode::retract(bool toolchange, bool is_last_retraction, LiftType li
     return gcode;
 }
 
-std::string GCode::set_extruder(unsigned int new_filament_id, double print_z, bool by_object, int toolchange_temp_override)
+std::string GCode::set_extruder(unsigned int new_filament_id, double print_z, bool by_object, int toolchange_temp_override, float purge_volume_override)
 {
     int new_extruder_id = get_extruder_id(new_filament_id);
     if (!m_writer.need_toolchange(new_filament_id))
@@ -7906,7 +7906,8 @@ std::string GCode::set_extruder(unsigned int new_filament_id, double print_z, bo
             wipe_volume *= m_config.flush_multiplier.get_at(new_extruder_id);  // if is multi_extruder only use the fist extruder matrix
         }
         wipe_volume = std::max(0.f, wipe_volume-grab_purge_volume);
-
+        if (purge_volume_override >= 0.f)
+            wipe_volume = purge_volume_override;
         old_filament_e_feedrate = (int) (60.0 * m_config.filament_max_volumetric_speed.get_at(old_filament_id) / filament_area);
         old_filament_e_feedrate = old_filament_e_feedrate == 0 ? 100 : old_filament_e_feedrate;
         //BBS: must clean m_start_gcode_filament
@@ -8003,7 +8004,7 @@ std::string GCode::set_extruder(unsigned int new_filament_id, double print_z, bo
     dyn_config.set_key_value("flush_length", new ConfigOptionFloat(wipe_length));
 
     int flush_count = std::min(g_max_flush_count, (int)std::round(wipe_volume / g_purge_volume_one_time));
-    float flush_unit = wipe_length / flush_count;
+    float flush_unit = flush_count > 0 ? wipe_length / flush_count : 0.f;
     int flush_idx = 0;
     for (; flush_idx < flush_count; flush_idx++) {
         char key_value[64] = { 0 };

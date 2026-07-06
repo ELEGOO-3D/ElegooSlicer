@@ -1284,7 +1284,8 @@ WipeTower::ToolChangeResult WipeTower2::construct_tcr(WipeTowerWriter2& writer,
                                                      bool priming,
                                                      size_t old_tool,
                                                      bool is_finish,
-                                                     bool is_contact) const
+                                                     bool is_contact,
+                                                     float purge_volume) const
 {
     WipeTower::ToolChangeResult result;
     result.priming      = priming;
@@ -1300,6 +1301,7 @@ WipeTower::ToolChangeResult WipeTower2::construct_tcr(WipeTowerWriter2& writer,
     result.wipe_path    = std::move(writer.wipe_path());
     result.is_finish_first = is_finish;
     result.is_contact = is_contact;
+    result.purge_volume = purge_volume;
     // ORCA: Always initialize the tool_change_start_pos with a valid position
     // to avoid undefined variable travel on X in Gcode.cpp function std::string WipeTowerIntegration::post_process_wipe_tower_moves
     result.tool_change_start_pos = result.start_pos;  // always valid fallback
@@ -1585,6 +1587,7 @@ WipeTower::ToolChangeResult WipeTower2::tool_change(size_t tool)
 
     float wipe_area = 0.f;
 	float wipe_volume = 0.f;
+	float purge_volume = -1.f;
     bool interface_layer = m_enable_tower_interface_features && m_current_layer_has_interface;
 	
 	// Finds this toolchange info
@@ -1594,6 +1597,7 @@ WipeTower::ToolChangeResult WipeTower2::tool_change(size_t tool)
 			if ( b.new_tool == tool ) {
                 wipe_volume = b.wipe_volume;
 				wipe_area = b.required_depth;
+				purge_volume = b.purge_volume;
 				break;
 			}
 	}
@@ -1689,7 +1693,7 @@ WipeTower::ToolChangeResult WipeTower2::tool_change(size_t tool)
     if (m_current_tool < m_used_filament_length.size())
         m_used_filament_length[m_current_tool] += writer.get_and_reset_used_filament_length();
 
-    return construct_tcr(writer, false, old_tool, false, interface_layer);
+    return construct_tcr(writer, false, old_tool, false, interface_layer, purge_volume);
 }
 
 
@@ -2274,7 +2278,7 @@ static float get_wipe_depth(float volume, float layer_height, float perimeter_wi
 
 // Appends a toolchange into m_plan and calculates neccessary depth of the corresponding box
 void WipeTower2::plan_toolchange(float z_par, float layer_height_par, unsigned int old_tool,
-                                unsigned int new_tool, float wipe_volume)
+                                unsigned int new_tool, float wipe_volume, float purge_volume)
 {
 	assert(m_plan.empty() || m_plan.back().z <= z_par + WT_EPSILON);	// refuses to add a layer below the last one
 
@@ -2310,7 +2314,7 @@ void WipeTower2::plan_toolchange(float z_par, float layer_height_par, unsigned i
 
     float wiping_depth = get_wipe_depth(wipe_volume - first_wipe_volume, layer_height_par, m_perimeter_width, m_extra_flow, planning_spacing, width);
     
-	m_plan.back().tool_changes.push_back(WipeTowerInfo::ToolChange(old_tool, new_tool, ramming_depth + wiping_depth, ramming_depth, first_wipe_line, wipe_volume));
+	m_plan.back().tool_changes.push_back(WipeTowerInfo::ToolChange(old_tool, new_tool, ramming_depth + wiping_depth, ramming_depth, first_wipe_line, wipe_volume, purge_volume));
 }
 
 
@@ -2426,6 +2430,9 @@ static WipeTower::ToolChangeResult merge_tcr(WipeTower::ToolChangeResult& first,
     out.wipe_path = second.wipe_path;
     out.initial_tool = first.initial_tool;
     out.new_tool = second.new_tool;
+    out.purge_volume = first.purge_volume < 0.f ? second.purge_volume :
+                       second.purge_volume < 0.f ? first.purge_volume :
+                       first.purge_volume + second.purge_volume;
     return out;
 }
 
