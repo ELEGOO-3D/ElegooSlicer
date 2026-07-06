@@ -1714,27 +1714,27 @@ void GLGizmoEmboss::draw_text_input()
 
     if (exist_font) ImGui::PopFont();
 
-    // warning tooltip has to be with default font
-    if (!warning_tool_tip.empty()) {
-        // Multiline input has hidden window for scrolling
-        const ImGuiWindow *input = ImGui::GetCurrentWindow()->DC.ChildWindows.front();
-        const ImGuiStyle &style = ImGui::GetStyle();
-        float scrollbar_width = (input->ScrollbarY) ? style.ScrollbarSize : 0.f;
-        float scrollbar_height = (input->ScrollbarX) ? style.ScrollbarSize : 0.f;
+    // // warning tooltip has to be with default font
+    // if (!warning_tool_tip.empty()) {
+    //     // Multiline input has hidden window for scrolling
+    //     const ImGuiWindow *input = ImGui::GetCurrentWindow()->DC.ChildWindows.front();
+    //     const ImGuiStyle &style = ImGui::GetStyle();
+    //     float scrollbar_width = (input->ScrollbarY) ? style.ScrollbarSize : 0.f;
+    //     float scrollbar_height = (input->ScrollbarX) ? style.ScrollbarSize : 0.f;
 
-        if (ImGui::IsItemHovered())
-            m_imgui->tooltip(warning_tool_tip, m_gui_cfg->max_tooltip_width);
+    //     if (ImGui::IsItemHovered())
+    //         m_imgui->tooltip(warning_tool_tip, m_gui_cfg->max_tooltip_width);
 
-        ImVec2 cursor = ImGui::GetCursorPos();
-        float width = ImGui::GetContentRegionAvailWidth();
-        const ImVec2& padding = style.FramePadding;
-        ImVec2 icon_pos(width - m_gui_cfg->icon_width - scrollbar_width + padding.x, 
-                        cursor.y - 2 * m_gui_cfg->icon_width - scrollbar_height - 2*padding.y);  // ORCA fix vertical position
+    //     ImVec2 cursor = ImGui::GetCursorPos();
+    //     float width = ImGui::GetContentRegionAvailWidth();
+    //     const ImVec2& padding = style.FramePadding;
+    //     ImVec2 icon_pos(width - m_gui_cfg->icon_width - scrollbar_width + padding.x, 
+    //                     cursor.y - 2 * m_gui_cfg->icon_width - scrollbar_height - 2*padding.y);  // ORCA fix vertical position
         
-        ImGui::SetCursorPos(icon_pos);
-        draw(get_icon(m_icons, IconType::exclamation, IconState::hovered));
-        ImGui::SetCursorPos(cursor);
-    }
+    //     ImGui::SetCursorPos(icon_pos);
+    //     draw(get_icon(m_icons, IconType::exclamation, IconState::hovered));
+    //     ImGui::SetCursorPos(cursor);
+    // }
     
     // Add Edit button to the right of text input, aligned to center
     ImGui::SameLine();
