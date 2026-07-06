@@ -5933,7 +5933,7 @@ msgid "You must be logged in to sync presets from cloud."
 msgstr "您必须登录后才能从云端同步预设。"
 
 msgid "Quit"
-msgstr "辞职"
+msgstr "退出"
 
 msgid "Undo"
 msgstr "撤销"
@@ -6593,7 +6593,7 @@ msgstr "使用访问码绑定"
 
 msgctxt "Quit_Switching"
 msgid "Quit"
-msgstr "辞职"
+msgstr "退出"
 
 msgid "Switching..."
 msgstr "交换..."
