@@ -49,19 +49,22 @@ function SortUI()
 	//	$('#MachineList').hide();
 	//}
 	
-	//Filament - Create sorted array with generic vendor first
+	//Filament - Create sorted array with Elegoo and generic vendors first
 	let FilamentArray=new Array();
+	let ElegooFilamentArray=new Array();
 	let GenericFilamentArray=new Array();
 	for( let key in m_ProfileItem['filament'] )
 	{
 		let OneFila=m_ProfileItem['filament'][key];
-		if(OneFila['vendor'].toLowerCase() === 'generic')
+		if(OneFila['vendor'].toLowerCase() === 'elegoo')
+			ElegooFilamentArray.push({key: key, data: OneFila});
+		else if(OneFila['vendor'].toLowerCase() === 'generic')
 			GenericFilamentArray.push({key: key, data: OneFila});
 		else
 			FilamentArray.push({key: key, data: OneFila});
 	}
-	// Combine arrays with generic filaments first
-	let SortedFilamentArray = GenericFilamentArray.concat(FilamentArray);
+	// Combine arrays with Elegoo and generic filaments first
+	let SortedFilamentArray = ElegooFilamentArray.concat(GenericFilamentArray, FilamentArray);
 	
 	let HtmlFilament='';
 	let SelectNumber=0;

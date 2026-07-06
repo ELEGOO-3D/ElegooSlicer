@@ -46,6 +46,13 @@ namespace Slic3r { namespace GUI {
 
 json m_ProfileJson;
 
+static wxString guide_start_page_url(const char* target)
+{
+    wxString url = from_path((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html").make_preferred());
+    url += wxString::Format("?target=%s", target);
+    return url;
+}
+
 static wxString update_custom_filaments()
 {
     json m_Res                                                                     = json::object();
@@ -220,37 +227,37 @@ wxString GuideFrame::SetStartPage(GuidePage startpage, bool load)
     m_page = startpage;
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< boost::format(" enter, load=%1%, start_page=%2%")%load%int(startpage);
     //wxLogMessage("GUIDE: webpage_1  %s", (boost::filesystem::path(resources_dir()) / "web\\guide\\1\\index.html").make_preferred().string().c_str() );
-    wxString TargetUrl = from_u8( (boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=1").make_preferred().string() );
+    wxString TargetUrl = guide_start_page_url("1");
     //wxLogMessage("GUIDE: webpage_2  %s", TargetUrl.mb_str());
 
     if (startpage == BBL_WELCOME){
         SetTitle(_L("Setup Wizard"));
-        TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=1").make_preferred().string());
+        TargetUrl = guide_start_page_url("1");
     } else if (startpage == BBL_REGION) {
         SetTitle(_L("Setup Wizard"));
-        TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=11").make_preferred().string());
+        TargetUrl = guide_start_page_url("11");
     } else if (startpage == BBL_MODELS) {
         SetTitle(_L("Setup Wizard"));
-        TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=21").make_preferred().string());
+        TargetUrl = guide_start_page_url("21");
     } else if (startpage == BBL_FILAMENTS) {
         SetTitle(_L("Setup Wizard"));
 
         int nSize = m_ProfileJson["model"].size();
 
         if (nSize>0)
-            TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=22").make_preferred().string());
+            TargetUrl = guide_start_page_url("22");
         else
-            TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=21").make_preferred().string());
+            TargetUrl = guide_start_page_url("21");
     } else if (startpage == BBL_FILAMENT_ONLY) {
         SetTitle("");
-        TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=23").make_preferred().string());
+        TargetUrl = guide_start_page_url("23");
     } else if (startpage == BBL_MODELS_ONLY) {
         SetTitle("");
-        TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=24").make_preferred().string());
+        TargetUrl = guide_start_page_url("24");
     }
     else {
         SetTitle(_L("Setup Wizard"));
-        TargetUrl = from_u8((boost::filesystem::path(resources_dir()) / "web/guide/0/index.html?target=21").make_preferred().string());
+        TargetUrl = guide_start_page_url("21");
     }
 
     wxString strlang = wxGetApp().current_language_code_safe();
@@ -1120,13 +1127,13 @@ int GuideFrame::GetFilamentInfo( std::string VendorDirectory, json & pFilaList, 
                         std::string FPath = pFilaList[FName]["sub_path"];
                         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " Before Format Inherits Path: VendorDirectory - " << VendorDirectory << ", sub_path - " << FPath;
                         wxString strNewFile = wxString::Format("%s%c%s", wxString(VendorDirectory.c_str(), wxConvUTF8), boost::filesystem::path::preferred_separator, FPath);
-                        boost::filesystem::path inherits_path(w2s(strNewFile));
+                        boost::filesystem::path inherits_path(into_path(strNewFile));
                         if (!boost::filesystem::exists(inherits_path))
-                            inherits_path = (boost::filesystem::path(m_OrcaFilaLibPath) / boost::filesystem::path(FPath)).make_preferred();
+                            inherits_path = (into_path(from_u8(m_OrcaFilaLibPath)) / boost::filesystem::path(FPath)).make_preferred();
 
                         if (boost::filesystem::exists(inherits_path)) {
                             // Recurse with this file's own (vendor, type) as the chain accumulator.
-                            status = GetFilamentInfo(VendorDirectory, pFilaList, inherits_path.string(), vendor, type);
+                            status = GetFilamentInfo(VendorDirectory, pFilaList, into_u8(from_path(inherits_path)), vendor, type);
                         } else {
                             BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " inherits File Not Exist: " << inherits_path;
                             status = -1;
@@ -1193,10 +1200,10 @@ int GuideFrame::LoadProfileData()
         std::set<std::string> loaded_vendors;
         auto filament_library_name = boost::filesystem::path(PresetBundle::ORCA_FILAMENT_LIBRARY).replace_extension(".json");
         if (boost::filesystem::exists(vendor_dir / filament_library_name)) {
-            m_OrcaFilaLibPath = (vendor_dir / PresetBundle::ORCA_FILAMENT_LIBRARY).string();
+            m_OrcaFilaLibPath = into_u8(from_path(vendor_dir / PresetBundle::ORCA_FILAMENT_LIBRARY));
             LoadProfileFamily(PresetBundle::ORCA_FILAMENT_LIBRARY, into_u8(from_path(vendor_dir / filament_library_name)));
         } else {
-            m_OrcaFilaLibPath = (rsrc_vendor_dir / PresetBundle::ORCA_FILAMENT_LIBRARY).string();
+            m_OrcaFilaLibPath = into_u8(from_path(rsrc_vendor_dir / PresetBundle::ORCA_FILAMENT_LIBRARY));
             LoadProfileFamily(PresetBundle::ORCA_FILAMENT_LIBRARY, into_u8(from_path(rsrc_vendor_dir / filament_library_name)));
         }
         loaded_vendors.insert(PresetBundle::ORCA_FILAMENT_LIBRARY);
@@ -1411,7 +1418,7 @@ int GuideFrame::LoadProfileFamily(std::string strVendor, std::string strFilePath
                      cover_file)
                         .make_preferred();
             }
-            OneModel["cover"]                  = cover_path.string();
+            OneModel["cover"]                  = into_u8(from_path(cover_path));
 
             OneModel["nozzle_selected"] = "";
 

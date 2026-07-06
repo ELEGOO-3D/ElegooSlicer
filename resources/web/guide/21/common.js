@@ -52,6 +52,10 @@ function HandleModelList( pVal )
 		...pModel.filter(i=>i.vendor === "Custom"),
 		...pModel.filter(i=>i.vendor !== "Custom")
 	];
+	pModel = [
+		...pModel.filter(i=>i.vendor === "Elegoo"),
+		...pModel.filter(i=>i.vendor !== "Elegoo")
+	];
 	
 	let nTotal=pModel.length;
 	let ModelHtml={};
