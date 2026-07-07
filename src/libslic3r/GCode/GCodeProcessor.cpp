@@ -5445,17 +5445,17 @@ void GCodeProcessor::init_filament_maps_and_nozzle_type_when_import_only_gcode()
     }
 }
 
-void GCodeProcessor::process_filament_change(int id, float extra_time_)
+void GCodeProcessor::process_filament_change(int id)
 {
     assert(id < m_result.filaments_count);
     int prev_extruder_id = get_extruder_id(false);
     int prev_filament_id = get_filament_id(false);
     int next_extruder_id = m_filament_maps[id];
     int next_filament_id = id;
-    float extra_time = static_cast<float>(extra_time_);
+    float extra_time = 0.0f;
     unsigned int filament_changes_delta = 0;
     unsigned int extruder_changes_delta = 0;
-    float filament_load_time_delta = static_cast<float>(extra_time_);
+    float filament_load_time_delta = 0.0f;
     float filament_unload_time_delta = 0.0f;
     float tool_change_time_delta = 0.0f;
 

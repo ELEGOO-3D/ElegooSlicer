@@ -1082,7 +1082,7 @@ class Print;
         void process_M622(const GCodeReader::GCodeLine &line);
         void process_M623(const GCodeReader::GCodeLine &line);
 
-        void process_filament_change(int id, float extra_time_ = 0);
+        void process_filament_change(int id);
 
         // post process the file with the given filename to:
         // 1) add remaining time lines M73 and update moves' gcode ids accordingly

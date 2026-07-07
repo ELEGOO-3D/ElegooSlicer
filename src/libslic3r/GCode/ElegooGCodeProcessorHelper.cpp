@@ -192,9 +192,8 @@ void GCodeProcessor::process_M6211(const GCodeReader::GCodeLine& line)
     const bool  is_first_extrusion = (curr_filament_id == -1) || (filament_id == curr_filament_id);
 
     m_time_processor.filament_unload_times = 0;
-    m_time_processor.filament_load_times = 0;
-
-    process_filament_change(filament_id, m6211_time);
+    m_time_processor.filament_load_times = m6211_time;
+    process_filament_change(filament_id);
 
     if (extruder_id >= 0 && static_cast<size_t>(extruder_id) < m_remaining_volume.size()) {
         const float remaining_volume = static_cast<size_t>(extruder_id) < m_nozzle_volume.size() ?
