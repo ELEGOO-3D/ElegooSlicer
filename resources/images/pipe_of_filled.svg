@@ -5,14 +5,14 @@
 <defs>
 <linearGradient id="paint0_linear_17771_23141" x1="3.9896" y1="0.25" x2="3.9896" y2="50.9227" gradientUnits="userSpaceOnUse">
 <stop stop-color="#EBF9F0" stop-opacity="0"/>
-<stop offset="1" stop-color="#009688"/>
+<stop offset="1" stop-color="#1677ff"/>
 </linearGradient>
 <linearGradient id="paint1_linear_17771_23141" x1="7.34891" y1="49.2037" x2="7.34891" y2="1.64844" gradientUnits="userSpaceOnUse">
-<stop stop-color="#009688"/>
+<stop stop-color="#1677ff"/>
 <stop offset="1" stop-color="#EBF9F0" stop-opacity="0"/>
 </linearGradient>
 <linearGradient id="paint2_linear_17771_23141" x1="0.350652" y1="49.2037" x2="0.350649" y2="1.64844" gradientUnits="userSpaceOnUse">
-<stop stop-color="#009688"/>
+<stop stop-color="#1677ff"/>
 <stop offset="1" stop-color="#EBF9F0" stop-opacity="0"/>
 </linearGradient>
 </defs>

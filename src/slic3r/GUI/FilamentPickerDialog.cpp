@@ -686,7 +686,7 @@ void FilamentPickerDialog::OnButtonPaint(wxPaintEvent& event)
     }
 
     // Draw the green border
-    dc.SetPen(wxPen(wxColour("#009688"), 2));  // Green pen, 2px thick
+    dc.SetPen(wxPen(wxColour("#1677ff"), 2));  // Green pen, 2px thick
     dc.SetBrush(*wxTRANSPARENT_BRUSH);
     dc.DrawRectangle(1, 1, COLOR_BTN_SIZE.GetWidth() - 1, COLOR_BTN_SIZE.GetHeight() - 1);
 }
