@@ -3122,6 +3122,8 @@ void MainFrame::init_menubar_as_editor()
         append_submenu(fileMenu, export_menu, wxID_ANY, _L("Export"), "");
 
         fileMenu->AppendSeparator();
+
+#if 0
         append_menu_item(fileMenu, wxID_ANY, _L("Sync Presets"), _L("Pull and apply the latest presets from OrcaCloud"),
             [this](wxCommandEvent&) {
                 if (!wxGetApp().is_user_login()) {
@@ -3137,6 +3139,7 @@ void MainFrame::init_menubar_as_editor()
             }, this);
 
         fileMenu->AppendSeparator();
+#endif
 
 #ifndef __APPLE__
         append_menu_item(fileMenu, wxID_EXIT, _L("Quit"), wxString::Format(_L("Quit")),
