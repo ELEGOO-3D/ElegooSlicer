@@ -424,6 +424,7 @@ PrinterManagerView::PrinterManagerView(wxWindow *parent)
     // on extended displays if loaded before the window is fully displayed
     // The WebView will be created and loaded by calling initializeWebView() after window is shown
     mBrowser = nullptr;
+    mResetWebViewOnShow = wxGetApp().is_recreating_gui();
     // Note: loadTabState() will be called in initializeWebView() after WebView is created
 
     Bind(wxEVT_CLOSE_WINDOW, &PrinterManagerView::onClose, this);
@@ -451,6 +452,54 @@ void PrinterManagerView::msw_rescale()
     Refresh();
 }
 
+bool PrinterManagerView::createMainBrowser()
+{
+    mBrowser = WebView::CreateWebView(mTabBar, "");
+    if (mBrowser == nullptr) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": could not init mBrowser";
+        return false;
+    }
+
+    mIpc = std::make_unique<webviewIpc::WebviewIPCManager>(mBrowser);
+    setupIPCHandlers();
+
+    if (mTabBar->GetPageIndex(mBrowser) == wxNOT_FOUND) {
+        if (mTabBar->GetPageCount() == 0)
+            mTabBar->AddPage(mBrowser, FIRST_TAB_NAME);
+        else
+            mTabBar->InsertPage(0, mBrowser, FIRST_TAB_NAME);
+    }
+
+    return true;
+}
+
+void PrinterManagerView::resetMainBrowser()
+{
+    mIpc.reset();
+
+    if (mBrowser) {
+        const int pageIndex = mTabBar ? mTabBar->GetPageIndex(mBrowser) : wxNOT_FOUND;
+        if (mTabBar && pageIndex != wxNOT_FOUND)
+            mTabBar->RemovePage(pageIndex);
+        mBrowser->Destroy();
+        mBrowser = nullptr;
+    }
+
+    mIsReady = false;
+    mWebViewInitialized = false;
+}
+
+bool PrinterManagerView::Show(bool show)
+{
+    bool result = wxPanel::Show(show);
+    if (show && mResetWebViewOnShow) {
+        mResetWebViewOnShow = false;
+        resetMainBrowser();
+        initializeWebView();
+    }
+    return result;
+}
+
 void PrinterManagerView::initializeWebView()
 {
     // Only initialize once
@@ -461,21 +510,9 @@ void PrinterManagerView::initializeWebView()
     
     // Create WebView if not already created
     if (!mBrowser) {
-        mBrowser = WebView::CreateWebView(mTabBar, "");
-        if (mBrowser == nullptr) {
-            BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": could not init mBrowser";
-            // Reset flag on failure to allow retry
+        if (!createMainBrowser()) {
             mWebViewInitialized = false;
             return;
-        }
-        
-        mIpc = std::make_unique<webviewIpc::WebviewIPCManager>(mBrowser);
-        setupIPCHandlers();
-        
-        // Check if page already exists in tab bar to avoid duplicate addition
-        int pageIndex = mTabBar->GetPageIndex(mBrowser);
-        if (pageIndex == wxNOT_FOUND) {
-            mTabBar->AddPage(mBrowser, FIRST_TAB_NAME);
         }
     }
     
@@ -493,7 +530,7 @@ void PrinterManagerView::initializeWebView()
     if(wxGetApp().app_config->get_bool("developer_mode")){
         TargetUrl = TargetUrl + "&dev=true";
     }  
-    mBrowser->LoadURL(TargetUrl);
+    WebView::LoadUrl(mBrowser, TargetUrl);
     
     // Set ElegooSlicer UserAgent
     wxString theme = wxGetApp().dark_mode() ? "dark" : "light";

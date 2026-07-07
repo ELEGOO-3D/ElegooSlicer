@@ -41,6 +41,7 @@ wxBEGIN_EVENT_TABLE(HomeView, wxPanel) EVT_WEBVIEW_LOADED(wxID_ANY, HomeView::on
     , mCurrentView(nullptr)
     , m_lifeTracker(std::make_shared<bool>(true))
 {
+    mResetNavigationOnShow = wxGetApp().is_recreating_gui();
     initUI();
 }
 
@@ -61,15 +62,10 @@ void HomeView::initUI()
     mMainSizer = new wxBoxSizer(wxHORIZONTAL);
 
     // Create navigation webview (left side) with fixed width
-    mNavigationBrowser = WebView::CreateWebView(this, "");
-
-    if (!mNavigationBrowser) {
+    if (!createNavigationBrowser()) {
         wxMessageBox("Failed to create navigation webview", "Error", wxOK | wxICON_ERROR);
         return;
     }
-
-    // Remove WebView border completely
-    mNavigationBrowser->SetWindowStyleFlag(wxNO_BORDER);
 
     // Create content panel (right side) - this will contain different HomepageViews
     mContentPanel = new wxPanel(this, wxID_ANY);
@@ -84,19 +80,73 @@ void HomeView::initUI()
     mNavigationBrowser->SetMinSize(wxSize(FromDIP(HOME_NAVIGATION_WIDTH_DIP), -1));
     SetSizer(mMainSizer);
 
-    // Initialize IPC for navigation
-    mIpc = std::make_unique<webviewIpc::WebviewIPCManager>(mNavigationBrowser);
-    setupIPCHandlers();
-
     // Delay creating homepage views until window is shown
     // This fixes macOS multi-display rendering issue where WKWebView fails to render
     // on extended displays if created before the window is fully displayed
     // Homepage views will be created by calling initializeNavigationWebView() after window is shown
     
-    mNavigationBrowser->EnableAccessToDevTools(wxGetApp().app_config->get_bool("developer_mode"));
-    
     // Hide WebView temporarily to avoid rendering issues on extended displays
     mNavigationBrowser->Hide();
+}
+
+bool HomeView::createNavigationBrowser()
+{
+    mNavigationBrowser = WebView::CreateWebView(this, "");
+    if (!mNavigationBrowser)
+        return false;
+
+    mNavigationBrowser->SetWindowStyleFlag(wxNO_BORDER);
+    mNavigationBrowser->SetMinSize(wxSize(FromDIP(HOME_NAVIGATION_WIDTH_DIP), -1));
+    mNavigationBrowser->EnableAccessToDevTools(wxGetApp().app_config->get_bool("developer_mode"));
+    mNavigationBrowser->Hide();
+
+    mIpc = std::make_unique<webviewIpc::WebviewIPCManager>(mNavigationBrowser);
+    setupIPCHandlers();
+    return true;
+}
+
+void HomeView::resetNavigationWebView()
+{
+    mIpc.reset();
+
+    if (mNavigationBrowser) {
+        if (mMainSizer)
+            mMainSizer->Detach(mNavigationBrowser);
+        mNavigationBrowser->Destroy();
+        mNavigationBrowser = nullptr;
+    }
+
+    for (auto& pair : mHomepageViews) {
+        if (mContentSizer)
+            mContentSizer->Detach(pair.second);
+        delete pair.second;
+    }
+    mHomepageViews.clear();
+    mCurrentView = nullptr;
+
+    mIsReady = false;
+    mNavigationWebViewInitialized = false;
+
+    if (!createNavigationBrowser()) {
+        BOOST_LOG_TRIVIAL(error) << __FUNCTION__ << ": could not recreate navigation WebView";
+        return;
+    }
+
+    if (mMainSizer) {
+        mMainSizer->Insert(0, mNavigationBrowser, 0, wxEXPAND | wxALL, 0);
+        Layout();
+    }
+}
+
+bool HomeView::Show(bool show)
+{
+    bool result = wxPanel::Show(show);
+    if (show && mResetNavigationOnShow) {
+        mResetNavigationOnShow = false;
+        resetNavigationWebView();
+        initializeNavigationWebView();
+    }
+    return result;
 }
 
 void HomeView::msw_rescale()
@@ -443,7 +493,7 @@ void HomeView::initializeNavigationWebView()
     
     // Load navigation page (left side) - only navigation bar
     wxString navUrl = wxString::Format("file://%s/web/homepage4/navigation.html", from_u8(resources_dir()));
-    mNavigationBrowser->LoadURL(navUrl);
+    WebView::LoadUrl(mNavigationBrowser, navUrl);
     
     // Show WebView after loading URL
     mNavigationBrowser->Show();

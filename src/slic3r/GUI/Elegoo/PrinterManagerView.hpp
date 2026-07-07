@@ -32,11 +32,14 @@ public:
     void openPrinterTab(const std::string& printerId, bool saveState = true, bool openDeviceAssistant = false);
     void refreshUserInfo();
     void msw_rescale();
+    bool Show(bool show = true) override;
     
     // Initialize WebView after window is shown (fixes macOS multi-display rendering issue)
     void initializeWebView();
 
 private:
+    bool createMainBrowser();
+    void resetMainBrowser();
     void setupIPCHandlers();
     void onClosePrinterTab(wxAuiNotebookEvent& event);
     void onTabBeginDrag(wxAuiNotebookEvent& event);
@@ -81,6 +84,7 @@ private:
     UserNetworkInfo mRefreshUserInfo; // User info
     std::atomic<bool> mIsReady{false};
     std::atomic<bool> mWebViewInitialized{false};
+    bool mResetWebViewOnShow{false};
     std::mutex mPrinterSnapshotMutex;
     std::size_t mLastObservedPrinterCount{0};
     bool mHasObservedPrinterCount{false};
