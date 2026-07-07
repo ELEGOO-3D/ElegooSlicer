@@ -15,8 +15,7 @@
 #include <windows.h>
 #endif
 
-static bool sInitialized   = false;
-static bool sUploadEnabled = false;
+static bool sInitialized = false;
 
 bool CrashReporter::init(const std::string& dataDir)
 {
@@ -83,7 +82,6 @@ bool CrashReporter::init(const std::string& dataDir)
     sentry_options_set_database_path(options, sentryDir.string().c_str());
     sentry_options_set_release(options, "elegoo-slicer@" ELEGOOSLICER_VERSION);
     sentry_options_set_handler_path(options, handlerPath.string().c_str());
-    sentry_options_set_require_user_consent(options, 1);
     sentry_options_set_cache_keep(options, SENTRY_CACHE_KEEP_OFFLINE);
     sentry_options_set_cache_max_age(options, 30 * 24 * 60 * 60);
     sentry_options_set_cache_max_size(options, 128 * 1024 * 1024);
@@ -95,10 +93,6 @@ bool CrashReporter::init(const std::string& dataDir)
 
     int result = sentry_init(options);
     if (result == 0) {
-        if (sUploadEnabled)
-            sentry_user_consent_give();
-        else
-            sentry_user_consent_revoke();
         BOOST_LOG_TRIVIAL(info) << "Sentry crash reporter initialized successfully";
         BOOST_LOG_TRIVIAL(info) << "  Database: " << sentryDir.string();
         BOOST_LOG_TRIVIAL(info) << "  Handler: " << handlerPath.string();
@@ -120,22 +114,12 @@ void CrashReporter::close()
     }
 }
 
-void CrashReporter::setEnabled(bool enabled)
-{
-    if (sUploadEnabled != enabled) {
-        sUploadEnabled = enabled;
-        if (sInitialized) {
-            if (enabled)
-                sentry_user_consent_give();
-            else
-                sentry_user_consent_revoke();
-        }
-        BOOST_LOG_TRIVIAL(info) << "Crash report upload " << (enabled ? "enabled" : "disabled");
-    }
-}
-
 void CrashReporter::triggerTestCrash()
 {
+    if (!sInitialized) {
+        BOOST_LOG_TRIVIAL(warning) << "Crash reporter not initialized (login required)";
+        return;
+    }
     BOOST_LOG_TRIVIAL(info) << "Triggering test crash for Sentry crash reporting verification";
     volatile int* ptr = nullptr;
     *ptr = 42;

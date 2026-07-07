@@ -5,14 +5,13 @@
 /**
  * @brief Crash reporter using Sentry Native SDK (Crashpad backend)
  *
- * Captures crashes on Windows/macOS/Linux. Local crash data is stored in
- * dataDir/sentry/. Uploading is controlled separately by setEnabled().
+ * Initialized after Elegoo user login succeeds. Shutdown on application exit only.
  */
 class CrashReporter
 {
 public:
     /**
-     * @brief Initialize Sentry crash reporter
+     * @brief Initialize Sentry crash reporter (call only when user is logged in)
      * @param dataDir Application data directory
      * @return true if initialized successfully
      */
@@ -22,15 +21,6 @@ public:
      * @brief Shutdown Sentry, flushing pending events before exit
      */
     static void close();
-
-    /**
-     * @brief Enable or disable crash report uploading
-     *
-     * The crash handler stays installed either way so local crash data can
-     * still be generated. Events are not uploaded while disabled.
-     * @param enabled true to allow sending, false to suppress
-     */
-    static void setEnabled(bool enabled);
 
     /**
      * @brief Trigger a test crash for debugging crash reporting

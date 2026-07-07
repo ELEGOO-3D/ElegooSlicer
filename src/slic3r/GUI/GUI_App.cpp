@@ -175,8 +175,6 @@ typedef BOOL (WINAPI *LPFN_ISWOW64PROCESS2)(
 #include "dev-utils/BaseException.h"
 #endif
 
-#include "dev-utils/CrashReporter.h"
-
 #if ENABLE_THUMBNAIL_GENERATOR_DEBUG
 #include <boost/beast/core/detail/base64.hpp>
 #include <boost/nowide/fstream.hpp>
@@ -1105,7 +1103,6 @@ GUI_App::GUI_App()
 {
 	//app config initializes early becasuse it is used in instance checking in ElegooSlicer.cpp
     this->init_app_config();
-    CrashReporter::init(data_dir());
     this->init_download_path();
     // Note: the WebView2 runtime check (init_webview_runtime) used to run here, but
     // the constructor executes before wxWidgets is fully initialized and before the
@@ -2643,8 +2640,6 @@ bool GUI_App::OnInit()
 
 int GUI_App::OnExit()
 {
-    CrashReporter::close();
-
     stop_http_server();
     stop_sync_user_preset();
 
@@ -3128,8 +3123,6 @@ bool GUI_App::on_init_inner()
     } */
     copy_network_if_available();
     on_init_network();
-
-    CrashReporter::setEnabled(m_agent && m_agent->is_user_login());
 
     if (m_agent && m_agent->is_user_login()) {
         enable_user_preset_folder(true);
