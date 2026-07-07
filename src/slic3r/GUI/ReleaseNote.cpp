@@ -253,12 +253,12 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
     m_text_up_info = new Label(this, Label::Head_14, wxEmptyString, LB_AUTO_WRAP);
     m_text_up_info->SetForegroundColour(wxColour(0x26, 0x2E, 0x30));
 
-    // Store builds get updates from the Microsoft Store: wxID_YES opens the Store
-    // product page there (see the EVT_SLIC3R_VERSION_ONLINE handler) instead of GitHub.
-    auto github_link = new HyperLink(this, is_running_in_msix() ? _L("Check on Microsoft Store") : _L("Check on GitHub"), "", LB_AUTO_WRAP);
-    github_link->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &e) {
-        EndModal(wxID_YES);
-    });
+    // // Store builds get updates from the Microsoft Store: wxID_YES opens the Store
+    // // product page there (see the EVT_SLIC3R_VERSION_ONLINE handler) instead of GitHub.
+    // auto github_link = new HyperLink(this, is_running_in_msix() ? _L("Check on Microsoft Store") : _L("Check on GitHub"), "", LB_AUTO_WRAP);
+    // github_link->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &e) {
+    //     EndModal(wxID_YES);
+    // });
 
     m_simplebook_release_note = new wxSimplebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSIMPLE_BORDER);
     //m_simplebook_release_note->SetSize(wxSize(FromDIP(560), FromDIP(430)));
@@ -312,13 +312,13 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
         EndModal(wxID_YES);
     });
 
-    m_button_skip_version = new Button(this, _L("Skip this Version"));
-    m_button_skip_version->SetStyle(ButtonStyle::Regular, ButtonType::Choice);
+    // m_button_skip_version = new Button(this, _L("Skip this Version"));
+    // m_button_skip_version->SetStyle(ButtonStyle::Regular, ButtonType::Choice);
 
-    m_button_skip_version->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &e) {
-        wxGetApp().set_skip_version(true);
-        EndModal(wxID_NO);
-    });
+    // m_button_skip_version->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &e) {
+    //     wxGetApp().set_skip_version(true);
+    //     EndModal(wxID_NO);
+    // });
 
     // m_cb_stable_only = new CheckBox(this);
     // m_cb_stable_only->SetValue(wxGetApp().app_config->get_bool("check_stable_update_only"));
@@ -327,8 +327,8 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
     //     e.Skip();
     // });
 
-    auto stable_only_label = new Label(this, _L("Check for stable updates only"));
-    stable_only_label->SetFont(Label::Body_12);
+    // auto stable_only_label = new Label(this, _L("Check for stable updates only"));
+    // stable_only_label->SetFont(Label::Body_12);
 
     m_button_cancel = new Button(this, _L("Cancel"));
     m_button_cancel->SetStyle(ButtonStyle::Regular, ButtonType::Choice);
@@ -339,16 +339,16 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
 
     //sizer_button->Add(m_remind_choice, 0, wxALL | wxEXPAND, FromDIP(5));
 
-    sizer_button->Add(m_cb_stable_only     , 0, wxALIGN_CENTER);
-    sizer_button->Add(stable_only_label    , 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
+    // sizer_button->Add(m_cb_stable_only     , 0, wxALIGN_CENTER);
+    // sizer_button->Add(stable_only_label    , 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
     sizer_button->AddStretchSpacer();
     sizer_button->Add(m_button_download    , 0, wxLEFT, FromDIP(10));
-    sizer_button->Add(m_button_skip_version, 0, wxLEFT, FromDIP(10));
+    // sizer_button->Add(m_button_skip_version, 0, wxLEFT, FromDIP(10));
     sizer_button->Add(m_button_cancel      , 0, wxLEFT, FromDIP(10));
 
     m_sizer_desc->AddStretchSpacer();
     m_sizer_desc->Add(m_text_up_info, 0, wxEXPAND | wxBOTTOM, FromDIP(5));
-    m_sizer_desc->Add(github_link);
+    // m_sizer_desc->Add(github_link);
     m_sizer_desc->AddStretchSpacer();
 
     m_sizer_top->Add(m_brand     , 0, wxRIGHT  | wxALIGN_CENTER_VERTICAL, FromDIP(15));
