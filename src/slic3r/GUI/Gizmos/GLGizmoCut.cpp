@@ -3398,8 +3398,11 @@ bool GLGizmoCut3D::has_valid_groove() const
         bool intersection = false;
         for (const unsigned int volume_idx : list) {
             const GLVolume* glvol = selection.get_volume(volume_idx);
-            if (!glvol->is_modifier && 
-                glvol->mesh_raycaster->intersects_line(beg, end - beg, glvol->world_matrix())) {
+            if (glvol == nullptr || glvol->is_modifier)
+                continue;
+            if (!glvol->mesh_raycaster || !glvol->raycaster_ready.load())
+                return false;
+            if (glvol->mesh_raycaster->intersects_line(beg, end - beg, glvol->world_matrix())) {
                 intersection = true;
                 break;
             }
