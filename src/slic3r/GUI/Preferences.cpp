@@ -1185,8 +1185,9 @@ wxBoxSizer* PreferencesDialog::create_item_downloads(wxString title, wxString to
 
 wxBoxSizer *PreferencesDialog::create_item_bambu_cloud(wxString title, wxString tooltip)
 {
+    
     wxBoxSizer *m_sizer = create_item_label(title, tooltip);
-
+#if 0 //ELEGOO: disallow Bambu Cloud for now
     auto cb = new ::CheckBox(m_parent);
     m_bambu_cloud_checkbox = cb;
     cb->SetValue(app_config->has_cloud_provider(BBL_CLOUD_PROVIDER));
@@ -1208,14 +1209,14 @@ wxBoxSizer *PreferencesDialog::create_item_bambu_cloud(wxString title, wxString 
     });
 
     m_sizer->Add(cb, 0, wxALIGN_CENTER);
-
+#endif
     return m_sizer;
 };
 
 wxBoxSizer *PreferencesDialog::create_item_network_plugin_version(wxString title, wxString tooltip)
 {
     wxBoxSizer *m_sizer = create_item_label(title, tooltip);
-
+#if 0 //ELEGOO: disallow Bambu Cloud for now
     m_network_version_combo = new ::ComboBox(m_parent, wxID_ANY, wxEmptyString, wxDefaultPosition, DESIGN_LARGE_COMBOBOX_SIZE, 0, nullptr, wxCB_READONLY);
     m_network_version_combo->GetDropDown().SetUseContentWidth(true);
     m_network_version_combo->SetToolTip(tooltip);
@@ -1315,7 +1316,7 @@ wxBoxSizer *PreferencesDialog::create_item_network_plugin_version(wxString title
         }
     });
     m_sizer->Add(reload_btn, 0, wxALIGN_CENTER | wxLEFT, FromDIP(5));
-
+#endif
     return m_sizer;
 }
 
