@@ -23,7 +23,7 @@ echo build type set to %build_type%
 cd deps
 mkdir %build_dir%
 cd %build_dir%
-set DEPS=%CD%/OrcaSlicer_dep
+set DEPS=%CD%/ElegooSlicer_dep
 set "SIG_FLAG="
 if defined ORCA_UPDATER_SIG_KEY set "SIG_FLAG=-DORCA_UPDATER_SIG_KEY=%ORCA_UPDATER_SIG_KEY%"
 if "%1"=="slicer" (

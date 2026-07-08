@@ -83,9 +83,9 @@ if "%1"=="pack" (
     cd %WP%/deps/build
     if "%arch%"=="ARM64" cd %WP%/deps/build-arm64
     for /f "tokens=2-4 delims=/ " %%a in ('date /t') do set build_date=%%c%%b%%a
-    echo packing deps: OrcaSlicer_dep_win-!arch!_!build_date!_vs!VS_VERSION!.zip
+    echo packing deps: ElegooSlicer_dep_win-!arch!_!build_date!_vs!VS_VERSION!.zip
 
-    %WP%/tools/7z.exe a OrcaSlicer_dep_win-!arch!_!build_date!_vs!VS_VERSION!.zip OrcaSlicer_dep
+    %WP%/tools/7z.exe a ElegooSlicer_dep_win-!arch!_!build_date!_vs!VS_VERSION!.zip ElegooSlicer_dep
     goto :done
 )
 

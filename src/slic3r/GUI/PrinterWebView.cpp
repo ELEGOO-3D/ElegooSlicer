@@ -169,7 +169,7 @@ PrinterWebView::~PrinterWebView()
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << " End";
 }
 
-void PrinterWebView::load_url(wxString& url, wxString apikey)
+void PrinterWebView::load_url(const wxString& url, wxString apikey)
 {
 //    this->Show();
 //    this->Raise();
