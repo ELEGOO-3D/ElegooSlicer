@@ -3,6 +3,7 @@
 
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Color.hpp"
+#include "libslic3r_version.h"
 #include "GUI.hpp"
 #include "GUI_App.hpp"
 #include "MainFrame.hpp"
@@ -248,7 +249,9 @@ AboutDialog::AboutDialog()
         version_string += " (Test)";
         #endif
         wxStaticText* version = new wxStaticText(this, wxID_ANY, version_string.c_str(), wxDefaultPosition, wxDefaultSize);
-        wxStaticText* bs_version = new wxStaticText(this, wxID_ANY, wxString::Format("Based on OrcaSlicer"), wxDefaultPosition, wxDefaultSize);
+        wxString bs_version_string = "Based on OrcaSlicer ";
+        bs_version_string += from_u8(ORCA_COMPATIBLE_VERSION);
+        wxStaticText* bs_version = new wxStaticText(this, wxID_ANY, bs_version_string, wxDefaultPosition, wxDefaultSize);
         bs_version->SetFont(Label::Body_12);
         wxFont version_font = GetFont();
         #ifdef __WXMSW__
