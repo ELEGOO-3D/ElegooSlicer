@@ -2279,6 +2279,9 @@ void GLCanvas3D::render_thumbnail(ThumbnailData &           thumbnail_data,
                                   bool                      for_picking,
                                   bool                      ban_light)
 {
+    if (!_set_current() || !wxGetApp().init_opengl())
+        return;
+
     GLShaderProgram* shader = nullptr;
     if (for_picking)
         shader = wxGetApp().get_shader("flat");
@@ -2317,6 +2320,9 @@ void GLCanvas3D::render_thumbnail(ThumbnailData &                    thumbnail_d
                                   bool                               for_picking,
                                   bool                               ban_light)
 {
+    if (!_set_current() || !wxGetApp().init_opengl())
+        return;
+
     GLShaderProgram *shader = wxGetApp().get_shader("thumbnail");
     switch (OpenGLManager::get_framebuffers_type()) {
         case OpenGLManager::EFramebufferType::Arb: {
@@ -2357,6 +2363,7 @@ void GLCanvas3D::remove_curr_plate_all()
 
 void GLCanvas3D::update_plate_thumbnails()
 {
+    m_sel_plate_toolbar.is_render_finish = false;
     _update_imgui_select_plate_toolbar();
 }
 
@@ -6971,6 +6978,20 @@ bool GLCanvas3D::_update_imgui_select_plate_toolbar()
     bool result = true;
     if (!m_sel_plate_toolbar.is_enabled() || m_sel_plate_toolbar.is_render_finish) return false;
 
+    if (!_set_current())
+        return false;
+
+    auto has_visible_thumbnail_pixels = [](const ThumbnailData& thumbnail_data) {
+        if (!thumbnail_data.is_valid())
+            return false;
+
+        for (size_t i = 3; i < thumbnail_data.pixels.size(); i += 4)
+            if (thumbnail_data.pixels[i] != 0)
+                return true;
+
+        return false;
+    };
+
     _update_select_plate_toolbar_stats_item();
 
     m_sel_plate_toolbar.del_all_item();
@@ -6979,12 +7000,13 @@ bool GLCanvas3D::_update_imgui_select_plate_toolbar()
     for (int i = 0; i < plate_list.get_plate_count(); i++) {
         IMToolbarItem* item = new IMToolbarItem();
         PartPlate* plate = plate_list.get_plate(i);
-        if (plate && plate->thumbnail_data.is_valid()) {
-            PartPlate* plate = plate_list.get_plate(i);
+        const bool thumbnail_ready = plate && plate->thumbnail_data.is_valid() &&
+            (!plate->has_printable_instances() || has_visible_thumbnail_pixels(plate->thumbnail_data));
+        if (thumbnail_ready) {
             item->image_data = plate->thumbnail_data.pixels;
             item->image_width = plate->thumbnail_data.width;
             item->image_height = plate->thumbnail_data.height;
-            result = item->generate_texture();
+            result &= item->generate_texture();
         }
         m_sel_plate_toolbar.m_items.push_back(item);
     }
@@ -9075,7 +9097,15 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
     }
 
     imgui.end();
-    m_sel_plate_toolbar.is_render_finish = true;
+
+    bool all_plate_textures_ready = true;
+    for (const IMToolbarItem* item : m_sel_plate_toolbar.m_items) {
+        if (item == nullptr || item->texture_id == 0) {
+            all_plate_textures_ready = false;
+            break;
+        }
+    }
+    m_sel_plate_toolbar.is_render_finish = all_plate_textures_ready;
 }
 
 //BBS: GUI refactor: GLToolbar adjust
