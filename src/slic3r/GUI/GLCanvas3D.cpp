@@ -8977,28 +8977,17 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
             text_bottom = _u8L("Stats");
         }
 
-        //ELE
-        if (ImGui::IsItemHovered()) {     
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(200);
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.00f, 1.00f, 1.00f, 1.00f));
-            ImGui::TextUnformatted(_u8L("All Plates Stats").c_str());
-            ImGui::PopStyleColor(1);
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
-
-        // // draw text
-        // GImGui->FontSize = 15.0f;
-        // ImGui::PushStyleColor(ImGuiCol_Text, text_clr);
-        // ImVec2 text_size = ImGui::CalcTextSize(_u8L("All Plates").c_str());
-        // ImVec2 text_start_pos = ImVec2(start_pos.x + (button_width - text_size.x) / 2, start_pos.y + 3.0f * button_height / 5.0f);
-        // ImGui::RenderText(text_start_pos, _u8L("All Plates").c_str());
-        // text_size = ImGui::CalcTextSize(_u8L("Stats").c_str());
-        // text_start_pos = ImVec2(start_pos.x + (button_width - text_size.x) / 2, text_start_pos.y + ImGui::GetTextLineHeight());
-        // ImGui::RenderText(text_start_pos, _u8L("Stats").c_str());
-        // ImGui::PopStyleColor();
-        // ImGui::SetWindowFontScale(1.2f);
+        // draw text
+        GImGui->FontSize = 15.0f * f_scale;
+        ImGui::PushStyleColor(ImGuiCol_Text, text_clr);
+        ImVec2 text_size = ImGui::CalcTextSize(text_top.c_str());
+        ImVec2 text_start_pos = ImVec2(start_pos.x + (button_width - text_size.x) / 2, start_pos.y + 3.0f * button_height / 5.0f);
+        ImGui::RenderText(text_start_pos, text_top.c_str());
+        text_size = ImGui::CalcTextSize(text_bottom.c_str());
+        text_start_pos = ImVec2(start_pos.x + (button_width - text_size.x) / 2, text_start_pos.y + ImGui::GetTextLineHeight());
+        ImGui::RenderText(text_start_pos, text_bottom.c_str());
+        ImGui::PopStyleColor();
+        ImGui::SetWindowFontScale(1.2f);
     }
 
     for (int i = 0; i < m_sel_plate_toolbar.m_items.size(); i++) {
@@ -9107,6 +9096,7 @@ void GLCanvas3D::_render_imgui_select_plate_toolbar()
     }
     m_sel_plate_toolbar.is_render_finish = all_plate_textures_ready;
 }
+
 
 //BBS: GUI refactor: GLToolbar adjust
 //when rendering, {0, 0} is at the center, {-0.5, 0.5} at the left-up
