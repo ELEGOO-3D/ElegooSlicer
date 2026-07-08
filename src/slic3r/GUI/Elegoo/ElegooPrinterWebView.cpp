@@ -290,7 +290,7 @@ void ElegooPrinterWebView::setupIPCHandlers()
         std::string url          = params.value("url", "");
         bool        needDownload = params.value("needDownload", false);
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << boost::format(": open URL: %s") % url;
-        if (needDownload) {
+        if (needDownload && m_printerModel == "Elegoo Centauri Carbon") {
             CallAfter([this, url]() {
                 GUI::wxGetApp().download(url);
             });
