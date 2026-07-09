@@ -513,12 +513,10 @@ WipingDialog::WipingDialog(wxWindow* parent, const int max_flush_volume) :
 }
 
 
-int WipingDialog::CalcFlushingVolume(const wxColour& from, const wxColour& to, int min_flush_volume , int nozzle_flush_dataset)
+int WipingDialog::CalcFlushingVolume(const wxColour& from, const wxColour& to, int min_flush_volume, int nozzle_flush_dataset, const std::string& printer_settings_id)
 {
-    const Slic3r::DynamicPrintConfig preset_config =
-        Slic3r::GUI::wxGetApp().preset_bundle->full_config();
     Slic3r::FlushVolCalculator calculator(min_flush_volume, Slic3r::g_max_flush_volume, nozzle_flush_dataset);
-    return calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(), to.Alpha(), to.Red(), to.Green(), to.Blue(), &preset_config);
+    return calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(), to.Alpha(), to.Red(), to.Green(), to.Blue(), printer_settings_id);
 }
 
 WipingDialog::VolumeMatrix WipingDialog::CalcFlushingVolumes(int extruder_id)
@@ -526,6 +524,7 @@ WipingDialog::VolumeMatrix WipingDialog::CalcFlushingVolumes(int extruder_id)
     auto& preset_bundle = wxGetApp().preset_bundle;
     auto full_config = preset_bundle->full_config();
     auto& ams_multi_color_filament = preset_bundle->ams_multi_color_filment;
+    const std::string printer_settings_id = full_config.opt_string("printer_settings_id");
 
     std::vector<std::string> filament_color_strs = full_config.option<ConfigOptionStrings>("filament_colour")->values;
     std::vector<std::vector<wxColour>> multi_colors;
@@ -574,7 +573,7 @@ WipingDialog::VolumeMatrix WipingDialog::CalcFlushingVolumes(int extruder_id)
                     const wxColour& from = multi_colors[from_idx][i];
                     for (int j = 0; j < multi_colors[to_idx].size(); ++j) {
                         const wxColour& to = multi_colors[to_idx][j];
-                        int volume = CalcFlushingVolume(from, to, min_flush_volumes[from_idx], flush_dataset_value);
+                        int volume = CalcFlushingVolume(from, to, min_flush_volumes[from_idx], flush_dataset_value, printer_settings_id);
                         flushing_volume = std::max(flushing_volume, volume);
                     }
                 }

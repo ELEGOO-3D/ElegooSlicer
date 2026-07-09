@@ -60,7 +60,7 @@ public:
     void apply_wiping_scroll_viewport_limits();
 
 private:
-	static int CalcFlushingVolume(const wxColour& from_, const wxColour& to_, int min_flush_volume, int nozzle_flush_dataset);
+	static int CalcFlushingVolume(const wxColour& from_, const wxColour& to_, int min_flush_volume, int nozzle_flush_dataset, const std::string& printer_settings_id = "");
 	wxString BuildTableObjStr();
 	wxString BuildTextObjStr(bool multi_language = true);
 	void StoreFlushData(int extruder_num, const std::vector<std::vector<double>>& flush_volume_vecs, const std::vector<double>& flush_multipliers);

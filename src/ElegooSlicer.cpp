@@ -3461,6 +3461,7 @@ int CLI::run(int argc, char **argv)
                 }
             }
 
+            const std::string printer_settings_id = m_print_config.opt_string("printer_settings_id");
             for (size_t nozzle_id = 0; nozzle_id < new_extruder_count; ++nozzle_id) {
             std::vector<double> flush_vol_mtx = get_flush_volumes_matrix(flush_vol_matrix, nozzle_id, new_extruder_count);
                 for (int from_idx = 0; from_idx < project_filament_count; from_idx++) {
@@ -3482,7 +3483,7 @@ int CLI::run(int argc, char **argv)
                                 Slic3r::GUI::BitmapCache::parse_color4(to_color, to_rgb);
 
                                 Slic3r::FlushVolCalculator calculator(min_flush_volumes[from_idx], Slic3r::g_max_flush_volume,nozzle_flush_dataset[nozzle_id]);
-                                flushing_volume = calculator.calc_flush_vol(from_rgb[3], from_rgb[0], from_rgb[1], from_rgb[2], to_rgb[3], to_rgb[0], to_rgb[1], to_rgb[2], &m_print_config);
+                                flushing_volume = calculator.calc_flush_vol(from_rgb[3], from_rgb[0], from_rgb[1], from_rgb[2], to_rgb[3], to_rgb[0], to_rgb[1], to_rgb[2], printer_settings_id);
                                 if (is_from_support) { flushing_volume = std::max(Slic3r::g_min_flush_volume_from_support, flushing_volume); }
                             }
 

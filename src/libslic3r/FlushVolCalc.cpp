@@ -102,7 +102,7 @@ int FlushVolCalculator::calc_flush_vol_rgb(unsigned char src_r, unsigned char sr
 
 int FlushVolCalculator::calc_flush_vol(unsigned char src_a, unsigned char src_r, unsigned char src_g, unsigned char src_b,
     unsigned char dst_a, unsigned char dst_r, unsigned char dst_g, unsigned char dst_b,
-    const DynamicPrintConfig* preset_config)
+    const std::string& printer_settings_id)
 {
     // BBS: Transparent materials are treated as white materials
     if (src_a == 0) {
@@ -114,17 +114,15 @@ int FlushVolCalculator::calc_flush_vol(unsigned char src_a, unsigned char src_r,
 
     // Consult the per-printer override table. Additional preset fields may
     // be pulled here when the flush_volumes.json schema grows.
-    if (preset_config != nullptr) {
-        const std::string printer_name = preset_config->opt_string("printer_settings_id");
-        if (!printer_name.empty()) {
+    if (!printer_settings_id.empty()) {
             char from_buf[8];
             char to_buf[8];
             std::snprintf(from_buf, sizeof(from_buf), "#%02X%02X%02X", src_r, src_g, src_b);
             std::snprintf(to_buf,   sizeof(to_buf),   "#%02X%02X%02X", dst_r, dst_g, dst_b);
-            if (auto v = FlushVolumeRules::instance().lookup(printer_name, from_buf, to_buf))
+            if (auto v = FlushVolumeRules::instance().lookup(printer_settings_id, from_buf, to_buf))
                 return *v;
-        }
     }
+    
 
     float flush_volume;
     if(m_flush_dataset != 0  && get_flush_vol_from_data(src_r, src_g, src_b, dst_r, dst_g, dst_b, flush_volume))

@@ -2078,8 +2078,15 @@ Sidebar::Sidebar(Plater *parent)
     p->m_panel_filament_title->SetBackgroundColor(title_bg);
     p->m_panel_filament_title->SetBackgroundColor2(0xF1F1F1);
     p->m_panel_filament_title->Bind(wxEVT_LEFT_UP, [this](wxMouseEvent &e) {
-        if (e.GetPosition().x > (p->m_flushing_volume_btn->IsShown()
-                ? p->m_flushing_volume_btn->GetPosition().x : (p->m_bpButton_add_filament->GetPosition().x - FromDIP(30)))) // ORCA exclude area of del button from titlebar collapse/expand feature to fix undesired collapse when user spams del filament button 
+        if (!p || !p->m_panel_filament_content || !m_scrolled_sizer || !p->m_bpButton_set_filament || !p->m_flushing_volume_btn || !p->m_bpButton_add_filament || !ams_btn)
+            return;
+        // ORCA exclude area of del button from titlebar collapse/expand feature to fix undesired collapse when user spams del filament button
+        // also block fold/unfold feature when user clicks to spacing between icons
+        int exclude_pt = p->m_bpButton_set_filament->GetPosition().x; // maximum fixed item
+        if      (p->m_flushing_volume_btn->IsShown())   exclude_pt = p->m_flushing_volume_btn->GetPosition().x;
+        else if (p->m_bpButton_add_filament->IsShown()) exclude_pt = p->m_bpButton_add_filament->GetPosition().x - FromDIP(30); // reserve spacing for delete button
+        else if (ams_btn->IsShown())                    exclude_pt = ams_btn->GetPosition().x;
+        if (e.GetPosition().x > exclude_pt)
             return;
         p->m_panel_filament_content->Show(!p->m_panel_filament_content->IsShown());
         m_scrolled_sizer->Layout();
@@ -3194,23 +3201,6 @@ void Sidebar::on_filament_count_change(size_t num_filaments)
 
     update_filaments_area_height();  // ORCA
 
-    // Update scrolled window size based on content
-    // Reset constraints and force size recalculation
-    p->m_panel_filament_content->SetMinSize(wxSize(-1, 1));
-    p->m_panel_filament_content->SetMaxSize(wxSize(-1, -1));
-    m_scrolled_sizer->Layout();
-    
-    p->m_panel_filament_content->GetSizer()->Layout();
-    p->m_panel_filament_content->FitInside();
-    
-    wxSize virtualSize = p->m_panel_filament_content->GetVirtualSize();
-    int maxHeight = FromDIP(202);
-    int actualHeight = std::min(virtualSize.y, maxHeight);
-    
-    // Now set the new constraints
-    p->m_panel_filament_content->SetMinSize(wxSize(-1, actualHeight));
-    p->m_panel_filament_content->SetMaxSize(wxSize(-1, maxHeight));
-
     Layout();
     p->m_panel_filament_title->Refresh();
     update_ui_from_settings();
@@ -4241,6 +4231,7 @@ void Sidebar::auto_calc_flushing_volumes_internal(const int modify_id, const int
     auto& project_config = preset_bundle->project_config;
     const auto& full_config = wxGetApp().preset_bundle->full_config();
     auto& ams_multi_color_filament = preset_bundle->ams_multi_color_filment;
+    const std::string printer_settings_id = full_config.opt_string("printer_settings_id");
     size_t extruder_nums = preset_bundle->get_printer_extruder_count();
     int nozzle_flush_dataset = full_config.option<ConfigOptionIntsNullable>("nozzle_flush_dataset")->values[extruder_id];
     std::vector<double> init_matrix = get_flush_volumes_matrix((project_config.option<ConfigOptionFloats>("flush_volumes_matrix"))->values, extruder_id, extruder_nums);
@@ -4293,7 +4284,7 @@ void Sidebar::auto_calc_flushing_volumes_internal(const int modify_id, const int
                             const wxColour& to = multi_colours[modify_id][k];
                             int volume = calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(),
                                                                    to.Alpha(),   to.Red(),   to.Green(),   to.Blue(),
-                                                                   &full_config);
+                                                                   printer_settings_id);
                             flushing_volume = std::max(flushing_volume, volume);
                         }
                     }
@@ -4320,7 +4311,7 @@ void Sidebar::auto_calc_flushing_volumes_internal(const int modify_id, const int
                             const wxColour& to = multi_colours[to_idx][k];
                             int volume = calculator.calc_flush_vol(from.Alpha(), from.Red(), from.Green(), from.Blue(),
                                                                    to.Alpha(),   to.Red(),   to.Green(),   to.Blue(),
-                                                                   &full_config);
+                                                                   printer_settings_id);
                             flushing_volume = std::max(flushing_volume, volume);
                         }
                     }

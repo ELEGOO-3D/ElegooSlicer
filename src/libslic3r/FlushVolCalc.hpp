@@ -5,10 +5,9 @@
 #include "FlushVolPredictor.hpp"
 #include "PrintConfig.hpp"
 
+#include <string>
 
 namespace Slic3r {
-
-class DynamicPrintConfig;
 
 extern const int g_min_flush_volume_from_support;
 extern const int g_flush_volume_to_support;
@@ -22,12 +21,12 @@ public:
     {
     }
 
-    // When preset_config is non-null, the per-printer override table in
+    // When printer_settings_id is non-null, the per-printer override table in
     // resources/profiles/<Vendor>/flush/flush_volumes.json is consulted first.
     // Falls back to the HSV formula when no override matches.
     int calc_flush_vol(unsigned char src_a, unsigned char src_r, unsigned char src_g, unsigned char src_b,
         unsigned char dst_a, unsigned char dst_r, unsigned char dst_g, unsigned char dst_b,
-        const DynamicPrintConfig* preset_config = nullptr);
+        const std::string& printer_settings_id = "");
 
     int calc_flush_vol_rgb(unsigned char src_r,unsigned char src_g,unsigned char src_b,
         unsigned char dst_r, unsigned char dst_g, unsigned char dst_b);
