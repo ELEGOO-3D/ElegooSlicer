@@ -763,6 +763,62 @@ void split_query(const string& query, vector<pair<string, string>>& params)
     }
 }
 
+string to_lower_copy(const string& value)
+{
+    string lowered;
+    lowered.reserve(value.size());
+    for (unsigned char c : value) {
+        lowered += static_cast<char>(std::tolower(c));
+    }
+    return lowered;
+}
+
+string replace_directory_separators(string filename)
+{
+    for (char& c : filename) {
+        if (c == '/' || c == '\\') {
+            c = '_';
+        }
+    }
+    return filename;
+}
+
+string filename_with_supported_extension_from_text(const string& text, const vector<string>& normalized_extensions)
+{
+    if (text.empty() || normalized_extensions.empty()) {
+        return "";
+    }
+
+    const string lowered = to_lower_copy(text);
+    auto is_filename_boundary = [](char c) {
+        return c == '/' || c == '\\' || c == '?' || c == '&' || c == '#' || c == '=' || c == ':' ||
+               c == '"' || c == '\'' || c == '<' || c == '>' || c == '|' || c == ';' || c == ',';
+    };
+
+    for (const string& extension : normalized_extensions) {
+        size_t pos = 0;
+        while ((pos = lowered.find(extension, pos)) != string::npos) {
+            const size_t end_pos = pos + extension.size();
+            if (end_pos < text.size() && !is_filename_boundary(text[end_pos])) {
+                pos = end_pos;
+                continue;
+            }
+
+            size_t start_pos = pos;
+            while (start_pos > 0 && !is_filename_boundary(text[start_pos - 1])) {
+                --start_pos;
+            }
+
+            string filename = text.substr(start_pos, end_pos - start_pos);
+            if (filename.size() > extension.size()) {
+                return replace_directory_separators(filename);
+            }
+            pos = end_pos;
+        }
+    }
+    return "";
+}
+
 string trim(const string& s)
 {
     size_t first = s.find_first_not_of(" \t");
@@ -824,7 +880,7 @@ string parse_content_disposition(const string& content_disp)
     return filename_value;
 }
 
-string FileGet::filename_from_url(const string& url)
+string FileGet::filename_from_url(const string& url, const vector<string>& supported_extensions)
 {
     size_t         query_start = url.find('?');
     string         path_part   = url.substr(0, query_start);
@@ -843,22 +899,43 @@ string FileGet::filename_from_url(const string& url)
     filename_from_path = url_decode(filename_from_path, false);
     vector<pair<string, string>> query_params;
     split_query(query_part, query_params);
+    vector<string>       normalized_extensions;
+    normalized_extensions.reserve(supported_extensions.size());
+    for (const string& extension : supported_extensions) {
+        if (extension.empty()) {
+            continue;
+        }
+
+        string normalized = to_lower_copy(extension);
+        if (normalized.front() != '.') {
+            normalized.insert(normalized.begin(), '.');
+        }
+        normalized_extensions.emplace_back(std::move(normalized));
+    }
+
     string filename_from_query;
+    string filename_from_query_fallback;
     string content_disp_value;
 
     for (const auto& param : query_params) {
-        if (param.first == "filename" || param.first == "file_name" || param.first == "name") {
-            string decoded_value = url_decode(param.second, true);
-            // Replace directory separators with underscores to match browser behavior
-            for (char& c : decoded_value) {
-                if (c == '/' || c == '\\') {
-                    c = '_';
-                }
+        string normalized_key;
+        const string decoded_key = url_decode(param.first, true);
+        normalized_key.reserve(decoded_key.size());
+        for (unsigned char c : decoded_key) {
+            if (c == '_' || c == '-') {
+                continue;
             }
-            filename_from_query = decoded_value;
+            normalized_key += static_cast<char>(std::tolower(c));
+        }
 
-        } else if (param.first == "response-content-disposition") {
+        if (normalized_key == "filename" || normalized_key == "name" || normalized_key == "file") {
+            string decoded_value = url_decode(param.second, true);
+            filename_from_query = replace_directory_separators(decoded_value);
+        } else if (normalized_key == "responsecontentdisposition") {
             content_disp_value = url_decode(param.second, true);
+        } else if (filename_from_query_fallback.empty()) {
+            const string decoded_value = url_decode(param.second, true);
+            filename_from_query_fallback = filename_with_supported_extension_from_text(decoded_value, normalized_extensions);
         }
     }
 
@@ -875,6 +952,29 @@ string FileGet::filename_from_url(const string& url)
 
     } else if (!filename_from_cd.empty()) {
         return filename_from_cd;
+    } else if (!normalized_extensions.empty()) {
+        if (!filename_from_path.empty()) {
+            const string lowered_filename_from_path = to_lower_copy(filename_from_path);
+            for (const string& extension : normalized_extensions) {
+                if (boost::algorithm::iends_with(lowered_filename_from_path, extension)) {
+                    return filename_from_path;
+                }
+            }
+        }
+
+        if (!filename_from_query_fallback.empty()) {
+            return filename_from_query_fallback;
+        }
+
+        string filename_from_url_fallback = filename_with_supported_extension_from_text(url_decode(path_part, false), normalized_extensions);
+        if (!filename_from_url_fallback.empty()) {
+            return filename_from_url_fallback;
+        }
+
+        filename_from_url_fallback = filename_with_supported_extension_from_text(url_decode(url, false), normalized_extensions);
+        if (!filename_from_url_fallback.empty()) {
+            return filename_from_url_fallback;
+        }
     }
     return filename_from_path;
 }

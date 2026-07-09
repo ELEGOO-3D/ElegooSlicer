@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include <wx/event.h>
 #include <wx/frame.h>
 #include <boost/filesystem.hpp>
@@ -24,7 +25,7 @@ public:
 	void pause();
 	void resume();
 	static std::string	unescape_url(const std::string& url);
-    static std::string  filename_from_url(const std::string& url);
+    static std::string  filename_from_url(const std::string& url, const std::vector<std::string>& supported_extensions = {});
 	static bool			is_subdomain(const std::string& url, const std::string& domain);
 private:
 	std::unique_ptr<priv> p;

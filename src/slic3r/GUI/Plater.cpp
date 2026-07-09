@@ -12522,7 +12522,14 @@ void Plater::import_model_id(wxString download_info)
 
     wxString download_url = download_info;
 
-    wxString filename = wxString::FromUTF8(FileGet::filename_from_url(download_url.ToStdString()));
+    const std::vector<std::string> supported_extensions =
+#ifdef __APPLE__
+        {".zip", ".3mf", ".stl", ".oltp", ".stp", ".step", ".svg", ".amf", ".obj", ".usd", ".usda", ".usdc", ".usdz", ".abc", ".ply"};
+#else
+        {".zip", ".3mf", ".stl", ".oltp", ".stp", ".step", ".svg", ".amf", ".obj"};
+#endif
+
+    wxString filename = wxString::FromUTF8(FileGet::filename_from_url(download_url.ToStdString(), supported_extensions));
 
     bool download_ok = false;
     int retry_count = 0;
@@ -12554,7 +12561,7 @@ void Plater::import_model_id(wxString download_info)
     p->project.reset();
 
     /* prepare project and profile */
-    boost::thread import_thread = Slic3r::create_thread([&percent, &cont, &cancel, &retry_count, max_retries, &msg, &target_path, &download_ok, download_url, &filename] {
+    boost::thread import_thread = Slic3r::create_thread([&percent, &cont, &cancel, &retry_count, max_retries, &msg, &target_path, &download_ok, download_url, &filename, supported_extensions] {
 
         // Orca: NetworkAgent is not needed and only prevents this from running
 //        NetworkAgent* m_agent = Slic3r::GUI::wxGetApp().getAgent();
@@ -12577,13 +12584,7 @@ void Plater::import_model_id(wxString download_info)
             vecFiles.clear();
             wxString extension = fs::path(filename.wx_str()).extension().c_str();
 
-            std::vector<wxString> supported_extensions = {};
-#ifdef __APPLE__
-            supported_extensions = {"zip", ".3mf", ".stl", ".oltp", ".stp", ".step", ".svg", ".amf", ".obj", ".usd", ".usda", ".usdc", ".usdz", ".abc", ".ply"};
-#else
-            supported_extensions = {"zip", ".3mf", ".stl", ".oltp", ".stp", ".step", ".svg", ".amf", ".obj"};
-#endif
-            if (std::find(supported_extensions.begin(), supported_extensions.end(), extension.Lower()) == supported_extensions.end()) {
+            if (std::find(supported_extensions.begin(), supported_extensions.end(), extension.Lower().ToStdString()) == supported_extensions.end()) {
                 msg = _L("download failed, unknown file format.");
                 return;
             }
