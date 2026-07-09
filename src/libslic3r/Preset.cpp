@@ -989,8 +989,6 @@ BedType Preset::get_default_bed_type(PresetBundle* preset_bundle)
         return BedType::btPC;
     } else if (model_id == "C11") {
         return BedType::btPEI;
-    } else if (is_elegoo_cc_printer()) { // set default bed type to PTE for Elegoo-CC
-        return BedType::btPTE;
     }
     return BedType::btPEI;
 }

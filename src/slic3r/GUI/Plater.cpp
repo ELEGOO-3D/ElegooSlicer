@@ -2810,6 +2810,14 @@ std::string Sidebar::get_cur_select_bed_image()
     auto select_bed_type   = get_cur_select_bed_type();
     //auto series_suffix_str = m_cur_image_bed_type.empty() ? "" : ("_" + m_cur_image_bed_type);
     auto image_path        = bed_type_thumbnails[select_bed_type];// + series_suffix_str;
+
+    auto is_elegoo_cc_printer = wxGetApp().preset_bundle->printers.get_edited_preset().is_elegoo_cc_printer();
+    if(is_elegoo_cc_printer) {
+        if(select_bed_type == btPC)
+            image_path = "bed_pc_elegoo";
+        else if(select_bed_type == btPTE)
+            image_path = "bed_pte_elegoo";
+    }
     return image_path;
 }
 
