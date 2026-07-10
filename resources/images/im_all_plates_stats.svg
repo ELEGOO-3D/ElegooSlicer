@@ -1,18 +1,1 @@
-<svg width="50" height="50" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_1_2)">
-<path d="M50 0H0V50H50V0Z" fill="#E9E9E9"/>
-<path d="M18 15V14C18 13.7348 18.1054 13.4804 18.2929 13.2929C18.4804 13.1054 18.7348 13 19 13H36C36.2652 13 36.5196 13.1054 36.7071 13.2929C36.8946 13.4804 37 13.7348 37 14V31C37 31.2652 36.8946 31.5196 36.7071 31.7071C36.5196 31.8946 36.2652 32 36 32H35" stroke="#808080" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M16 17V16C16 15.7348 16.1054 15.4804 16.2929 15.2929C16.4804 15.1054 16.7348 15 17 15H34C34.2652 15 34.5196 15.1054 34.7071 15.2929C34.8946 15.4804 35 15.7348 35 16V33C35 33.2652 34.8946 33.5196 34.7071 33.7071C34.5196 33.8946 34.2652 34 34 34H33" stroke="#808080" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M32 17H15C14.4477 17 14 17.4477 14 18V35C14 35.5523 14.4477 36 15 36H32C32.5523 36 33 35.5523 33 35V18C33 17.4477 32.5523 17 32 17Z" stroke="#808080" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M16 19V34" stroke="#808080" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M31 34H16" stroke="#808080" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M19.906 25.781C19.906 25.2287 19.4583 24.781 18.906 24.781C18.3537 24.781 17.906 25.2287 17.906 25.781V30.781C17.906 31.3333 18.3537 31.781 18.906 31.781C19.4583 31.781 19.906 31.3333 19.906 30.781V25.781Z" stroke="#1677ff" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M24.906 21.781C24.906 21.2287 24.4583 20.781 23.906 20.781C23.3537 20.781 22.906 21.2287 22.906 21.781V30.781C22.906 31.3333 23.3537 31.781 23.906 31.781C24.4583 31.781 24.906 31.3333 24.906 30.781V21.781Z" stroke="#1677ff" stroke-linecap="round" stroke-linejoin="round"/>
-<path d="M29.906 23.781C29.906 23.2287 29.4583 22.781 28.906 22.781C28.3537 22.781 27.906 23.2287 27.906 23.781V30.781C27.906 31.3333 28.3537 31.781 28.906 31.781C29.4583 31.781 29.906 31.3333 29.906 30.781V23.781Z" stroke="#1677ff" stroke-linecap="round" stroke-linejoin="round"/>
-</g>
-<defs>
-<clipPath id="clip0_1_2">
-<rect width="50" height="50" fill="white"/>
-</clipPath>
-</defs>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><path d="M18.5,7.5v-1a1,1,0,0,1,1-1h17a1,1,0,0,1,1,1v17a1,1,0,0,1-1,1h-1" style="fill:none;stroke:gray;stroke-linecap:round;stroke-linejoin:round"/><path d="M16.5,9.5v-1a1,1,0,0,1,1-1h17a1,1,0,0,1,1,1v17a1,1,0,0,1-1,1h-1" style="fill:none;stroke:gray;stroke-linecap:round;stroke-linejoin:round"/><rect x="14.5" y="9.5" width="19" height="19" rx="1" style="fill:none;stroke:gray;stroke-linecap:round;stroke-linejoin:round"/><polyline points="30.5 25.5 17.5 25.5 17.5 12.5" style="fill:none;stroke:#1677ff;stroke-linecap:round;stroke-linejoin:round"/><line x1="20.5" y1="22.5" x2="20.5" y2="18.5" style="fill:none;stroke:#1677ff;stroke-linecap:round;stroke-linejoin:round"/><line x1="24.5" y1="22.5" x2="24.5" y2="14.5" style="fill:none;stroke:#1677ff;stroke-linecap:round;stroke-linejoin:round"/><line x1="28.5" y1="22.5" x2="28.5" y2="16.5" style="fill:none;stroke:#1677ff;stroke-linecap:round;stroke-linejoin:round"/></svg>
