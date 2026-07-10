@@ -264,7 +264,7 @@ public:
     void set_need_auto_sync_after_connect_printer(bool need_auto_sync) { m_need_auto_sync_after_connect_printer = need_auto_sync; }
 
 private:
-    void  auto_calc_flushing_volumes_internal(const int filament_id, const int extruder_id);
+    void  auto_calc_flushing_volumes_internal(const int filament_id, const int extruder_id, const DynamicPrintConfig& full_config);
 
 private:
     struct priv;

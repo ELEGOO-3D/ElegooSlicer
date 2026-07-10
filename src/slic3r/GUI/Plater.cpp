@@ -4210,9 +4210,10 @@ void Sidebar::auto_calc_flushing_volumes(const int filament_idx, const int extru
         extruder_indices.emplace_back(extruder_id);
     }
 
+    const DynamicPrintConfig full_config = wxGetApp().preset_bundle->full_config();
     for (auto eidx : extruder_indices) {
         for (auto fidx : filament_indices) {
-            auto_calc_flushing_volumes_internal(fidx, eidx);
+            auto_calc_flushing_volumes_internal(fidx, eidx, full_config);
         }
     }
 
@@ -4225,11 +4226,10 @@ void Sidebar::auto_calc_flushing_volumes(const int filament_idx, const int extru
 }
 
 
-void Sidebar::auto_calc_flushing_volumes_internal(const int modify_id, const int extruder_id)
+void Sidebar::auto_calc_flushing_volumes_internal(const int modify_id, const int extruder_id, const DynamicPrintConfig& full_config)
 {
     auto& preset_bundle = wxGetApp().preset_bundle;
     auto& project_config = preset_bundle->project_config;
-    const auto& full_config = wxGetApp().preset_bundle->full_config();
     auto& ams_multi_color_filament = preset_bundle->ams_multi_color_filment;
     const std::string printer_settings_id = full_config.opt_string("printer_settings_id");
     size_t extruder_nums = preset_bundle->get_printer_extruder_count();
