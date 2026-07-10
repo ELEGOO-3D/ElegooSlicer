@@ -4322,9 +4322,9 @@ void GUI_App::keyboard_shortcuts()
 
 void GUI_App::troubleshoot()
 {
-    TroubleshootDialog dlg;
-    if (dlg.ShowModal() == wxID_REMOVE)
-         wxGetApp().mainframe->Close(false);
+    // TroubleshootDialog dlg;
+    // if (dlg.ShowModal() == wxID_REMOVE)
+    //      wxGetApp().mainframe->Close(false);
 }
 
 void GUI_App::ShowUserGuide() {
