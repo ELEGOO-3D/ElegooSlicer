@@ -2575,6 +2575,7 @@ void Sidebar::update_all_preset_comboboxes()
         }
     } else {
         // m_bed_type_list->SelectAndNotify(btPEI - 1);
+        reset_bed_type_combox_choices();
         BedType bed_type = preset_bundle.printers.get_edited_preset().get_default_bed_type(&preset_bundle);
         set_bed_type_accord_combox(bed_type);
         p->combo_printer_bed->Disable();
@@ -2869,14 +2870,27 @@ bool Sidebar::reset_bed_type_combox_choices(bool is_sidebar_init)
         }
     };
 
+    const ConfigOptionDef *bed_type_def = print_config_def.get("curr_bed_type");
+
     if (m_last_combo_bedtype_count != 0 && pm) {
-        auto cur_count = (int) BedType::btCount - 1 - pm->not_support_bed_types.size();
-        if (cur_count == m_last_combo_bedtype_count) {//no change
+        // Build the actual list of available bed types and compare with the
+        // previously cached list. Comparing counts alone is unreliable when
+        // items change but the total stays the same.
+        std::vector<BedType> new_types;
+        if (bed_type_def && bed_type_def->enum_keys_map) {
+            int idx = 0;
+            for (auto &item : bed_type_def->enum_labels) {
+                idx++;
+                bool find = std::find(pm->not_support_bed_types.begin(), pm->not_support_bed_types.end(), item) != pm->not_support_bed_types.end();
+                if (find) continue;
+                new_types.emplace_back(BedType(idx));
+            }
+        }
+        if (!new_types.empty() && new_types == m_cur_combox_bed_types) {
             rename_bed_labels();
             return false;
         }
     }
-    const ConfigOptionDef *bed_type_def = print_config_def.get("curr_bed_type");
     p->combo_printer_bed->Clear();
     m_cur_combox_bed_types.clear();
     if (pm &&bed_type_def && bed_type_def->enum_keys_map) {
