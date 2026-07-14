@@ -278,11 +278,9 @@ UpdateVersionDialog::UpdateVersionDialog(wxWindow *parent)
     if (wxGetApp().app_config->get_bool("developer_mode"))
         m_vebview_release_note->EnableAccessToDevTools();
 
-    m_vebview_release_note->Bind(wxEVT_WEBVIEW_NAVIGATING,[=, count = 0](wxWebViewEvent& event) mutable {
-        count++;
-        if (count == 1) {
-            m_vebview_release_note->SetPage(wxString::FromUTF8(html_source), "");
-        } else if (count >= 3) {
+    m_vebview_release_note->Bind(wxEVT_WEBVIEW_NAVIGATING, [](wxWebViewEvent& event) {
+        const wxString url = event.GetURL().Lower();
+        if (url.StartsWith("http://") || url.StartsWith("https://")) {
             // Launch the default browser for links clicked by the user
             wxLaunchDefaultBrowser(event.GetURL());
             event.Veto();
@@ -393,6 +391,8 @@ void UpdateVersionDialog::OnTitleChanged(wxWebViewEvent& event)
 }
 void UpdateVersionDialog::OnError(wxWebViewEvent& event)
 {
+    BOOST_LOG_TRIVIAL(error) << __FUNCTION__
+                             << boost::format(": error loading page %1% %2%") % event.GetURL() % event.GetString();
     event.Skip();
 }
 
@@ -455,6 +455,7 @@ std::vector<std::string> UpdateVersionDialog::splitWithStl(std::string str,std::
     return result;
 }
 
+
 void UpdateVersionDialog::update_version_info(wxString release_note, wxString version)
 {
     //bbs check whether the web display is used
@@ -499,7 +500,7 @@ void UpdateVersionDialog::update_version_info(wxString release_note, wxString ve
         out_buf->append(text, size);
     }, (void*) &html_source, MD_DIALECT_GITHUB | MD_FLAG_STRIKETHROUGH | MD_FLAG_WIKILINKS, 0);
     html_source.append("</body></html>");
-    m_vebview_release_note->LoadURL("file://" + (boost::filesystem::path (resources_dir()) / "web/guide/0/index.html").string());
+    m_vebview_release_note->SetPage(wxString::FromUTF8(html_source), wxEmptyString);
 
     SetMinSize(GetSize());
     SetMaxSize(GetSize());
