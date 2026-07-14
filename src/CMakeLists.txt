@@ -127,6 +127,18 @@ else ()
     add_executable(ElegooSlicer ElegooSlicer.cpp ElegooSlicer.hpp dev-utils/CrashReporter.cpp dev-utils/CrashReporter.h)
 endif ()
 
+# Agora frameworks are embedded in ElegooSlicer.app/Contents/Frameworks.  Set
+# the deployment rpath on the executable itself so an absolute framework search
+# path exported by elegoolink cannot leak into the packaged application.  A
+# target property is also independent of the state of CMAKE_MACOSX_BUNDLE when
+# the top-level CMakeLists.txt is first configured.
+if (APPLE)
+    set_target_properties(ElegooSlicer PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "@executable_path/../Frameworks"
+    )
+endif ()
+
 if (MINGW)
     target_link_options(ElegooSlicer PUBLIC "-Wl,-allow-multiple-definition")
     set_target_properties(ElegooSlicer PROPERTIES PREFIX "")
