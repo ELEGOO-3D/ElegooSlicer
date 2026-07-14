@@ -494,6 +494,7 @@ struct Sidebar::priv
     StaticBox *     panel_nozzle_dia  = nullptr;
     Label *         label_nozzle_title= nullptr;
     ComboBox *      combo_nozzle_dia  = nullptr;
+    Label *         label_nozzle_unit = nullptr;
     Label *         label_nozzle_type = nullptr;
 
     // Printer - bed
@@ -513,6 +514,7 @@ struct Sidebar::priv
 
     int  FromDIP(int n) { return plater->FromDIP(n); }
     void layout_printer(bool isBBL, bool isDual);
+    void update_nozzle_unit_position();
 
     void flush_printer_sync(bool restart = false);
 
@@ -670,6 +672,19 @@ void Sidebar::priv::layout_printer(bool isBBL, bool isDual)
             m_panel_printer_content->Show();
         }
     }
+}
+
+void Sidebar::priv::update_nozzle_unit_position()
+{
+    if (combo_nozzle_dia == nullptr || label_nozzle_unit == nullptr)
+        return;
+
+    const int text_width = combo_nozzle_dia->GetTextExtent(combo_nozzle_dia->GetValue()).GetWidth();
+    const wxSize unit_size = label_nozzle_unit->GetBestSize();
+    const int x = FromDIP(20) + text_width + FromDIP(1);
+    const int y = std::max(0, (combo_nozzle_dia->GetClientSize().GetHeight() - unit_size.GetHeight()) / 2);
+    label_nozzle_unit->SetSize(x, y, unit_size.GetWidth(), unit_size.GetHeight());
+    label_nozzle_unit->Raise();
 }
 
 void Sidebar::priv::flush_printer_sync(bool restart)
@@ -1874,6 +1889,7 @@ Sidebar::Sidebar(Plater *parent)
         p->combo_nozzle_dia->SetMinSize(FromDIP(wxSize(PRINTER_PANEL_SIZE.GetWidth() - 4, 26))); // requires a static value in here
         p->combo_nozzle_dia->SetMaxSize(FromDIP(wxSize(PRINTER_PANEL_SIZE.GetWidth() - 4, 26))); // using -1 with wxEXPAND has issues
         p->combo_nozzle_dia->Bind(wxEVT_COMBOBOX, [this](auto &e) {
+            p->update_nozzle_unit_position();
             auto evt_combo = (*p->single_extruder).combo_diameter;
             evt_combo->SetSelection(e.GetSelection());
             wxCommandEvent evt(wxEVT_COMBOBOX, evt_combo->GetId());
@@ -1882,12 +1898,22 @@ Sidebar::Sidebar(Plater *parent)
             wxPostEvent(evt_combo, evt);
             e.Skip();
         });
+
+        p->label_nozzle_unit = new Label(p->combo_nozzle_dia, " mm");
+        p->label_nozzle_unit->SetFont(Label::Body_10);
+        p->label_nozzle_unit->SetBackgroundColour(StateColor::darkModeColorFor(panel_color.bg_normal));
+        p->combo_nozzle_dia->Bind(wxEVT_SIZE, [this](wxSizeEvent &e) {
+            p->update_nozzle_unit_position();
+            e.Skip();
+        });
+
         // ORCA paint whole combobox on focus
         auto nozzle_focus_bg = [this, panel_color](bool focused){
             auto bg_color = StateColor::darkModeColorFor(focused ? panel_color.bg_focus : panel_color.bg_normal);
             p->panel_nozzle_dia->SetBackgroundColor(bg_color);
             p->panel_nozzle_dia->SetBorderColor(focused ? panel_color.bd_focus : panel_color.bd_normal);
             p->label_nozzle_title->SetBackgroundColour(bg_color);
+            p->label_nozzle_unit->SetBackgroundColour(bg_color);
             p->label_nozzle_type->SetBackgroundColour(bg_color);
             p->combo_nozzle_dia->SetBackgroundColour(bg_color); // paints margins instead combo background
         };
@@ -1901,7 +1927,7 @@ Sidebar::Sidebar(Plater *parent)
 
         // highlight border on hover
         auto nozzle_dia_hovered = std::make_shared<std::unordered_set<wxWindow*>>();
-        for (wxWindow *w : std::initializer_list<wxWindow *>{p->panel_nozzle_dia, p->label_nozzle_title, p->label_nozzle_type, p->combo_nozzle_dia}) {
+        for (wxWindow *w : std::initializer_list<wxWindow *>{p->panel_nozzle_dia, p->label_nozzle_title, p->label_nozzle_unit, p->label_nozzle_type, p->combo_nozzle_dia}) {
             w->Bind(wxEVT_ENTER_WINDOW, [this, w, panel_color, nozzle_dia_hovered](wxMouseEvent &e) {
                 nozzle_dia_hovered->insert(w);
                 if(!p->combo_nozzle_dia->HasFocus())
@@ -2732,6 +2758,7 @@ void Sidebar::update_presets(Preset::Type preset_type)
             for (size_t i = 0; i < diameters.size(); ++i)
                 p->combo_nozzle_dia->Append(diameters[i], {});
             p->combo_nozzle_dia->SetSelection((*p->single_extruder).combo_diameter->GetSelection());
+            p->update_nozzle_unit_position();
             
             // ORCA update nozzle type
             const auto& full_config = wxGetApp().preset_bundle->full_config();
@@ -2994,6 +3021,7 @@ void Sidebar::msw_rescale()
     p->panel_nozzle_dia->SetMinSize(FromDIP(PRINTER_PANEL_SIZE));
     p->panel_nozzle_dia->SetCornerRadius(FromDIP(PRINTER_PANEL_RADIUS));
     p->combo_nozzle_dia->Rescale();
+    p->update_nozzle_unit_position();
 
     p->panel_printer_bed->SetMinSize(FromDIP(PRINTER_PANEL_SIZE));
     p->panel_printer_bed->SetCornerRadius(FromDIP(PRINTER_PANEL_RADIUS));
