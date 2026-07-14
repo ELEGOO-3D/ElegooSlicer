@@ -40,7 +40,7 @@ using namespace nlohmann;
 namespace Slic3r { namespace GUI {
 
 PrintSendDialogEx::PrintSendDialogEx(Plater* plater, int printPlateIdx, const boost::filesystem::path& path)
-    :  MsgDialog(static_cast<wxWindow*>(wxGetApp().mainframe), _L("Send G-code to printer host"), _L("Upload to Printer Host with the following filename:"), 0)
+    :  DPIDialog(static_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY, _L("Send G-code to printer host"))
     , mPlater(plater)
     , mPrintPlateIdx(printPlateIdx)
     , mTimeLapse(0)
@@ -65,6 +65,12 @@ PrintSendDialogEx::PrintSendDialogEx(Plater* plater, int printPlateIdx, const bo
 
 PrintSendDialogEx::~PrintSendDialogEx()
 {
+}
+
+void PrintSendDialogEx::on_dpi_changed(const wxRect &suggested_rect)
+{
+    Layout();
+    Refresh();
 }
 
 void PrintSendDialogEx::init()
@@ -647,7 +653,7 @@ void PrintSendDialogEx::EndModal(int ret)
         app_config->set("recent", CONFIG_KEY_SELECTED_PRINTER_ID, mSelectedPrinterId);
         app_config->set("recent", CONFIG_KEY_SWITCH_TO_DEVICE_TAB, std::to_string(mSwitchToDeviceTab));
     }
-    MsgDialog::EndModal(ret);
+    DPIDialog::EndModal(ret);
 }
 
 std::map<std::string, std::string> PrintSendDialogEx::getExtendedInfo() const

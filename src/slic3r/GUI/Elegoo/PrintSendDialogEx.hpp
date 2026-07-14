@@ -13,7 +13,6 @@
 #include <nlohmann/json.hpp>
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/GUI_Utils.hpp"
-#include "slic3r/GUI/MsgDialog.hpp"
 #include "slic3r/Utils/PrintHost.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
@@ -31,7 +30,7 @@ namespace webviewIpc {
 }
 
 namespace Slic3r { namespace GUI {
-class PrintSendDialogEx : public GUI::MsgDialog
+class PrintSendDialogEx : public GUI::DPIDialog
 {
 public:
     PrintSendDialogEx(Plater* plater, int printPlateIdx, const boost::filesystem::path& path);
@@ -50,6 +49,7 @@ public:
     bool getSwitchToDeviceTab() const;
 
 protected:
+    void on_dpi_changed(const wxRect &suggested_rect) override;
     void OnCloseWindow(wxCloseEvent& event);
 
     BedType getCurrentBedType() const;

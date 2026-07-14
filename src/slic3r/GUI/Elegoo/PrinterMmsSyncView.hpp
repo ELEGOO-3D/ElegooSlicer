@@ -7,7 +7,7 @@
 #include <wx/aui/aui.h>
 #include <wx/colour.h>
 #include <nlohmann/json.hpp>
-#include "slic3r/GUI/MsgDialog.hpp"
+#include "slic3r/GUI/GUI_Utils.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
 #include <slic3r/Utils/WebviewIPCManager.h>
 #if wxUSE_WEBVIEW_IE
@@ -20,7 +20,7 @@
 
 namespace Slic3r { namespace GUI {
 
-class PrinterMmsSyncView : public GUI::MsgDialog
+class PrinterMmsSyncView : public GUI::DPIDialog
 {
 public:
     PrinterMmsSyncView(wxWindow *parent);
@@ -31,6 +31,7 @@ public:
     PrinterMmsGroup getSyncedMmsGroup();
 
 private:
+    void on_dpi_changed(const wxRect &suggested_rect) override;
     void setupIPCHandlers();
     void OnCloseWindow(wxCloseEvent& event);
     IPCResult getPrinterList();

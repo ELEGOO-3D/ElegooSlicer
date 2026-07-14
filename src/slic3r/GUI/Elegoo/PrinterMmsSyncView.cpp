@@ -5,10 +5,8 @@
 #include "libslic3r/Utils.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
-#include "slic3r/GUI/MsgDialog.hpp"
 #include "slic3r/GUI/GUI.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
-#include "slic3r/GUI/MsgDialog.hpp"
 #include "slic3r/GUI/I18N.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
 #include "libslic3r/AppConfig.hpp"
@@ -20,7 +18,8 @@
 
 namespace Slic3r { namespace GUI {
 
-PrinterMmsSyncView::PrinterMmsSyncView(wxWindow* parent) : MsgDialog(static_cast<wxWindow*>(wxGetApp().mainframe), _L("Synchronize filament list"), _L(""), 0)
+PrinterMmsSyncView::PrinterMmsSyncView(wxWindow* parent)
+    : DPIDialog(static_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY, _L("Synchronize filament list"))
 {
     const AppConfig* app_config = wxGetApp().app_config;
 
@@ -67,13 +66,15 @@ PrinterMmsSyncView::PrinterMmsSyncView(wxWindow* parent) : MsgDialog(static_cast
     wxSize pSize = FromDIP(wxSize(800, 700));
     SetSize(pSize);
     CenterOnParent();
-
-    if (logo) {
-        logo->Hide();
-    }
 }
 
 PrinterMmsSyncView::~PrinterMmsSyncView() {
+}
+
+void PrinterMmsSyncView::on_dpi_changed(const wxRect &suggested_rect)
+{
+    Layout();
+    Refresh();
 }
 
 void PrinterMmsSyncView::setupIPCHandlers()
@@ -133,7 +134,7 @@ void PrinterMmsSyncView::setupIPCHandlers()
 
 void PrinterMmsSyncView::EndModal(int ret)
 {
-    MsgDialog::EndModal(ret);
+    DPIDialog::EndModal(ret);
 }
 
 IPCResult PrinterMmsSyncView::getPrinterList()
@@ -294,7 +295,7 @@ void PrinterMmsSyncView::onShow()
 int PrinterMmsSyncView::ShowModal()
 {
     onShow();
-    return MsgDialog::ShowModal();
+    return DPIDialog::ShowModal();
 }
 
 void PrinterMmsSyncView::OnCloseWindow(wxCloseEvent& event)
