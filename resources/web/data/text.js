@@ -1706,19 +1706,28 @@ var LangText = {
 var LANG_COOKIE_NAME = "ElegooSlicerLang";
 var LANG_COOKIE_EXPIRESECOND = 365 * 86400;
 
-function TranslatePage() {
+function GetPageLanguage() {
   let strLang = GetQueryString("lang");
   if (strLang != null) {
-    //setCookie(LANG_COOKIE_NAME,strLang,LANG_COOKIE_EXPIRESECOND,'/');
-    localStorage.setItem(LANG_COOKIE_NAME, strLang);
+    try {
+      localStorage.setItem(LANG_COOKIE_NAME, strLang);
+    } catch (e) {
+      // The URL keeps the language available when WebKit storage is unavailable.
+    }
   } else {
-    //strLang=getCookie(LANG_COOKIE_NAME);
-    strLang = localStorage.getItem(LANG_COOKIE_NAME);
+    try {
+      strLang = localStorage.getItem(LANG_COOKIE_NAME);
+    } catch (e) {
+      strLang = null;
+    }
   }
 
-  //alert(strLang);
-
   if (!LangText.hasOwnProperty(strLang)) strLang = "en";
+  return strLang;
+}
+
+function TranslatePage() {
+  let strLang = GetPageLanguage();
 
   let AllNode = $(".trans");
   let nTotal = AllNode.length;

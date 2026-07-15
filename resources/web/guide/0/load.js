@@ -24,5 +24,6 @@ function HandleStudio( pVal )
 
 function JumpToTarget()
 {
-	window.open('../'+TargetPage+'/index.html','_self');
+	let strLang=GetPageLanguage();
+	window.open('../'+TargetPage+'/index.html?lang='+encodeURIComponent(strLang),'_self');
 }
