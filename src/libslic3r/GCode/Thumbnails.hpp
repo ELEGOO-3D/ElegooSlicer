@@ -100,10 +100,9 @@ inline void export_thumbnails_to_file(ThumbnailsGeneratorCallback&              
                         std::vector<uint8_t> data(encoded_data, encoded_data + strlen(encoded_data));
                         int data_len = data.size();
                         int lines_count = data_len / max_line_data_len;
-                        // the +7 is a safety margin, which is a magic number for now. It doesn't have a very good explanation. 
-                        // It doesn't affect much if it's not added, but let's add it just in case. 
-                        // We can optimize this magic number later if we have a better understanding of it.
-                        int append_len = max_line_data_len - (data_len % max_line_data_len) + 7;
+                        // Not sure why the N3 printer needs to subtract 3 to correctly identify the thumbnail, 
+                        // but after subtracting 3, there may be a negative number, so here is a judgment
+                        int append_len = max_line_data_len - (data_len % max_line_data_len) - 3;
                         if(append_len < 0) {
                             append_len = 0;
                         }
