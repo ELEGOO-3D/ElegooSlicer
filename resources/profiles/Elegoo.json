@@ -1749,12 +1749,12 @@
             "sub_path": "filament/EC2/Elegoo PLA Glow @EC2.json"
         },
         {
-            "name": "Elegoo PLA Translucent2 @ECC2",
-            "sub_path": "filament/ECC2/Elegoo PLA Translucent2 @ECC2.json"
+            "name": "Elegoo PLA Translucent @ECC2",
+            "sub_path": "filament/ECC2/Elegoo PLA Translucent @ECC2.json"
         },
         {
-            "name": "Elegoo PLA Translucent2 @EC2",
-            "sub_path": "filament/EC2/Elegoo PLA Translucent2 @EC2.json"
+            "name": "Elegoo PLA Translucent @EC2",
+            "sub_path": "filament/EC2/Elegoo PLA Translucent @EC2.json"
         },
         {
             "name": "Elegoo Rapid TPU 95A @ECC2",
