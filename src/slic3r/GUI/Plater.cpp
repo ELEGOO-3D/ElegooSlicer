@@ -9522,7 +9522,6 @@ void Plater::priv::set_current_panel(wxPanel* panel, bool no_slice)
             notification_manager->set_in_preview(false);
     }
     else if (current_panel == preview) {
-        q->invalid_all_plate_thumbnails();
         if (old_panel == view3D)
             view3D->get_canvas3d()->unbind_event_handlers();
         else if (old_panel == assemble_view)
@@ -9560,6 +9559,9 @@ void Plater::priv::set_current_panel(wxPanel* panel, bool no_slice)
             if (wxGetApp().is_editor() && !q->only_gcode_mode())
                 do_reslice();
         }
+
+        // Do not rely on the Preview canvas receiving focus to rebuild these.
+        q->force_update_all_plate_thumbnails();
 
         // reset cached size to force a resize on next call to render() to keep imgui in synch with canvas size
         preview->get_canvas3d()->reset_old_size();
