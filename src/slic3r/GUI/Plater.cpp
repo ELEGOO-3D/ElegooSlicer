@@ -12834,6 +12834,11 @@ void Plater::add_model(bool imperial_units, std::string fname)
         paths.emplace_back(fname);
     }
 
+    if (fname.empty() && get_3mf_file_count(paths) > 0) {
+        load_files(input_files);
+        return;
+    }
+
     std::string snapshot_label;
     assert(! paths.empty());
     if (paths.size() == 1) {
