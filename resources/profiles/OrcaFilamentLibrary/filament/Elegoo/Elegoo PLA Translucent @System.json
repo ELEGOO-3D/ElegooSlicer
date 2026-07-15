@@ -1,11 +1,11 @@
 {
 	"type": "filament",
-	"name": "Elegoo PLA Translucent2 @System",
+	"name": "Elegoo PLA Translucent @System",
 	"inherits": "Elegoo PLA @base",
 	"from": "system",
 	"setting_id": "q0koYRlO9X8xLXPM",
 	"instantiation": "true",
-	"renamed_from": "Elegoo PLA Translucent2",
+	"renamed_from": "Elegoo PLA Translucent2 @system",
 	"pressure_advance": [
 		"0.04"
 	],
