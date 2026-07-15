@@ -3744,6 +3744,7 @@ void MainFrame::init_menubar_as_editor()
                      {return m_plater->is_view3D_shown();; }, this);
 
 #else
+#if 0
     // On Mac, the Apple menu ignores non-standard custom items, so add Preset Bundle to the File menu
     fileMenu->AppendSeparator();
     append_menu_item(
@@ -3753,6 +3754,7 @@ void MainFrame::init_menubar_as_editor()
             plater()->get_current_canvas3D()->force_set_focus();
         },
         "", nullptr, []() { return true; }, this);
+#endif
     m_menubar->Append(fileMenu, wxString::Format("&%s", _L("File")));
     if (editMenu)
         m_menubar->Append(editMenu, wxString::Format("&%s", _L("Edit")));
