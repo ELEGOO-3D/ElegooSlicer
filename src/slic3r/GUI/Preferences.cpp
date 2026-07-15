@@ -495,6 +495,10 @@ wxBoxSizer *PreferencesDialog::create_item_language_combobox(wxString title, wxS
             return;
 
         if (e.GetString().ToStdString() != app_config->get(param)) {
+            // The dropdown sends wxEVT_COMBOBOX before dismissing itself. Hide it
+            // explicitly before entering a nested modal event loop, otherwise it
+            // remains visible above the confirmation dialog on macOS.
+            combobox->GetDropDown().Hide();
             {
                 //check if the project has changed
                 if (wxGetApp().plater()->is_project_dirty()) {
