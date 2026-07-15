@@ -598,7 +598,7 @@ wxMenu* MenuFactory::append_submenu_add_handy_model(wxMenu* menu, ModelVolumeTyp
         {L("Voron Cube"),           {"Voron_Design_Cube_v7.drc"}},
         {L("Stanford Bunny"),       {"Stanford_Bunny.drc"}},
         {L("Elegoo String Hell"),   {"Elegoo_stringhell.3mf"},                                 false, true},
-        {L("Orca String Hell"),     {"Orca_stringhell.drc"},                                   false, true},
+        // {L("Orca String Hell"),     {"Orca_stringhell.drc"},                                   false, true},
     };
 
     for (const auto& model : handy_models) {
