@@ -867,6 +867,7 @@ void UnsavedChangesDialog::build(Preset::Type type, PresetCollection *dependent_
 
     //m_sizer_top->Add(0, 0, 0, wxLEFT, UNSAVE_CHANGE_DIALOG_FIRST_VALUE_WIDTH);
     auto        m_panel_temp   = new wxPanel(m_table_top, wxID_ANY, wxDefaultPosition, wxSize(UNSAVE_CHANGE_DIALOG_FIRST_VALUE_WIDTH, -1), wxTAB_TRAVERSAL);
+    m_panel_temp->SetBackgroundColour(m_table_top->GetBackgroundColour());
     wxBoxSizer *top_title_temp_v = new wxBoxSizer(wxVERTICAL);
     top_title_temp_v->SetMinSize(wxSize(UNSAVE_CHANGE_DIALOG_VALUE_WIDTH, -1));
     wxBoxSizer *top_title_temp_h = new wxBoxSizer(wxHORIZONTAL);
@@ -886,6 +887,7 @@ void UnsavedChangesDialog::build(Preset::Type type, PresetCollection *dependent_
 
     m_sizer_top->Add(title_block_middle, 0, wxBOTTOM | wxEXPAND | wxTOP, 2);
     auto m_panel_oldv = new wxPanel( m_table_top, wxID_ANY, wxDefaultPosition, wxSize(UNSAVE_CHANGE_DIALOG_VALUE_WIDTH,-1), wxTAB_TRAVERSAL );
+    m_panel_oldv->SetBackgroundColour(m_table_top->GetBackgroundColour());
     wxBoxSizer *top_title_oldv = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *top_title_oldv_h = new wxBoxSizer(wxHORIZONTAL);
 
@@ -905,6 +907,7 @@ void UnsavedChangesDialog::build(Preset::Type type, PresetCollection *dependent_
     m_sizer_top->Add(title_block_right, 0, wxBOTTOM | wxEXPAND | wxTOP, 2);
 
     auto m_panel_newv = new wxPanel( m_table_top, wxID_ANY, wxDefaultPosition, wxSize( UNSAVE_CHANGE_DIALOG_VALUE_WIDTH,-1 ), wxTAB_TRAVERSAL );
+    m_panel_newv->SetBackgroundColour(m_table_top->GetBackgroundColour());
     wxBoxSizer *top_title_newv = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer *top_title_newv_h = new wxBoxSizer(wxHORIZONTAL);
 
