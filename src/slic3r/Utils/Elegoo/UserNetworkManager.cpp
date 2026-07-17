@@ -884,9 +884,11 @@ void UserNetworkManager::monitorUserNetwork()
 
             // Step 1: Check if need re-login
             if (needReLogin(userInfo)) {
-                BOOST_LOG_TRIVIAL(warning) << __FUNCTION__
-                                           << boost::format(": tick step 1, need re-login, user id: %1%, login status: %2%") %
-                                                  userInfo.userId % userInfo.loginStatus;
+                if(network) {
+                    BOOST_LOG_TRIVIAL(warning) << __FUNCTION__
+                                               << boost::format(": tick step 1, need re-login, user id: %1%, login status: %2%") %
+                                                      userInfo.userId % userInfo.loginStatus;
+                }
                 setNetwork(nullptr);
                 continue;
             }
