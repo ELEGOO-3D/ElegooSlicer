@@ -54,7 +54,13 @@ void UserNetworkManager::init()
 
     mLoggedInElsewhereHandlerId = UserNetworkEvent::getInstance()->loggedInElsewhereChanged.connect(
         [this](const UserLoggedInElsewhereEvent&) {
-            BOOST_LOG_TRIVIAL(warning) << "UserNetworkManager: loggedInElsewhereChanged event received, user id: " << getUserInfo().userId;
+            // Hold the lock across snapshot + invalidate so an in-flight token refresh
+            // cannot commit in between and cause the kick to be rejected as stale.
+            std::lock_guard<std::recursive_mutex> lock(mUserMutex);
+            BOOST_LOG_TRIVIAL(warning) << "UserNetworkManager: loggedInElsewhereChanged event received, user id: " << mUserInfo.userId;
+            const UserNetworkInfo snapshot = mUserInfo;
+            updateUserInfoLoginStatus(snapshot, LOGIN_STATUS_OFFLINE_INVALID_TOKEN);
+            mUserNetwork = nullptr;
         });
     mOnlineStatusChangedHandlerId = UserNetworkEvent::getInstance()->onlineStatusChanged.connect(
         [this](const UserOnlineStatusChangedEvent& event) {
@@ -444,6 +450,13 @@ bool UserNetworkManager::updateUserInfo(const UserNetworkInfo& userInfo)
     std::lock_guard<std::recursive_mutex> lock(mUserMutex);
     // if the user id is the same, update the user info
     if (mUserInfo.userId == userInfo.userId) {
+        // Terminal status (invalid token/user) can only be left via login(); reject in-flight updates.
+        if (mUserInfo.loginStatus == LOGIN_STATUS_OFFLINE_INVALID_TOKEN || mUserInfo.loginStatus == LOGIN_STATUS_OFFLINE_INVALID_USER) {
+            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__
+                                       << boost::format(": login status is invalid, skip update user info, user id: %s, login status: %d") %
+                                              mUserInfo.userId % mUserInfo.loginStatus;
+            return false;
+        }
         bool needNotify = false;
         if (mUserInfo.loginStatus != userInfo.loginStatus) {
             needNotify = true;
@@ -495,6 +508,13 @@ bool UserNetworkManager::updateUserInfoLoginStatus(const UserNetworkInfo& userIn
         return false;
     }
 
+    // Terminal status (invalid token/user) can only be left via login(); reject in-flight updates.
+    if (mUserInfo.loginStatus == LOGIN_STATUS_OFFLINE_INVALID_TOKEN || mUserInfo.loginStatus == LOGIN_STATUS_OFFLINE_INVALID_USER) {
+        BOOST_LOG_TRIVIAL(warning) << __FUNCTION__
+                                   << boost::format(": login status is invalid, skip update login status, user id: %s, login status: %d") %
+                                          mUserInfo.userId % mUserInfo.loginStatus;
+        return false;
+    }
     if (mUserInfo.token != userInfo.token) {
         BOOST_LOG_TRIVIAL(warning)
             << __FUNCTION__
@@ -744,7 +764,14 @@ UserNetworkInfo UserNetworkManager::refreshToken(const UserNetworkInfo& userInfo
     }
 
     if (refreshToken(currentUserInfo, network)) {
-        updateUserInfo(currentUserInfo);
+        if (!updateUserInfo(currentUserInfo)) {
+            // Status turned terminal while refresh was in flight; discard the new token/network.
+            BOOST_LOG_TRIVIAL(warning) << __FUNCTION__
+                                       << boost::format(": user info rejected after refresh, drop network, user id: %s") %
+                                              currentUserInfo.userId;
+            setNetwork(nullptr);
+            return getUserInfo();
+        }
         setNetwork(network);
         BOOST_LOG_TRIVIAL(info)
             << __FUNCTION__
