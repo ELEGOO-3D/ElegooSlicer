@@ -547,21 +547,26 @@ bool UserNetworkManager::updateUserInfoLoginStatus(const UserNetworkInfo& userIn
 }
 void UserNetworkManager::notifyUserInfoUpdated()
 {
-    if (wxGetApp().mainframe && wxGetApp().mainframe->is_loaded()) {
-        auto evt = new wxCommandEvent(EVT_USER_INFO_UPDATED);
-        wxQueueEvent(wxGetApp().mainframe, evt);
-
-        if (MultiInstanceCoordinator::getInstance()->isMaster()) {
-            UserNetworkEvent::getInstance()->userInfoChanged.emit(UserInfoChangedEvent());
-        }
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__
-                                << boost::format(": user info updated, send event to mainframe, user id: %s, login status: %d") %
-                                       mUserInfo.userId % mUserInfo.loginStatus;
-    } else {
-        BOOST_LOG_TRIVIAL(info) << __FUNCTION__
-                                << boost::format(": mainframe is not loaded, skip sending event, user id: %s, login status: %d") %
-                                       mUserInfo.userId % mUserInfo.loginStatus;
+    // Cross-process state synchronization must not depend on the local UI lifecycle.
+    if (MultiInstanceCoordinator::getInstance()->isMaster()) {
+        UserNetworkEvent::getInstance()->userInfoChanged.emit(UserInfoChangedEvent());
     }
+
+    const std::string userId      = mUserInfo.userId;
+    const LoginStatus loginStatus = mUserInfo.loginStatus;
+    wxGetApp().CallAfter([userId, loginStatus]() {
+        if (wxGetApp().mainframe && wxGetApp().mainframe->is_loaded()) {
+            auto evt = new wxCommandEvent(EVT_USER_INFO_UPDATED);
+            wxQueueEvent(wxGetApp().mainframe, evt);
+            BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::notifyUserInfoUpdated"
+                                    << boost::format(": user info updated, send event to mainframe, user id: %s, login status: %d") %
+                                           userId % loginStatus;
+        } else {
+            BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::notifyUserInfoUpdated"
+                                    << boost::format(": mainframe is not loaded, skip sending event, user id: %s, login status: %d") %
+                                           userId % loginStatus;
+        }
+    });
 }
 
 PrinterNetworkResult<bool> UserNetworkManager::checkUserNeedReLogin()

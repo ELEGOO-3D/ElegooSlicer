@@ -43,6 +43,7 @@ private:
 
     void        acceptNext();
     IPCResponse handleRequest(const IPCRequest& request);
+    void        disconnectEventHandlers();
     void        cleanupResources();
     std::unique_ptr<boost::asio::io_context>            mIoContext;
     std::unique_ptr<boost::asio::thread_pool>           mBusinessPool;
@@ -50,6 +51,10 @@ private:
     std::vector<std::thread>                            mIoThreads;
     std::atomic<bool>                                   mRunning{false};
     uint64_t                                            mUserInfoChangedHandlerId{0};
+    uint64_t                                            mConnectStatusChangedHandlerId{0};
+    uint64_t                                            mEventRawChangedHandlerId{0};
+    uint64_t                                            mRtcTokenChangedHandlerId{0};
+    uint64_t                                            mRtmMessageChangedHandlerId{0};
     std::string                                         mAuthToken;
     std::mutex                                          mServerMutex;
     std::mutex                                          mSessionsMutex;

@@ -16,7 +16,6 @@
 #include <slic3r/GUI/Widgets/WebView.hpp>
 #include <wx/webview.h>
 #include "slic3r/Utils/PrintHost.hpp"
-#include "slic3r/Utils/Elegoo/IPCServer.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Utils.hpp"
@@ -36,7 +35,6 @@
 #include "slic3r/Utils/Elegoo/PrinterManager.hpp"
 #include <boost/log/trivial.hpp>
 #include <boost/format.hpp>
-#include "slic3r/Utils/Elegoo/MultiInstanceCoordinator.hpp"
 #include "TelemetryEvents.hpp"
 
 #define FIRST_TAB_NAME _L("Connected Printer")
@@ -1049,9 +1047,6 @@ void PrinterManagerView::setupIPCHandlers()
             if (targetView) {
                 targetView->onConnectionStatus(data);
             }
-            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
-                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.connectStatusChanged", data, ""));
-            }
         });
     });
     mEventRawChangedHandlerId = PrinterNetworkEvent::getInstance()->eventRawChanged.connect([this](const PrinterEventRawEvent& event) {
@@ -1063,9 +1058,6 @@ void PrinterManagerView::setupIPCHandlers()
             if (targetView) {
                 targetView->onPrinterEventRaw(data);
             }
-            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
-                IPCServer::getInstance()->broadcastEvent(IPCEvent("printer.eventRawChanged", data, ""));
-            }
         });
     });
 
@@ -1076,9 +1068,6 @@ void PrinterManagerView::setupIPCHandlers()
             data["userId"] = event.userInfo.userId;
             data["rtcTokenExpireTime"] = event.userInfo.rtcTokenExpireTime;
             forEachPrinterView([&data](const std::string&, ElegooPrinterWebView* view) { view->onRtcTokenChanged(data); });
-            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
-                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtcTokenChanged", data, ""));
-            }
         });
     });
     mRtmMessageChangedHandlerId = UserNetworkEvent::getInstance()->rtmMessageChanged.connect([this](const UserRtmMessageEvent& event) {
@@ -1089,9 +1078,6 @@ void PrinterManagerView::setupIPCHandlers()
             data["printerId"] = event.printerId;
             if (targetView) {
                 targetView->onRtmMessage(data);
-            }
-            if (MultiInstanceCoordinator::getInstance()->isMaster()) {
-                IPCServer::getInstance()->broadcastEvent(IPCEvent("user.rtmMessageChanged", data, ""));
             }
         });
     });
