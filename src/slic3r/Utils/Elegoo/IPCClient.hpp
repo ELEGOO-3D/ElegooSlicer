@@ -104,6 +104,7 @@ private:
 
     std::atomic<bool>     mConnected{false};
     std::atomic<uint32_t> mRequestIdCounter{0};
+    std::string           mAuthToken;
 
     std::mutex                                                        mConnectionMutex;
     std::mutex                                                        mPendingMutex;

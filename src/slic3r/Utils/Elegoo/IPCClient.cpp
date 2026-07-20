@@ -56,18 +56,19 @@ bool IPCClient::connectToMaster()
     }
 
     unsigned short port = 0;
+    mAuthToken.clear();
     std::string portFile = getIPCPortFilePath();
     boost::nowide::ifstream file(portFile);
     if (file.is_open()) {
-        file >> port;
+        file >> port >> mAuthToken;
         file.close();
     } else {
         BOOST_LOG_TRIVIAL(warning) << "IPCClient: port file not found: " << portFile << ", server may not be running";
         return false;
     }
 
-    if (port == 0) {
-        BOOST_LOG_TRIVIAL(error) << "IPCClient: invalid port read from file: " << portFile;
+    if (port == 0 || mAuthToken.empty()) {
+        BOOST_LOG_TRIVIAL(error) << "IPCClient: invalid server information read from file: " << portFile;
         return false;
     }
 
@@ -471,6 +472,8 @@ IPCResponse IPCClient::sendRequest(const std::string& method, const nlohmann::js
             errorResponse.code = static_cast<int>(PrinterNetworkErrorCode::IPC_NOT_CONNECTED);
             return errorResponse;
         }
+
+        requestJson["auth"] = mAuthToken;
 
         {
             std::lock_guard<std::mutex> lockPending(mPendingMutex);

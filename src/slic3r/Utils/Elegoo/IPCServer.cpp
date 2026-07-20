@@ -11,6 +11,8 @@
 #include <boost/asio.hpp>
 #include <boost/nowide/cstdio.hpp>
 #include <boost/nowide/fstream.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <nlohmann/json.hpp>
 #include <deque>
 #include <memory>
@@ -174,6 +176,13 @@ private:
             return;
         }
 
+        // Only clients that discovered this server instance may execute privileged requests.
+        if (reqJson.value("auth", "") != mServer->mAuthToken) {
+            BOOST_LOG_TRIVIAL(warning) << "processRequest: authentication failed, closing session";
+            close();
+            return;
+        }
+
         IPCRequest request;
         request.id     = reqJson.value("id", "");
         request.method = reqJson.value("method", "");
@@ -282,13 +291,15 @@ void IPCServer::start()
         mIoContext = std::make_unique<boost::asio::io_context>();
         mBusinessPool = std::make_unique<boost::asio::thread_pool>(std::max(8u, std::thread::hardware_concurrency()));
         
-        boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), 0);
+        boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address_v4::loopback(), 0);
         mAcceptor = std::make_unique<boost::asio::ip::tcp::acceptor>(*mIoContext, endpoint);
         
         boost::asio::ip::tcp::endpoint actualEndpoint = mAcceptor->local_endpoint();
         unsigned short port = actualEndpoint.port();
+        mAuthToken = boost::uuids::to_string(boost::uuids::random_generator()()) +
+                     boost::uuids::to_string(boost::uuids::random_generator()());
         
-        // Port file allows clients to discover the server's listening port
+        // The per-start token prevents unrelated local processes from issuing IPC requests.
         std::string portFile = getIPCPortFilePath();
         boost::nowide::ofstream file(portFile);
         if (!file.is_open()) {
@@ -296,7 +307,7 @@ void IPCServer::start()
             cleanupResources();
             return;
         }
-        file << port;
+        file << port << '\n' << mAuthToken;
         file.close();
         BOOST_LOG_TRIVIAL(info) << "IPCServer: listening on port " << port << ", port info saved to " << portFile;
 

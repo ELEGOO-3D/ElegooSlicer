@@ -10,6 +10,7 @@
 #include <memory>
 #include <set>
 #include <mutex>
+#include <string>
 
 namespace Slic3r {
 
@@ -49,6 +50,7 @@ private:
     std::vector<std::thread>                            mIoThreads;
     std::atomic<bool>                                   mRunning{false};
     uint64_t                                            mUserInfoChangedHandlerId{0};
+    std::string                                         mAuthToken;
     std::mutex                                          mServerMutex;
     std::mutex                                          mSessionsMutex;
     std::set<std::weak_ptr<Session>, std::owner_less<>> mSessions;
