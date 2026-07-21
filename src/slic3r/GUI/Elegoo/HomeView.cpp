@@ -316,7 +316,9 @@ IPCResult HomeView::handleReady()
 
 IPCResult HomeView::handleLogout()
 {
-    UserNetworkManager::getInstance()->logout();
+    PrinterNetworkResult<bool> result = UserNetworkManager::getInstance()->logout();
+    if (result.isError())
+        return IPCResult::error(result.message);
     return IPCResult::success();
 }
 

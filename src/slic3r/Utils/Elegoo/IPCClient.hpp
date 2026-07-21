@@ -61,8 +61,8 @@ public:
     PrinterNetworkResult<bool>           cancelUploadTask(const std::string& taskId);
 
     UserNetworkInfo                                       getUserInfo();
-    void                                                  login(const UserNetworkInfo& userInfo);
-    void                                                  logout();
+    PrinterNetworkResult<bool>                            login(const UserNetworkInfo& userInfo);
+    PrinterNetworkResult<bool>                            logout();
     void                                                  reportTelemetryEvent(const std::string& eventName, const nlohmann::json& content, const std::string& pageName);
     PrinterNetworkResult<bool>                            checkUserNeedReLogin();
     UserNetworkInfo                                       refreshToken(const UserNetworkInfo& userInfo);

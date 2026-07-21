@@ -607,9 +607,8 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
                 BOOST_LOG_TRIVIAL(info) << "Role change: slave promoted to master";
                 wxGetApp().CallAfter([]() {
                     IPCClient::getInstance()->stop();
-                    IPCServer::getInstance()->start();
                     PrinterManager::getInstance()->init();
-                    TelemetryReporter::getInstance()->init();
+                    IPCServer::getInstance()->start();
                 });
             }
         });

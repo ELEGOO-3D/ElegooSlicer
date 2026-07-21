@@ -810,13 +810,20 @@ UserNetworkInfo IPCClient::getUserInfo()
     return UserNetworkInfo();
 }
 
-void IPCClient::login(const UserNetworkInfo& userInfo)
+PrinterNetworkResult<bool> IPCClient::login(const UserNetworkInfo& userInfo)
 {
     nlohmann::json params = convertUserNetworkInfoToJson(userInfo);
-    sendRequest("user.login", params);
+    IPCResponse    response = sendRequest("user.login", params);
+    return PrinterNetworkResult<bool>(static_cast<PrinterNetworkErrorCode>(response.code),
+                                      response.data.is_boolean() ? response.data.get<bool>() : false, response.message);
 }
 
-void IPCClient::logout() { sendRequest("user.logout", nlohmann::json::object()); }
+PrinterNetworkResult<bool> IPCClient::logout()
+{
+    IPCResponse response = sendRequest("user.logout", nlohmann::json::object());
+    return PrinterNetworkResult<bool>(static_cast<PrinterNetworkErrorCode>(response.code),
+                                      response.data.is_boolean() ? response.data.get<bool>() : false, response.message);
+}
 
 void IPCClient::reportTelemetryEvent(const std::string& eventName, const nlohmann::json& content, const std::string& pageName)
 {

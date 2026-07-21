@@ -43,7 +43,7 @@ PrinterNetworkResult<UserNetworkInfo> ElegooUserNetwork::getRtcToken()
 
 PrinterNetworkResult<UserNetworkInfo> ElegooUserNetwork::refreshToken(const UserNetworkInfo& userInfo)
 {
-    mUserNetworkInfo = userInfo;
+    updateUserNetworkInfo(userInfo);
     auto result = ElegooLink::getInstance()->refreshToken(userInfo);
     return logUserLinkFailure(__FUNCTION__, std::move(result), std::string("userId=") + userInfo.userId);
 }
@@ -62,8 +62,9 @@ PrinterNetworkResult<bool> ElegooUserNetwork::setRegion(const std::string& regio
 
 PrinterNetworkResult<bool> ElegooUserNetwork::logout()
 {
-    return logUserLinkFailure(__FUNCTION__, ElegooLink::getInstance()->logout(mUserNetworkInfo),
-                             std::string("userId=") + getUserNetworkInfo().userId);
+    const UserNetworkInfo userInfo = getUserNetworkInfo();
+    return logUserLinkFailure(__FUNCTION__, ElegooLink::getInstance()->logout(userInfo),
+                             std::string("userId=") + userInfo.userId);
 }
 
 

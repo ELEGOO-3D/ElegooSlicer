@@ -107,8 +107,9 @@ void UserNetworkManager::uninit()
 
     {
         std::lock_guard<std::recursive_mutex> lock(mInitMutex);
-        mUserInfo = UserNetworkInfo();
-        setNetwork(nullptr);
+        std::lock_guard<std::recursive_mutex> userLock(mUserMutex);
+        mUserInfo    = UserNetworkInfo();
+        mUserNetwork = nullptr;
         mIsInitialized.store(false, std::memory_order_release);
     }
     BOOST_LOG_TRIVIAL(info) << "UserNetworkManager::uninit: complete";
@@ -382,14 +383,14 @@ UserNetworkInfo UserNetworkManager::getUserInfo()
     return copy;
 }
 
-void UserNetworkManager::logout()
+PrinterNetworkResult<bool> UserNetworkManager::logout()
 {
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__;
 
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
-        IPCClient::getInstance()->logout();
+        PrinterNetworkResult<bool> result = IPCClient::getInstance()->logout();
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": delegated to IPCClient (slave)";
-        return;
+        return result;
     }
 
     std::lock_guard<std::recursive_mutex> lock(mUserMutex);
@@ -410,13 +411,13 @@ void UserNetworkManager::logout()
     PrinterNetworkEvent::getInstance()->printerOnlineListChanged.emit(PrinterOnlineListChangedEvent());
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": complete (master)";
 
+    return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::SUCCESS, true);
 }
-void UserNetworkManager::login(const UserNetworkInfo& userInfo)
+PrinterNetworkResult<bool> UserNetworkManager::login(const UserNetworkInfo& userInfo)
 {
     if (!MultiInstanceCoordinator::getInstance()->isMaster()) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": delegate to IPCClient (slave), userId=" << userInfo.userId;
-        IPCClient::getInstance()->login(userInfo);
-        return;
+        return IPCClient::getInstance()->login(userInfo);
     }
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__
@@ -433,6 +434,7 @@ void UserNetworkManager::login(const UserNetworkInfo& userInfo)
     mUserNetwork = nullptr;
 
     BOOST_LOG_TRIVIAL(info) << __FUNCTION__ << ": complete (master), user id: " << userInfo.userId;
+    return PrinterNetworkResult<bool>(PrinterNetworkErrorCode::SUCCESS, true);
 }
 
 std::shared_ptr<IUserNetwork> UserNetworkManager::getNetwork() const

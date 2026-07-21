@@ -679,13 +679,17 @@ IPCResponse IPCServer::handleRequest(const IPCRequest& request)
                 response.data = convertUserNetworkInfoToJson(userInfo);
             } else if (actualMethod == "login") {
                 UserNetworkInfo userInfo = convertJsonToUserNetworkInfo(request.params);
-                UserNetworkManager::getInstance()->login(userInfo);
-                response.code = static_cast<int>(PrinterNetworkErrorCode::SUCCESS);
-                response.data = true;
+                auto            result   = UserNetworkManager::getInstance()->login(userInfo);
+                response.code            = static_cast<int>(result.code);
+                response.message         = result.message;
+                if (result.hasData())
+                    response.data = *result.data;
             } else if (actualMethod == "logout") {
-                UserNetworkManager::getInstance()->logout();
-                response.code = static_cast<int>(PrinterNetworkErrorCode::SUCCESS);
-                response.data = true;
+                auto result      = UserNetworkManager::getInstance()->logout();
+                response.code    = static_cast<int>(result.code);
+                response.message = result.message;
+                if (result.hasData())
+                    response.data = *result.data;
             } else if (actualMethod == "getRtcToken") {
                 auto result      = UserNetworkManager::getInstance()->getRtcToken();
                 response.code    = static_cast<int>(result.code);

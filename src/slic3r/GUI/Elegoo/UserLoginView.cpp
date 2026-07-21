@@ -125,7 +125,12 @@ void UserLoginView::setupIPCHandlers()
         userNetworkInfo.loginStatus = LOGIN_STATUS_LOGIN_SUCCESS;
         BOOST_LOG_TRIVIAL(info) << "UserLoginView report.userInfo login ok, nickname=" << userNetworkInfo.nickname
                                 << ", region=" << mRegion << ", language=" << mLanguage;
-        UserNetworkManager::getInstance()->login(userNetworkInfo);
+        PrinterNetworkResult<bool> result = UserNetworkManager::getInstance()->login(userNetworkInfo);
+        if (result.isError()) {
+            BOOST_LOG_TRIVIAL(error) << "UserLoginView report.userInfo login failed to synchronize, code="
+                                     << static_cast<int>(result.code) << ", message=" << result.message;
+            return IPCResult::error(result.message);
+        }
 
         CallAfter([this]() {
             std::this_thread::sleep_for(std::chrono::seconds(1));

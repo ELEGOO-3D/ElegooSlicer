@@ -25,8 +25,8 @@ public:
     
     UserNetworkInfo getUserInfo();
     // only can be called by login or logout
-    void logout();
-    void login(const UserNetworkInfo& userInfo);
+    PrinterNetworkResult<bool> logout();
+    PrinterNetworkResult<bool> login(const UserNetworkInfo& userInfo);
     // for frontend click avatar, check user need re-login
     PrinterNetworkResult<bool> checkUserNeedReLogin();
     // for frontend refresh token
