@@ -681,7 +681,7 @@ void Sidebar::priv::update_nozzle_unit_position()
 
     const int text_width = combo_nozzle_dia->GetTextExtent(combo_nozzle_dia->GetValue()).GetWidth();
     const wxSize unit_size = label_nozzle_unit->GetBestSize();
-    const int x = FromDIP(20) + text_width + FromDIP(1);
+    const int x = FromDIP(22) + text_width + FromDIP(1);
     const int y = std::max(0, (combo_nozzle_dia->GetClientSize().GetHeight() - unit_size.GetHeight()) / 2);
     label_nozzle_unit->SetSize(x, y, unit_size.GetWidth(), unit_size.GetHeight());
     label_nozzle_unit->Raise();
