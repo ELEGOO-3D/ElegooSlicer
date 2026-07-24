@@ -46,7 +46,7 @@ bool LabeledStaticBox::Create(
 {
     if (style & wxBORDER_NONE)
         m_border_width = 0;
-    wxStaticBox::Create(parent, wxID_ANY, label, pos, size, style);
+    wxStaticBox::Create(parent, wxID_ANY, wxEmptyString, pos, size, style);
 #ifdef __WXOSX__
     Slic3r::GUI::staticbox_remove_margin(this);
 #endif
@@ -182,6 +182,8 @@ void LabeledStaticBox::DrawBorderAndLabel(wxDC& dc)
 
 void LabeledStaticBox::GetBordersForSizer(int* borderTop, int* borderOther) const {
     wxStaticBox::GetBordersForSizer(borderTop, borderOther);
+    if (borderTop && !m_label.IsEmpty())
+        *borderTop = wxMax(*borderTop, m_label_height);
 #ifdef __WXOSX__
     *borderOther = 5; // Make sure macOS uses the same border padding as other platforms
 #endif

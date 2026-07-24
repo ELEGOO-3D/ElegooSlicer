@@ -412,8 +412,13 @@ void ObjectTableSettings::update_config_values(bool is_object, ModelObject* obje
         og->update_visibility(wxGetApp().get_mode());
     }
     m_parent->Layout();
-    m_parent->Fit();
-    m_parent->GetParent()->Layout();
+    if (auto* scrolled = wxDynamicCast(m_parent->GetParent(), wxScrolledWindow)) {
+        scrolled->FitInside();
+        if (scrolled->GetParent())
+            scrolled->GetParent()->Layout();
+    } else {
+        m_parent->GetParent()->Layout();
+    }
     t_config_option_keys diff_keys;
     for (const t_config_option_key &opt_key : main_config.keys()) {
         const ConfigOption *this_opt  = main_config.option(opt_key);

@@ -2599,6 +2599,7 @@ void ObjectGridTable::OnSelectCell(int row, int col)
         wxGetApp().obj_list()->select_items(object_volume_ids);
     }
     m_panel->m_side_window->Layout();
+    m_panel->m_side_window->FitInside();
     //m_panel->m_side_window->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_ALWAYS);
     m_panel->m_side_window->Thaw();
     m_panel->Layout();
@@ -2736,12 +2737,11 @@ ObjectTablePanel::ObjectTablePanel( wxWindow* parent, wxWindowID id, const wxPoi
     //m_object_grid->AssignTable(m_object_grid_table);
 
     m_side_window = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxSize(FromDIP(440),FromDIP(480)), wxVSCROLL);
-    m_side_window->SetScrollRate( 0, 5 );
+    m_side_window->SetScrollRate(0, 5);
     m_page_sizer = new wxBoxSizer(wxVERTICAL);
     //m_page_top_sizer = new wxBoxSizer(wxHORIZONTAL);
     m_side_window->SetBackgroundColour(wxColour(0xff, 0xff, 0xff));
     m_side_window->SetSizer(m_page_sizer);
-    m_side_window->SetScrollbars(1, 20, 1, 2);
     //m_side_window->ShowScrollbars(wxSHOW_SB_NEVER, wxSHOW_SB_NEVER);
 
     //m_side_window->EnableScrolling(false, true);
@@ -2775,10 +2775,14 @@ ObjectTablePanel::ObjectTablePanel( wxWindow* parent, wxWindowID id, const wxPoi
 
     //create object settings
     m_side_window->SetFont(::Label::Body_12);
-    m_object_settings = new ObjectTableSettings(m_side_window, m_object_grid_table);
+    wxPanel* side_content = new wxPanel(m_side_window, wxID_ANY);
+    side_content->SetBackgroundColour(wxColour(0xff, 0xff, 0xff));
+    wxBoxSizer* side_content_sizer = new wxBoxSizer(wxVERTICAL);
+    side_content->SetSizer(side_content_sizer);
+    m_object_settings = new ObjectTableSettings(side_content, m_object_grid_table);
     m_object_settings->Hide();
-    //m_page_sizer->Add(m_page_top_sizer, 0, wxALIGN_CENTER_HORIZONTAL, 0);
-    m_page_sizer->Add(m_object_settings->get_sizer(), 1, wxEXPAND | wxALL, 2 );
+    side_content_sizer->Add(m_object_settings->get_sizer(), 1, wxEXPAND | wxALL, 2);
+    m_page_sizer->Add(side_content, 1, wxEXPAND);
     m_side_window->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& evt) {
         m_object_grid->SetFocus();
         evt.Skip();
