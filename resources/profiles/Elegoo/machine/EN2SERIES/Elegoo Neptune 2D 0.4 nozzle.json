@@ -8,16 +8,7 @@
 	"host_type": "elegoolink",
 	"printer_model": "Elegoo Neptune 2D",
 	"default_print_profile": "0.20mm Standard @Elegoo Neptune 0.4 nozzle",
-	"extruder_colour": [
-		"#FCE94F",
-		"#FCE94F"
-	],
-	"extruder_offset": [
-		"0x0",
-		"0x0"
-	],
 	"nozzle_diameter": [
-		"0.4",
 		"0.4"
 	],
 	"printable_area": [
@@ -85,35 +76,27 @@
 		"0.4"
 	],
 	"max_layer_height": [
-		"0.28",
 		"0.28"
 	],
 	"min_layer_height": [
-		"0.08",
 		"0.08"
 	],
 	"retraction_minimum_travel": [
-		"2",
 		"2"
 	],
 	"retract_before_wipe": [
-		"70%",
 		"70%"
 	],
 	"retraction_length": [
-		"5",
 		"5"
 	],
 	"retraction_speed": [
-		"60",
 		"60"
 	],
 	"retract_length_toolchange": [
-		"1",
 		"1"
 	],
 	"deretraction_speed": [
-		"40",
 		"40"
 	],
 	"single_extruder_multi_material": "1",
