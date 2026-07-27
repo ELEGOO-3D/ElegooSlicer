@@ -19075,7 +19075,7 @@ msgstr "大面积悬空"
 msgid ""
 "It seems object %s has %s. Please re-orient the object or enable support "
 "generation."
-msgstr "似乎对象%s有%s。请重新调整对象的方向或启用支持生成。"
+msgstr "似乎对象%s有%s。请重新调整对象的方向或启用支撑生成。"
 
 msgid "Generating support"
 msgstr "正在生成支撑"
