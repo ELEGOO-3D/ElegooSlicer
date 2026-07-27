@@ -28,7 +28,7 @@
 }
 
 /* SYSTEM FILAMENTS PAGE */
-body:has(#SystemFilamentBtn.TitleSelected) #Content { /* :has selector browser support 2023+ */
+body.system-filaments-selected #Content {
 	padding: 15px 15px 5px;
 }
 

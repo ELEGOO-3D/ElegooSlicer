@@ -57,6 +57,8 @@ function OnSelectMenu( nIndex )
 	switch(nIndex)
 	{
 		case 1:
+			document.body.classList.add('system-filaments-selected');
+
 			$('#SystemFilamentBtn').addClass('TitleSelected');
 			$('#SystemFilamentBtn').removeClass('TitleUnselected');		
 			
@@ -67,6 +69,8 @@ function OnSelectMenu( nIndex )
 			$('#CustomFilamentsArea').css('display','none');
 			break;
 		case 2:
+			document.body.classList.remove('system-filaments-selected');
+
 			$('#CustomFilamentBtn').addClass('TitleSelected');
 			$('#CustomFilamentBtn').removeClass('TitleUnselected');
 			

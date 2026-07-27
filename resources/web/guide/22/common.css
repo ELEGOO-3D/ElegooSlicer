@@ -1,5 +1,8 @@
 #Content {
-	height: 100%;
+	flex: 1 1 auto;
+	height: auto;
+	min-width: 0;
+	min-height: 0;
 }
 
 .ChooseBlock {
@@ -41,9 +44,11 @@
 .cbr-browser-container {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
-	grid-template-rows: 210px auto;
+	grid-template-rows: 210px minmax(0, 1fr);
 	width: 100%;
 	height: 100%;
+	min-width: 0;
+	min-height: 0;
 	border: 1px solid var(--border-color);
 	box-sizing: border-box;
 }
@@ -56,6 +61,8 @@
 .cbr-column {
 	display: flex;
 	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
 	overflow: hidden;
 }
 
@@ -72,15 +79,19 @@
 }
 
 .cbr-column-title-container {
-	position: sticky;
+	position: relative;
 	background: var(--bg-color-secondary);
 	display: flex;
+	flex-shrink: 0;
 	align-items: center;
+	min-width: 0;
 	border-bottom: 1px solid var(--border-color);
 }
 
 .cbr-search-bar,
 .cbr-filter-bar {
+	box-sizing: border-box;
+	min-width: 0;
 	font-size: 16px;
 	background: var(--bg-color-secondary);
 	border: 1px solid transparent;
@@ -89,13 +100,13 @@
 }
 
 .cbr-search-bar {
-	width: calc(100% - 18px);
+	width: 100%;
 }
 
 .cbr-filter-bar {
 	border-color: var(--border-color);
-	width: 160px;
-	height:24px;
+	width: 100%;
+	height: 30px;
 }
 
 .cbr-column-title-container .ComboBox > select {
@@ -103,28 +114,37 @@
 	height: 30px;
 }
 
-.cbr-column-title-container input:is(:hover,:focus) {
+.cbr-column-title-container input:hover,
+.cbr-column-title-container input:focus {
 	border-color: var(--main-color);
 	outline: none;
 }
 
-.cbr-column-title-container input:is(:focus) {
+.cbr-column-title-container input:focus {
 	background: var(--focus-bg-box);
 }
 
 .cbr-filter-box {
 	position: relative;
+	flex: 0 1 216px;
+	width: 216px;
+	min-width: 140px;
 	margin: 3px;
 }
 
 .list-item-count {
 	color:var(--fg-color-label);
-	margin-left:10px
+	flex-shrink: 0;
+	margin-left:10px;
+	white-space: nowrap;
 }
 
 .cbr-filter-btns {
 	display: flex;
+	flex-shrink: 0;
+	align-items: center;
 	margin: 5px 5px 5px auto;
+	white-space: nowrap;
 }
 
 .cbr-filter-btns div:first-of-type {
@@ -190,6 +210,8 @@ input[onclear="1"] {
 }
 
 .cbr-content {
+	flex: 1 1 auto;
+	min-height: 0;
 	overflow-y: auto;
 }
 
@@ -200,6 +222,12 @@ input[onclear="1"] {
 .cbr-content label {
 	margin-right: 0 !important;
 	padding: 1px 0 !important;
+}
+
+.cbr-content label > input[type="checkbox"] + span {
+	vertical-align: middle;
+	line-height: 1.2em;
+	margin: 0;
 }
 
 .cbr-content div.cbr-no-items {
