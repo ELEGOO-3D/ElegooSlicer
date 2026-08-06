@@ -101,6 +101,11 @@ bundle_dependency_closure() {
 
     local -a queue=("$@")
     local target dep dep_real copied_path
+    # Include app bin/lib and the build output dir so already-copied private libs
+    # (e.g. libaosl.so next to libagora_rtm_sdk.so) resolve via ldd.
+    local search_path="${dst_dir}:${BIN_DIR:-package/bin}:${LIB_DIR:-package/lib}:src/${CONFIG:-Release}:src/Release"
+    local saved_ld_library_path="${LD_LIBRARY_PATH-}"
+    export LD_LIBRARY_PATH="${search_path}${saved_ld_library_path:+:$saved_ld_library_path}"
     declare -A seen=()
 
     while [ ${#queue[@]} -gt 0 ]; do
@@ -113,8 +118,25 @@ bundle_dependency_closure() {
 
         while IFS= read -r dep; do
             if [[ "$dep" == MISSING:* ]]; then
-                echo "Error: missing runtime dependency ${dep#MISSING:} while bundling $target"
-                exit 1
+                local missing_name="${dep#MISSING:}"
+                local local_candidate=""
+                for local_candidate in                     "$dst_dir/$missing_name"                     "${BIN_DIR:-package/bin}/$missing_name"                     "src/${CONFIG:-Release}/$missing_name"                     "src/Release/$missing_name"
+                do
+                    if [ -f "$local_candidate" ]; then
+                        dep="$(readlink -f "$local_candidate")"
+                        break
+                    fi
+                    local_candidate=""
+                done
+                if [ -z "$local_candidate" ]; then
+                    echo "Error: missing runtime dependency $missing_name while bundling $target"
+                    if [ -n "${saved_ld_library_path+x}" ]; then
+                        export LD_LIBRARY_PATH="$saved_ld_library_path"
+                    else
+                        unset LD_LIBRARY_PATH
+                    fi
+                    exit 1
+                fi
             fi
 
             dep_real="$(readlink -f "$dep" 2>/dev/null || printf '%s' "$dep")"
@@ -134,6 +156,12 @@ bundle_dependency_closure() {
             fi
         done < <(appimage_list_direct_dependencies "$target")
     done
+
+    if [ -n "${saved_ld_library_path+x}" ]; then
+        export LD_LIBRARY_PATH="$saved_ld_library_path"
+    else
+        unset LD_LIBRARY_PATH
+    fi
 }
 
 echo -n "[9/9] Generating Linux app..."

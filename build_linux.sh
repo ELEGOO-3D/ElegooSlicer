@@ -428,7 +428,7 @@ function create_builder_user() {
 }
 
 create_builder_user
-mkdir -p "${GITHUB_WORKSPACE}/deps/build/destdir"
+mkdir -p "${GITHUB_WORKSPACE}/deps/build/ElegooSlicer_dep"
 chown -R "${HOST_UID}:${HOST_GID}" "${GITHUB_WORKSPACE}/deps/build"
 if [[ -d "${GITHUB_WORKSPACE}/build" ]] ; then
     chown -R "${HOST_UID}:${HOST_GID}" "${GITHUB_WORKSPACE}/build"
@@ -613,7 +613,7 @@ if [[ -n "${BUILD_ELEGOO}" ]] || [[ -n "${BUILD_TESTS}" ]] ; then
 
     print_and_run cmake -S . -B $BUILD_DIR "${CMAKE_C_CXX_COMPILER_CLANG[@]}" "${CMAKE_LLD_LINKER_ARGS[@]}" "${CMAKE_CCACHE_ARGS[@]}" -G "Ninja Multi-Config" \
 -DSLIC3R_PCH="${SLIC3R_PRECOMPILED_HEADERS}" \
--DCMAKE_PREFIX_PATH="${SCRIPT_PATH}/deps/$BUILD_DIR/destdir/usr/local" \
+-DCMAKE_PREFIX_PATH="${SCRIPT_PATH}/deps/$BUILD_DIR/ElegooSlicer_dep/usr/local" \
 -DSLIC3R_STATIC=1 \
 -DORCA_TOOLS=ON \
 "${COLORED_OUTPUT}" \
