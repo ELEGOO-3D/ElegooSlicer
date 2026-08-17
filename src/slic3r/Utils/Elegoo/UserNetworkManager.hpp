@@ -24,6 +24,7 @@ public:
     void uninit();
     
     UserNetworkInfo getUserInfo();
+    static bool hasPersistedAccount();
     // only can be called by login or logout
     PrinterNetworkResult<bool> logout();
     PrinterNetworkResult<bool> login(const UserNetworkInfo& userInfo);

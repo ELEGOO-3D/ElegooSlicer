@@ -81,6 +81,8 @@
 #include "GUI_Utils.hpp"
 #include "3DScene.hpp"
 #include "MainFrame.hpp"
+#include "dev-utils/CrashReporter.h"
+#include "slic3r/Utils/Elegoo/UserNetworkManager.hpp"
 #include "Plater.hpp"
 #include "GLCanvas3D.hpp"
 #include "EncodedFilament.hpp"
@@ -1102,7 +1104,9 @@ GUI_App::GUI_App()
 	, m_other_instance_message_handler(std::make_unique<OtherInstanceMessageHandler>())
 {
 	//app config initializes early becasuse it is used in instance checking in ElegooSlicer.cpp
-    this->init_app_config();
+	this->init_app_config();
+    if (Slic3r::UserNetworkManager::hasPersistedAccount())
+        CrashReporter::init(data_dir());
     this->init_download_path();
     // Note: the WebView2 runtime check (init_webview_runtime) used to run here, but
     // the constructor executes before wxWidgets is fully initialized and before the

@@ -1112,4 +1112,34 @@ void UserNetworkManager::loadUserInfo()
     }
 }
 
+bool UserNetworkManager::hasPersistedAccount()
+{
+    try {
+        fs::path    userDir = fs::path(Slic3r::data_dir()) / "user";
+        std::string jsonString;
+#if ELEGOO_INTERNAL_TESTING
+        fs::path path = userDir / "user_info.json";
+        if (fs::exists(path)) {
+            boost::nowide::ifstream file(path.string());
+            if (file.is_open()) {
+                nlohmann::json json;
+                file >> json;
+                jsonString = json.dump();
+            }
+        }
+#else
+        fs::path path = userDir / "user_info";
+        if (fs::exists(path)) {
+            jsonString = UserDataStorage(path.string()).load();
+        }
+#endif
+        if (jsonString.empty())
+            return false;
+        return !convertJsonToUserNetworkInfo(nlohmann::json::parse(jsonString)).userId.empty();
+    } catch (const std::exception&) {
+        return false;
+    }
+    return false;
+}
+
 } // namespace Slic3r

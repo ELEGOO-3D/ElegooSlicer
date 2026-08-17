@@ -558,10 +558,6 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     });
     Bind(EVT_USER_INFO_UPDATED, [this](wxCommandEvent&) {
         wxGetApp().CallAfter([this]() {
-            auto info = UserNetworkManager::getInstance()->getUserInfo();
-            if (info.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS) {
-                CrashReporter::init(Slic3r::data_dir());
-            }
             if (m_home_view) {
                 m_home_view->refreshUserInfo();
             }
@@ -675,18 +671,9 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent& event) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": mainframe received close_widow event";
 
-        // Tear down Sentry first: shutdown often crashes and those need not be reported.
-        CrashReporter::close();
-        const auto restore_crash_reporter = []() {
-            const UserNetworkInfo info = UserNetworkManager::getInstance()->getUserInfo();
-            if (info.loginStatus == LOGIN_STATUS_LOGIN_SUCCESS)
-                CrashReporter::init(Slic3r::data_dir());
-        };
-
         if (event.CanVeto() && m_plater->get_view3D_canvas3D()->get_gizmos_manager().is_in_editing_mode(true)) {
             // prevents to open the save dirty project dialog
             event.Veto();
-            restore_crash_reporter();
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< "cancelled by gizmo in editing";
             return;
         }
@@ -706,13 +693,11 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         int result;
         if (event.CanVeto() && ((result = m_plater->close_with_confirm(check)) == wxID_CANCEL)) {
             event.Veto();
-            restore_crash_reporter();
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< "cancelled by close_with_confirm selection";
             return;
         }
         if (event.CanVeto() && !wxGetApp().check_print_host_queue()) {
             event.Veto();
-            restore_crash_reporter();
             return;
         }
 
@@ -735,6 +720,8 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
         MarkdownTip::ExitTip();
         // Prevent queued selection/UI refresh work from running as normal during reset.
         wxGetApp().set_closing(true);
+
+        CrashReporter::close();
 
         m_plater->reset();
         this->shutdown();
