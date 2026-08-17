@@ -7520,7 +7520,7 @@ extern "C" {
         for (size_t i = 0; i < argc; ++ i)
             argv_ptrs[i] = argv_narrow[i].data();
 
-// Crash reporter is automatically initialized in GUI_App::OnInit()
+        // OOM: crash instead of throwing std::bad_alloc so Crashpad can capture a dump.
         std::set_new_handler([]() {
             int *a = nullptr;
             *a     = 0;

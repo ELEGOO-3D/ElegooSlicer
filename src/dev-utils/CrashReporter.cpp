@@ -24,6 +24,11 @@ bool CrashReporter::init(const std::string& dataDir)
         return true;
     }
 
+    if (dataDir.empty()) {
+        BOOST_LOG_TRIVIAL(error) << "Crash reporter init skipped: data directory is empty";
+        return false;
+    }
+
     const char* dsn = nullptr;
 #ifdef _WIN32
     dsn = SENTRY_DSN_WIN;
@@ -99,10 +104,10 @@ bool CrashReporter::init(const std::string& dataDir)
         BOOST_LOG_TRIVIAL(info) << "  Version: " << ELEGOOSLICER_VERSION;
         sInitialized = true;
         return true;
-    } else {
-        BOOST_LOG_TRIVIAL(error) << "Failed to initialize Sentry (error code: " << result << ")";
-        return false;
     }
+
+    BOOST_LOG_TRIVIAL(error) << "Failed to initialize Sentry (error code: " << result << ")";
+    return false;
 }
 
 void CrashReporter::close()
@@ -117,7 +122,7 @@ void CrashReporter::close()
 void CrashReporter::triggerTestCrash()
 {
     if (!sInitialized) {
-        BOOST_LOG_TRIVIAL(warning) << "Crash reporter not initialized (login required)";
+        BOOST_LOG_TRIVIAL(warning) << "Crash reporter not initialized";
         return;
     }
     BOOST_LOG_TRIVIAL(info) << "Triggering test crash for Sentry crash reporting verification";
