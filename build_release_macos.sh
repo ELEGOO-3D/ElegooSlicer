@@ -47,6 +47,15 @@ while getopts ":dpa:snt:xbc:i:1Tuhewg" opt; do
     u )
         export BUILD_TARGET="universal"
         ;;
+    e )
+        export ELEGOO_INTERNAL_TESTING="1"
+        ;;
+    w )
+        export DOWNLOAD_WEB="1"
+        ;;
+    g )
+        export SENTRY_UPLOAD="1"
+        ;;
     h ) echo "Usage: ./build_release_macos.sh [-d]"
         echo "   -d: Build deps only"
         echo "   -a: Set ARCHITECTURE (arm64 or x86_64 or universal)"
