@@ -9648,6 +9648,8 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
     // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
     // So, use GetSelection() from event parameter
     int selection = evt.GetSelection();
+    if (selection < 0 || selection >= static_cast<int>(combo->GetCount()))
+        return;
 
     auto marker = reinterpret_cast<size_t>(combo->GetClientData(selection));
     if (PresetComboBox::LabelItemType::LABEL_ITEM_WIZARD_ADD_PRINTERS == marker) {
@@ -9660,6 +9662,8 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
     // BBS:Save the plate parameters before switching
     PartPlateList& old_plate_list = this->partplate_list;
     PartPlate* old_plate = old_plate_list.get_selected_plate();
+    if (old_plate == nullptr)
+        return;
     Vec3d old_plate_pos = old_plate->get_center_origin();
 
     // BBS: Save the model in the current platelist
@@ -9770,11 +9774,14 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
                     }
                 }
             }
+        } else {
+            //BBS
+            //wxWindowUpdateLocker noUpdates1(sidebar->print_panel());
+            wxWindowUpdateLocker noUpdates2(sidebar->filament_panel());
+            wxGetApp().get_tab(preset_type)->select_preset(preset_name);
+            // update plater with new config
+            q->on_config_change(wxGetApp().preset_bundle->full_config());
         }
-        //BBS
-        //wxWindowUpdateLocker noUpdates1(sidebar->print_panel());
-        wxWindowUpdateLocker noUpdates2(sidebar->filament_panel());
-        wxGetApp().get_tab(preset_type)->select_preset(preset_name);
     }
 
     // ORCA: Always refresh the selected filament combo so its color swatch (clr_picker)
@@ -9795,7 +9802,8 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
 
         // BBS:Model reset by plate center
         PartPlateList& cur_plate_list = this->partplate_list;
-        PartPlate* cur_plate = cur_plate_list.get_curr_plate();
+        PartPlate* cur_plate = cur_plate_list.get_selected_plate();
+        if(cur_plate == nullptr) return;
         Vec3d cur_plate_pos = cur_plate->get_center_origin();
 
         if (old_plate_pos.x() != cur_plate_pos.x() || old_plate_pos.y() != cur_plate_pos.y()) {
@@ -9857,85 +9865,6 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
     for (auto plate : plate_list) {
          plate->update_slice_result_valid_state(false);
     }
-}
-
-
-void Plater::priv::update_objects_position_when_select_preset(const std::function<void()> &select_prest)
-{
-    PartPlateList &old_plate_list = this->partplate_list;
-    PartPlate     *old_plate      = old_plate_list.get_selected_plate();
-    Vec3d          old_plate_pos  = old_plate->get_center_origin();
-    Vec3d          old_plate_size = old_plate->get_plate_box().size();
-
-    // BBS: Save the model in the current platelist
-    std::vector<vector<int>> plate_object;
-    std::set<int>            all_plate_object;
-    for (size_t i = 0; i < old_plate_list.get_plate_count(); ++i) {
-        PartPlate                    *plate   = old_plate_list.get_plate(i);
-        std::set<std::pair<int, int>> obj_set = plate->get_obj_and_inst_set();
-
-        std::vector<int> obj_idxs;
-        for (auto &p : obj_set) {
-            obj_idxs.push_back(p.first);
-            all_plate_object.emplace(p.first);
-        }
-        plate_object.emplace_back(std::move(obj_idxs));
-    }
-
-
-    select_prest();
-
-    wxGetApp().obj_list()->update_object_list_by_printer_technology();
-
-    // set default wipe tower pos
-    PartPlateList &cur_plate_list       = this->partplate_list;
-    for (size_t plate_id = 0; plate_id < cur_plate_list.get_plate_list().size(); ++plate_id) {
-        cur_plate_list.set_default_wipe_tower_pos_for_plate(plate_id);
-    }
-    update();
-
-    // BBS:Model reset by plate center
-    PartPlate     *cur_plate            = cur_plate_list.get_curr_plate();
-    Vec3d          cur_plate_pos        = cur_plate->get_center_origin();
-    Vec3d          cur_plate_size       = cur_plate->get_bounding_box().size();
-    bool           cur_plate_is_smaller = cur_plate_size.x() + 1.0 < old_plate_size.x() || cur_plate_size.y() + 1.0 < old_plate_size.y();
-    BOOST_LOG_TRIVIAL(info) << format("change bed pos from (%.0f,%.0f) to (%.0f,%.0f)", old_plate_pos.x(), old_plate_pos.y(), cur_plate_pos.x(), cur_plate_pos.y());
-
-    bool plate_not_empty = std::any_of(plate_object.begin(), plate_object.end(), [](const std::vector<int> &obj_idxs) { return !obj_idxs.empty(); });
-    if (old_plate_pos.x() != cur_plate_pos.x() || old_plate_pos.y() != cur_plate_pos.y() || cur_plate_is_smaller) {
-        for (int i = 0; i < plate_object.size(); ++i) {
-            view3D->select_object_from_idx(plate_object[i]);
-            this->sidebar->obj_list()->update_selections();
-            view3D->center_selected_plate(i);
-        }
-
-        BOOST_LOG_TRIVIAL(info) << format("change bed size from (%.0f,%.0f) to (%.0f,%.0f)", old_plate_size.x(), old_plate_size.y(), cur_plate_size.x(), cur_plate_size.y());
-        if (cur_plate_is_smaller && plate_not_empty) {
-            take_snapshot("Arrange after bed size changes");
-            //collect all the objects on the current plates
-            std::set<ModelObject*>  new_all_plate_object;
-            for (int index = 0; index < cur_plate_list.get_plate_count(); index++)
-            {
-                PartPlate* plate = cur_plate_list.get_plate(index);
-                ModelObjectPtrs plate_obj_list = plate->get_objects_on_this_plate();
-                new_all_plate_object.insert(plate_obj_list.begin(), plate_obj_list.end());
-            }
-            std::set<std::pair<int, int>>& obj_set = cur_plate->get_obj_and_inst_set();
-            std::set<std::pair<int, int>>& obj_out_set = cur_plate->get_obj_and_inst_outside_set();
-            for (int i = 0; i < model.objects.size(); ++i) {
-                ModelObject* object = model.objects[i];
-                if (new_all_plate_object.find(object) == new_all_plate_object.end()) {
-                    //need to arrange
-                    obj_set.emplace(std::pair<int, int>{i, 0});
-                    obj_out_set.emplace(std::pair<int, int>{i, 0});
-                }
-            }
-        }
-
-        view3D->deselect_all();
-    }
-
-    wxQueueEvent(view3D->get_wxglcanvas(), new SimpleEvent(EVT_GLCANVAS_ARRANGE_OUTPLATE));
 }
 
 void Plater::priv::on_slicing_update(SlicingStatusEvent &evt)
@@ -11149,6 +11078,21 @@ void Plater::priv::init_notification_manager()
     notification_manager->init_slicing_progress_notification(cancel_callback);
     notification_manager->set_fff(printer_technology == ptFFF);
     notification_manager->init_progress_indicator();
+}
+
+void Plater::priv::update_objects_position_when_select_preset(const std::function<void()> &select_prest)
+{
+    select_prest();
+
+    wxGetApp().obj_list()->update_object_list_by_printer_technology();
+
+    // Re-clamp wipe tower positions to new bed boundaries after preset change
+    PartPlateList &cur_plate_list = this->partplate_list;
+    for (size_t plate_id = 0; plate_id < cur_plate_list.get_plate_list().size(); ++plate_id) {
+        cur_plate_list.set_default_wipe_tower_pos_for_plate(plate_id);
+    }
+
+    update();
 }
 
 void Plater::orient()
