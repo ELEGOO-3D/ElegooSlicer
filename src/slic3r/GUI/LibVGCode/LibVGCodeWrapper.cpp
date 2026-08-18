@@ -207,7 +207,16 @@ GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::ve
     }
 
     const std::vector<Slic3r::GCodeProcessorResult::MoveVertex>& moves = result.moves;
-    ret.vertices.reserve(2 * moves.size());
+    size_t vertices_count = moves.empty() ? 0 : moves.size() - 1;
+    for (size_t i = 1; i < moves.size(); ++i) {
+        const Slic3r::GCodeProcessorResult::MoveVertex& curr = moves[i];
+        const Slic3r::GCodeProcessorResult::MoveVertex& prev = moves[i - 1];
+        const EOptionType option_type = move_type_to_option(convert(curr.type));
+        if ((option_type == EOptionType::COUNT || option_type == EOptionType::Travels || option_type == EOptionType::Wipes) &&
+            (i == 1 || prev.type != curr.type || prev.extrusion_role != curr.extrusion_role || prev.mm3_per_mm != curr.mm3_per_mm))
+            ++vertices_count;
+    }
+    ret.vertices.reserve(vertices_count);
     for (size_t i = 1; i < moves.size(); ++i) {
         const Slic3r::GCodeProcessorResult::MoveVertex& curr = moves[i];
         const Slic3r::GCodeProcessorResult::MoveVertex& prev = moves[i - 1];
@@ -261,8 +270,6 @@ GCodeInputData convert(const Slic3r::GCodeProcessorResult& result, const std::ve
 #endif // VGCODE_ENABLE_COG_AND_TOOL_MARKERS
         ret.vertices.emplace_back(vertex);
     }
-    ret.vertices.shrink_to_fit();
-
     ret.spiral_vase_mode = result.spiral_vase_mode;
 
     return ret;
