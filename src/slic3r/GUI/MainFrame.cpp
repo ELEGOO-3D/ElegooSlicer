@@ -670,8 +670,13 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, BORDERLESS_FRAME_
     // declare events
     Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent& event) {
         BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< ": mainframe received close_widow event";
+        if (wxGetApp().is_closing() || IsBeingDeleted() || m_plater == nullptr) {
+            event.Skip();
+            return;
+        }
 
-        if (event.CanVeto() && m_plater->get_view3D_canvas3D()->get_gizmos_manager().is_in_editing_mode(true)) {
+        GLCanvas3D* view3d_canvas = m_plater->get_view3D_canvas3D();
+        if (event.CanVeto() && view3d_canvas != nullptr && view3d_canvas->get_gizmos_manager().is_in_editing_mode(true)) {
             // prevents to open the save dirty project dialog
             event.Veto();
             BOOST_LOG_TRIVIAL(info) << __FUNCTION__<< "cancelled by gizmo in editing";

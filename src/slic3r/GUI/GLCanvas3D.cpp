@@ -10159,6 +10159,10 @@ void GLCanvas3D::_set_warning_notification_if_needed(EWarning warning)
 
 void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
 {
+    // Skip UI notification updates after the Plater's private state starts tearing down.
+    if (wxGetApp().is_closing())
+        return;
+
     using NotificationLevel = NotificationManager::NotificationLevel;
     enum ErrorType{
         PLATER_WARNING,
