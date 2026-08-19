@@ -1,7 +1,7 @@
 {
     "name": "OpenEYE",
     "url": "http://www.openeye.tech",
-    "version": "01.05.03.03",
+    "version": "01.05.03.05",
     "force_update": "0",
     "description": "OpenEYE Printers Configurations",
     "machine_model_list": [
