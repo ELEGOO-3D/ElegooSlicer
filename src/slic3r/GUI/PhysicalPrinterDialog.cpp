@@ -20,6 +20,7 @@
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PresetBundle.hpp"
 
+#include "Widgets/ComboBox.hpp"
 #include "Widgets/DialogButtons.hpp"
 
 #include "GUI.hpp"
@@ -47,6 +48,41 @@ namespace Slic3r {
 namespace GUI {
 
 #define BORDER_W FromDIP(10)
+
+namespace {
+
+void disableElegooLinkChoice(Field* hostTypeField)
+{
+    Choice* choice = dynamic_cast<Choice*>(hostTypeField);
+    if (choice == nullptr)
+        return;
+
+    ComboBox* comboBox = dynamic_cast<ComboBox*>(choice->window);
+    if (comboBox == nullptr)
+        return;
+
+    const int selection = comboBox->GetSelection();
+    std::vector<DropDown::Item> hostTypes;
+    hostTypes.reserve(hostTypeField->m_opt.enum_values.size());
+    for (size_t index = 0; index < hostTypeField->m_opt.enum_values.size(); ++index) {
+        DropDown::Item item;
+        item.text          = _(hostTypeField->m_opt.enum_labels[index]);
+        item.icon          = comboBox->GetItemBitmap(index);
+        item.icon_textctrl = item.icon;
+        item.data          = comboBox->GetClientData(index);
+        item.alias         = comboBox->GetItemAlias(index);
+        item.tip           = comboBox->GetItemTooltip(index);
+        item.flag          = comboBox->GetFlag(index);
+        if (hostTypeField->m_opt.enum_values[index] == "elegoolink")
+            item.style = DD_ITEM_STYLE_DISABLED;
+        hostTypes.push_back(std::move(item));
+    }
+
+    comboBox->SetItems(hostTypes);
+    comboBox->SetSelection(selection);
+}
+
+} // namespace
 
 //------------------------------------------
 //          PhysicalPrinterDialog
@@ -153,6 +189,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     };
 
     m_optgroup->append_single_option_line("host_type");
+    disableElegooLinkChoice(m_optgroup->get_field("host_type"));
 
     // Build printer agent dropdown from registry (only if network agent is available)
     if (wxGetApp().getAgent() != nullptr) {
@@ -815,6 +852,7 @@ void PhysicalPrinterDialog::update_host_type(bool printer_change)
         PrintHostType type = static_cast<PrintHostType>(host_type);
         m_config->set_key_value("host_type", new ConfigOptionEnum<PrintHostType>(type));
     }
+    disableElegooLinkChoice(ht);
 }
 
 void PhysicalPrinterDialog::update_printer_agent_type()
