@@ -5,7 +5,7 @@
 	"from": "system",
 	"instantiation": "true",
 	"inherits": "Elegoo Neptune 3 Pro 0.4 nozzle",
-	"host_type": "elegoolink",
+	"host_type": "octoprint",
 	"printer_model": "Elegoo Neptune 3 Max",
 	"default_print_profile": "0.20mm Standard @Elegoo N3Max 0.4 nozzle",
 	"nozzle_diameter": [
