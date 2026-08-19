@@ -4866,9 +4866,9 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("ElegooSlicer can upload G-code files to a printer host. This field must contain "
                    "the kind of the host.");
     def->enum_keys_map = &ConfigOptionEnum<PrintHostType>::get_enum_values();
-    def->enum_values.push_back("octoprint");
     def->enum_values.push_back("prusalink");
     def->enum_values.push_back("prusaconnect");
+    def->enum_values.push_back("octoprint");
     def->enum_values.push_back("duet");
     def->enum_values.push_back("flashair");
     def->enum_values.push_back("astrobox");
@@ -4883,9 +4883,9 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("3dprinteros");
     def->enum_values.push_back("moonraker");
 
-    def->enum_labels.push_back("OctoPrint");
     def->enum_labels.push_back("PrusaLink");
     def->enum_labels.push_back("PrusaConnect");
+    def->enum_labels.push_back("OctoPrint");
     def->enum_labels.push_back("Duet");
     def->enum_labels.push_back("FlashAir");
     def->enum_labels.push_back("AstroBox");
