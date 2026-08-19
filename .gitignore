@@ -72,3 +72,4 @@ __pycache__/
 /.ai_rules/
 AGENTS.md
 /.github/copilot-instructions.md
+resources/web_bundles/

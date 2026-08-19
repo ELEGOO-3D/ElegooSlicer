@@ -4355,14 +4355,14 @@ void TabFilament::toggle_options()
 
         {
             auto       is_elegoo_cc_printer      = wxGetApp().preset_bundle->printers.get_edited_preset().is_elegoo_cc_printer();
-            auto line_cool_plate = this->get_line("cool_plate_temp_initial_layer");
+            auto line_smooth_pei_plate = this->get_line("hot_plate_temp_initial_layer");
             auto line_textured_plate_temp = this->get_line("textured_plate_temp_initial_layer");
-            if (line_cool_plate && line_textured_plate_temp) {
+            if (line_smooth_pei_plate && line_textured_plate_temp) {
                 if (is_elegoo_cc_printer) {
-                    line_cool_plate->setLabel(_L("Smooth Build Plate (Side B)"));
-                    line_textured_plate_temp->setLabel(_L("Textured Build Plate (Side A)"));
+                    line_smooth_pei_plate->setLabel(_L("Smooth PEI Plate") + " " + _L("(Side B)"));
+                    line_textured_plate_temp->setLabel(_L("Textured PEI Plate") + " " + _L("(Side A)"));
                 } else {
-                    line_cool_plate->setLabel(_L("Smooth Cool Plate"));
+                    line_smooth_pei_plate->setLabel(_L("Smooth PEI Plate / High Temp Plate"));
                     line_textured_plate_temp->setLabel(_L("Textured PEI Plate"));
                 }
             }
