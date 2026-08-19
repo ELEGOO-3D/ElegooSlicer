@@ -268,12 +268,12 @@ void Plater::show_illegal_characters_warning(wxWindow* parent)
 }
 
 static std::map<BedType, std::string> bed_type_thumbnails = {
-    {BedType::btPC,        "bed_cool"           },
-    {BedType::btEP,        "bed_engineering"    },
-    {BedType::btPEI,       "bed_high_templ"     },
-    {BedType::btPTE,       "bed_pei"            },
-    {BedType::btPCT,       "bed_pei_cool"       },
-    {BedType::btSuperTack, "bed_cool_supertack" }
+    {BedType::btPC,        "bed_cool_elegoo"           },
+    {BedType::btEP,        "bed_engineering_elegoo"    },
+    {BedType::btPEI,       "bed_pei_elegoo"            },
+    {BedType::btPTE,       "bed_pte_elegoo"            },
+    {BedType::btPCT,       "bed_pct_elegoo"            },
+    {BedType::btSuperTack, "bed_cool_supertack_elegoo" }
 };
 
 enum SlicedInfoIdx
@@ -2822,10 +2822,10 @@ std::string Sidebar::get_cur_select_bed_image()
 
     auto is_elegoo_cc_printer = wxGetApp().preset_bundle->printers.get_edited_preset().is_elegoo_cc_printer();
     if(is_elegoo_cc_printer) {
-        if(select_bed_type == btPC)
-            image_path = "bed_pc_elegoo";
+        if(select_bed_type == btPEI)
+            image_path = "bed_pei_elegoo_b";
         else if(select_bed_type == btPTE)
-            image_path = "bed_pte_elegoo";
+            image_path = "bed_pte_elegoo_a";
     }
     return image_path;
 }
@@ -2856,16 +2856,16 @@ bool Sidebar::reset_bed_type_combox_choices(bool is_sidebar_init)
     // don't change, because switching printer type can change the display text)
     auto rename_bed_labels = [this]() {
         auto is_elegoo_cc_printer = wxGetApp().preset_bundle->printers.get_edited_preset().is_elegoo_cc_printer();
-        auto pc_it  = std::find(m_cur_combox_bed_types.begin(), m_cur_combox_bed_types.end(), btPC);
+        auto pei_it = std::find(m_cur_combox_bed_types.begin(), m_cur_combox_bed_types.end(), btPEI);
         auto pte_it = std::find(m_cur_combox_bed_types.begin(), m_cur_combox_bed_types.end(), btPTE);
         if (is_elegoo_cc_printer) {
-            if (pc_it != m_cur_combox_bed_types.end())
-                p->combo_printer_bed->SetString(pc_it - m_cur_combox_bed_types.begin(), _L("Smooth Build Plate (Side B)"));
+            if (pei_it != m_cur_combox_bed_types.end())
+                p->combo_printer_bed->SetString(pei_it - m_cur_combox_bed_types.begin(), _L("Smooth PEI Plate") + " " + _L("(Side B)"));
             if (pte_it != m_cur_combox_bed_types.end())
-                p->combo_printer_bed->SetString(pte_it - m_cur_combox_bed_types.begin(), _L("Textured Build Plate (Side A)"));
+                p->combo_printer_bed->SetString(pte_it - m_cur_combox_bed_types.begin(), _L("Textured PEI Plate") + " " + _L("(Side A)"));
         } else {
-            if (pc_it != m_cur_combox_bed_types.end())
-                p->combo_printer_bed->SetString(pc_it - m_cur_combox_bed_types.begin(), _L("Smooth Cool Plate"));
+            if (pei_it != m_cur_combox_bed_types.end())
+                p->combo_printer_bed->SetString(pei_it - m_cur_combox_bed_types.begin(), _L("Smooth PEI Plate / High Temp Plate"));
             if (pte_it != m_cur_combox_bed_types.end())
                 p->combo_printer_bed->SetString(pte_it - m_cur_combox_bed_types.begin(), _L("Textured PEI Plate"));
         }

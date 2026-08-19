@@ -49,8 +49,8 @@ const PrintSendApp = {
 
             // Bed type management
             bedTypes: [
-                { value: 'btPTE', name: this.$t ? this.$t('printSend.texturedA') : 'Textured A', icon: 'img/bt_pte.png' },
-                { value: 'btPC', name: this.$t ? this.$t('printSend.smoothB') : 'Smooth B', icon: 'img/bt_pc.png' }
+                { value: 'btPTE', name: this.$t ? this.$t('printSend.texturedA') : 'Textured A', icon: 'img/bed_pte_a.png' },
+                { value: 'btPC', name: this.$t ? this.$t('printSend.smoothB') : 'Smooth B', icon: 'img/bed_pei_b.png' }
             ],
             selectedBedType: null,
             hasMmsInfo: false,
@@ -60,9 +60,7 @@ const PrintSendApp = {
             // UI state
             isEditingName: false,
             showFilamentSection: false,
-            isIniting: false,
-            // Currently selected heated bed type in the app
-            currentBedType: ""
+            isIniting: false
         };
     },
 
@@ -112,10 +110,6 @@ const PrintSendApp = {
             return this.curPrinter && this.printInfo.currentProjectPrinterModel && this.curPrinter.printerModel !== this.printInfo.currentProjectPrinterModel;
         },
 
-        bedTypeNotMatch() {
-            return this.printInfo.uploadAndPrint && this.selectedBedType && this.currentBedType !== this.selectedBedType.value && this.curPrinter.printCapabilities.supportsHeatedBedSwitching;
-        },
-
         // Check if printer is busy (not idle and not print completed)
         printerBusy() {
             if (!this.curPrinter) return false;
@@ -142,17 +136,12 @@ const PrintSendApp = {
                 errors.push(this.$t('printSend.printerModelNotMatch'));
             }
             
-            // Priority 2: Bed type mismatch (only if printer model matches)
-            if (!this.printerModelNotMatch && this.bedTypeNotMatch) {
-                errors.push(this.$t('printSend.bedTypeNotMatch'));
-            }
-            
-            // Priority 3: Printer busy warning (non-idle and non-completed)
+            // Priority 2: Printer busy warning (non-idle and non-completed)
             if (this.printerBusy) {
                 errors.push(this.$t('printSend.printerBusyWarning'));
             }
             
-            // Priority 4: Print completed warning (only if "Upload and Print" is checked)
+            // Priority 3: Print completed warning (only if "Upload and Print" is checked)
             if (this.printerPrintCompleted && this.printInfo.uploadAndPrint) {
                 errors.push(this.$t('printSend.printCompleteWarning'));
             }
@@ -166,7 +155,6 @@ const PrintSendApp = {
         async init() {
             this.isIniting = true;
             await this.requestPrinterList();
-            await this.getCurrentBedType();
             this.isIniting = false;
         },
 
@@ -258,19 +246,6 @@ const PrintSendApp = {
                 nativeIpc.sendEvent('expand_window', { expand });
             } catch (error) {
                 console.error('Failed to request printer list:', error);
-            }
-        },
-
-        async getCurrentBedType() {
-            try {
-                const response = await this.ipcRequest('get_current_bed_type', { printerId: this.curPrinter.printerId });
-                if (response && response.bedType) {
-                    console.log("Current bed type:", response.bedType);
-                    this.currentBedType = response.bedType;
-                    console.log("Selected bed type:", this.selectedBedType ? this.selectedBedType.value : null);
-                }
-            } catch (error) {
-                console.error('Failed to get current bed type:', error);
             }
         },
 
@@ -573,11 +548,6 @@ const PrintSendApp = {
 
         // Event handlers called by external code
         async onPrinterChanged() {
-            // Update bed types with current translations
-            this.bedTypes = [
-                { value: 'btPTE', name: this.$t('printSend.texturedA'), icon: 'img/bt_pte.png' },
-                { value: 'btPC', name: this.$t('printSend.smoothB'), icon: 'img/bt_pc.png' }
-            ];
             // Handle printer change logic if needed
             await this.requestPrintTask();
 
@@ -620,11 +590,6 @@ const PrintSendApp = {
     },
 
     mounted() {
-        // Initialize bed types with translations
-        this.bedTypes = [
-            { value: 'btPTE', name: this.$t('printSend.texturedA'), icon: 'img/bt_pte.png' },
-            { value: 'btPC', name: this.$t('printSend.smoothB'), icon: 'img/bt_pc.png' }
-        ];
         this.selectedBedType = this.bedTypes[0];
 
         // Initialize the application

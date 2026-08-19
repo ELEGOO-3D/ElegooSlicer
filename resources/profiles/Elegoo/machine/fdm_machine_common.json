@@ -126,5 +126,6 @@
 	"change_filament_gcode": "",
 	"purge_in_prime_tower": "0",
 	"manual_filament_change": "1",
-	"enable_filament_ramming": "0"
+	"enable_filament_ramming": "0",
+	"support_multi_bed_types": "1"
 }
