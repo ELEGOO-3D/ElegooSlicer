@@ -1,9 +1,11 @@
 #pragma once
 
+#include "IPCCommon.hpp"
 #include "Singleton.hpp"
 #include "slic3r/Utils/IPCMessage.hpp"
 #include "libslic3r/PrinterNetworkInfo.hpp"
 #include <boost/asio.hpp>
+#include <chrono>
 #include <string>
 #include <thread>
 #include <atomic>
@@ -76,7 +78,9 @@ private:
     IPCClient();
     ~IPCClient();
 
-    IPCResponse sendRequest(const std::string& method, const nlohmann::json& params);
+    IPCResponse sendRequest(const std::string& method,
+                            const nlohmann::json& params,
+                            std::chrono::seconds timeout = std::chrono::seconds(IPC_REQUEST_TIMEOUT_SECONDS));
     std::string generateRequestId();
     IPCResponse handlePendingRequestError(const std::string& id, PrinterNetworkErrorCode errorCode);
 
