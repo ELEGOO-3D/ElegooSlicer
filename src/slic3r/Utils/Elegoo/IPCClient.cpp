@@ -444,7 +444,9 @@ IPCResponse IPCClient::handlePendingRequestError(const std::string& id, PrinterN
     return response;
 }
 
-IPCResponse IPCClient::sendRequest(const std::string& method, const nlohmann::json& params)
+IPCResponse IPCClient::sendRequest(const std::string& method,
+                                   const nlohmann::json& params,
+                                   std::chrono::seconds timeout)
 {
     if (std::this_thread::get_id() == mIoThreadId) {
         BOOST_LOG_TRIVIAL(error) << "IPCClient: sendRequest called from I/O thread (API misuse), method: " << method;
@@ -497,7 +499,7 @@ IPCResponse IPCClient::sendRequest(const std::string& method, const nlohmann::js
         }
     }
 
-    auto status = future.wait_for(std::chrono::seconds(IPC_REQUEST_TIMEOUT_SECONDS));
+    auto status = future.wait_for(timeout);
     if (status == std::future_status::timeout) {
         return handlePendingRequestError(id, PrinterNetworkErrorCode::OPERATION_TIMEOUT);
     }
@@ -803,7 +805,9 @@ PrinterNetworkResult<bool> IPCClient::cancelUploadTask(const std::string& taskId
 
 UserNetworkInfo IPCClient::getUserInfo()
 {
-    IPCResponse response = sendRequest("user.getUserInfo", nlohmann::json::object());
+    IPCResponse response = sendRequest("user.getUserInfo",
+                                       nlohmann::json::object(),
+                                       std::chrono::seconds(IPC_USER_INFO_TIMEOUT_SECONDS));
     if (response.code == 0 && !response.data.is_null()) {
         return convertJsonToUserNetworkInfo(response.data);
     }

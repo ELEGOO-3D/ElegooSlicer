@@ -8,7 +8,8 @@ namespace Slic3r {
 
 constexpr size_t IPC_MAX_MESSAGE_SIZE           = 100 * 1024 * 1024;
 constexpr size_t IPC_MAX_PENDING_WRITES         = 20;
-constexpr int    IPC_REQUEST_TIMEOUT_SECONDS    = 30;
+constexpr int    IPC_REQUEST_TIMEOUT_SECONDS    = 5;
+constexpr int    IPC_USER_INFO_TIMEOUT_SECONDS  = 3;
 constexpr int    IPC_RECONNECT_INTERVAL_SECONDS = 1;
 
 inline std::string getIPCPortFilePath()
