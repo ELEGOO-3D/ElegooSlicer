@@ -1,66 +1,80 @@
-name: 🚀 Feature Request / Enhancement
-description: Suggest an improvement to make Orca Slicer even better!
+name: "🚀 Feature Request"
+description: Suggest an improvement for ElegooSlicer
+title: "[Feature] "
 labels: ["enhancement"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this feature request!
+        Thank you for suggesting an improvement to ElegooSlicer.
 
-        If your idea is still at the formulation stage, or you're not sure it would
-        be useful to many users, you can raise it as a discussion topic under [Ideas](https://github.com/OrcaSlicer/OrcaSlicer/discussions/categories/ideas)
-        or you can raise it on the [Discord server](https://discord.gg/P4VE9UY9gJ).
+        Please describe the user problem and desired outcome rather than only a specific implementation. For early-stage ideas or general discussion, visit [GitHub Discussions](https://github.com/ELEGOO-3D/ElegooSlicer/discussions) or the [ELEGOO Discord community](https://discord.com/invite/NkFzP96cMt).
+
   - type: checkboxes
+    id: existing_request
     attributes:
-      label: Is there an existing issue for this feature request?
-      description: |
-        Please search to see if an issue already exists for a feature, or perhaps one similar.
-        You can then comment and react so that we know know much interest there is in the feature request.
+      label: Is there an existing request for this feature?
+      description: Search open and closed issues for the same or a similar request.
       options:
-        - label: I have searched the existing issues
+        - label: I have searched the existing issues and discussions
           required: true
+
   - type: textarea
+    id: problem
     attributes:
-      label: Is your feature request related to a problem?
-      description: A clear and concise description of what the problem is.
-      placeholder: I'm always frustrated when [...]
+      label: Problem or limitation
+      description: Explain the workflow problem, limitation, or user need this feature would address.
+      placeholder: When I ..., I cannot ..., which means ...
     validations:
       required: true
+
   - type: dropdown
+    id: area
     attributes:
-      label: Which printers will be beneficial to this feature?
-      description: Select affected printer firmware type.
+      label: Feature area
+      options:
+        - Slicing or toolpath generation
+        - Printer or filament profiles
+        - Printer connection and device control
+        - User interface and workflow
+        - File import or export
+        - Calibration
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: printer_scope
+    attributes:
+      label: Printer scope
+      description: Select all printer groups that would benefit.
       multiple: true
-      options: 
-        - Klipper
-        - Marlin
-        - Others
-        - All
+      options:
+        - ELEGOO printers
+        - Other Klipper-based printers
+        - Other Marlin-based printers
+        - All supported printers
+        - Not printer-specific
     validations:
       required: true
+
   - type: textarea
+    id: proposed_solution
     attributes:
-      label: Describe the solution you'd like
-      description: A clear and concise description of what you want to happen.
-      placeholder: It should do [...]
+      label: Proposed solution
+      description: Describe the behavior or workflow you would like ElegooSlicer to provide.
+      placeholder: ElegooSlicer should ...
     validations:
       required: true
+
   - type: textarea
+    id: alternatives
     attributes:
-      label: Describe alternatives you've considered
-      description: A clear and concise description of any alternative solutions or features you've considered.
-      placeholder: |
-        1. [...]
-        2. [...]
-        3. [...]
-    validations:
-      required: false
+      label: Alternatives considered
+      description: Describe current workarounds or alternative solutions you have tried.
+
   - type: textarea
+    id: additional_context
     attributes:
       label: Additional context
-      description: |
-        Add any other context, diagrams, illustations or screenshots about the feature request here.
-
-        Tip: You can attach images or log files by clicking this area to highlight it and then dragging files in.
-    validations:
-      required: false
+      description: Add mockups, screenshots, example files, links, or other context that clarifies the request.

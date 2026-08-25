@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Community Support (Discord channel)
-    url: https://discord.gg/P4VE9UY9gJ
-    about: Please ask and answer support "how do I?"questions here.
-  - name: Discussion Forum
-    url: https://github.com/OrcaSlicer/OrcaSlicer/discussions
-    about: Please raise ideas and feature suggestions here.
+  - name: ELEGOO community support
+    url: https://discord.com/invite/NkFzP96cMt
+    about: Ask usage questions and get help troubleshooting ElegooSlicer in the ELEGOO Discord community.
+  - name: ElegooSlicer discussions
+    url: https://github.com/ELEGOO-3D/ElegooSlicer/discussions
+    about: Discuss early-stage ideas, workflows, and general ElegooSlicer topics.

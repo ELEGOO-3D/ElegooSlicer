@@ -1,27 +1,35 @@
-# Description
+## Summary
 
-<!--
-> Please provide a summary of the changes made in this PR. Include details such as:
-  > * What issue does this PR address or fix?
-  > * What new features or enhancements does this PR introduce?
-  > * Are there any breaking changes or dependencies that need to be considered?
--->
+<!-- Explain what changed and why. Keep the scope focused. -->
 
-# Screenshots/Recordings/Graphs
+## Related issue
 
-<!--
-> Please attach relevant screenshots to showcase the UI changes.
-> Please attach images that can help explain the changes.
--->
+<!-- Link the issue this PR addresses, for example: Closes #123. -->
 
-## Tests
+## Change type
 
-<!--
-> Please describe the tests that you have conducted to verify the changes made in this PR.
--->
+- [ ] Bug fix
+- [ ] New feature or enhancement
+- [ ] Printer, filament, or process profile
+- [ ] Refactoring
+- [ ] Documentation, localization, build, or maintenance
 
-<!--
-> A guide for users on how to download the artifacts from this PR.
--->
+## Testing
 
-[How to Download Pull Requests Artifacts for Testing](https://www.orcaslicer.com/wiki/how_to_download_pr_artifacts)
+<!-- List the checks performed and their results. Include the tested OS, printer/profile, and ElegooSlicer build configuration when relevant. -->
+
+- Tested on:
+- Test scenario and result:
+
+## Screenshots or recordings
+
+<!-- Required for visible UI changes. Remove this section when it does not apply. -->
+
+## Contributor checklist
+
+- [ ] I kept the change focused and did not include unrelated formatting or refactoring.
+- [ ] I followed the existing code style and used English for code, comments, and commit messages.
+- [ ] I tested the affected workflow on the relevant platform(s).
+- [ ] I considered compatibility with existing profiles and project files.
+- [ ] I updated user-facing text or localization resources when required.
+- [ ] I did not add or change third-party dependencies without explaining why.
